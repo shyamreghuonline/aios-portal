@@ -599,11 +599,11 @@ export default function StudentsPage() {
                   {/* Photo - Mandatory */}
                   {detailStudent.personalDetails?.photoUrl ? (
                     <div className="flex flex-col items-center p-3 bg-green-50 border border-green-200 rounded-lg h-20 w-28">
-                      <button onClick={() => openBase64(detailStudent.personalDetails!.photoUrl!)} className="w-10 h-10 rounded bg-green-100 flex items-center justify-center hover:ring-2 ring-green-300 transition-all mb-2">
+                      <button onClick={() => openBase64(detailStudent.personalDetails!.photoUrl as string)} className="w-10 h-10 rounded bg-green-100 flex items-center justify-center hover:ring-2 ring-green-300 transition-all mb-2">
                         <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                       </button>
                       <p className="text-[9px] font-bold text-green-700 text-center leading-tight mb-2">Photo</p>
-                      <button onClick={() => downloadDocument(detailStudent.personalDetails!.photoUrl!, `${detailStudent.name.replace(/\s+/g, "_")}_Photo.jpg`)} className="px-2 py-1 text-[8px] font-bold text-green-700 bg-white border border-green-300 rounded hover:bg-green-100">Download</button>
+                      <button onClick={() => downloadDocument(detailStudent.personalDetails!.photoUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_Photo.jpg`)} className="px-2 py-1 text-[8px] font-bold text-green-700 bg-white border border-green-300 rounded hover:bg-green-100">Download</button>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center p-3 bg-red-50 border border-red-300 rounded-lg h-20 w-28">
@@ -617,11 +617,11 @@ export default function StudentsPage() {
                   {/* Aadhaar Card - Mandatory */}
                   {detailStudent.personalDetails?.aadhaarUrl ? (
                     <div className="flex flex-col items-center p-3 bg-red-50 border border-red-200 rounded-lg h-20 w-28">
-                      <button onClick={() => openBase64(detailStudent.personalDetails!.aadhaarUrl!)} className="w-10 h-10 rounded bg-red-100 flex items-center justify-center hover:ring-2 ring-red-300 transition-all mb-2">
+                      <button onClick={() => openBase64(detailStudent.personalDetails!.aadhaarUrl as string)} className="w-10 h-10 rounded bg-red-100 flex items-center justify-center hover:ring-2 ring-red-300 transition-all mb-2">
                         <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                       </button>
                       <p className="text-[9px] font-bold text-red-700 text-center leading-tight mb-2">Aadhaar</p>
-                      <button onClick={() => downloadDocument(detailStudent.personalDetails!.aadhaarUrl!, `${detailStudent.name.replace(/\s+/g, "_")}_Aadhaar.jpg`)} className="px-2 py-1 text-[8px] font-bold text-red-700 bg-white border border-red-300 rounded hover:bg-red-100">Download</button>
+                      <button onClick={() => downloadDocument(detailStudent.personalDetails!.aadhaarUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_Aadhaar.jpg`)} className="px-2 py-1 text-[8px] font-bold text-red-700 bg-white border border-red-300 rounded hover:bg-red-100">Download</button>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center p-3 bg-red-50 border border-red-300 rounded-lg h-20 w-28">
@@ -635,11 +635,11 @@ export default function StudentsPage() {
                   {/* SSLC Certificate - Mandatory */}
                   {detailStudent.academicDetails?.sslc?.certificateUrl ? (
                     <div className="flex flex-col items-center p-3 bg-blue-50 border border-blue-200 rounded-lg h-20 w-28">
-                      <button onClick={() => openBase64(detailStudent.academicDetails!.sslc!.certificateUrl!)} className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center hover:ring-2 ring-blue-300 transition-all mb-2">
+                      <button onClick={() => openBase64(detailStudent.academicDetails!.sslc!.certificateUrl as string)} className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center hover:ring-2 ring-blue-300 transition-all mb-2">
                         <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                       </button>
                       <p className="text-[9px] font-bold text-blue-700 text-center leading-tight mb-2">SSLC</p>
-                      <button onClick={() => downloadDocument(detailStudent.academicDetails!.sslc!.certificateUrl!, `${detailStudent.name.replace(/\s+/g, "_")}_SSLC.jpg`)} className="px-2 py-1 text-[8px] font-bold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-100">Download</button>
+                      <button onClick={() => downloadDocument(detailStudent.academicDetails!.sslc!.certificateUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_SSLC.jpg`)} className="px-2 py-1 text-[8px] font-bold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-100">Download</button>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center p-3 bg-red-50 border border-red-300 rounded-lg h-20 w-28">
@@ -653,11 +653,11 @@ export default function StudentsPage() {
                   {/* HSC Certificate - Mandatory */}
                   {detailStudent.academicDetails?.plustwo?.certificateUrl ? (
                     <div className="flex flex-col items-center p-3 bg-blue-50 border border-blue-200 rounded-lg h-20 w-28">
-                      <button onClick={() => openBase64(detailStudent.academicDetails!.plustwo!.certificateUrl!)} className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center hover:ring-2 ring-blue-300 transition-all mb-2">
+                      <button onClick={() => openBase64(detailStudent.academicDetails!.plustwo!.certificateUrl as string)} className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center hover:ring-2 ring-blue-300 transition-all mb-2">
                         <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                       </button>
                       <p className="text-[9px] font-bold text-blue-700 text-center leading-tight mb-2">HSC</p>
-                      <button onClick={() => downloadDocument(detailStudent.academicDetails!.plustwo!.certificateUrl!, `${detailStudent.name.replace(/\s+/g, "_")}_HSC.jpg`)} className="px-2 py-1 text-[8px] font-bold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-100">Download</button>
+                      <button onClick={() => downloadDocument(detailStudent.academicDetails!.plustwo!.certificateUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_HSC.jpg`)} className="px-2 py-1 text-[8px] font-bold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-100">Download</button>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center p-3 bg-red-50 border border-red-300 rounded-lg h-20 w-28">
@@ -671,11 +671,11 @@ export default function StudentsPage() {
                   {/* UG Certificate - Optional */}
                   {detailStudent.academicDetails?.ug?.certificateUrl ? (
                     <div className="flex flex-col items-center p-3 bg-blue-50 border border-blue-200 rounded-lg h-20 w-28">
-                      <button onClick={() => openBase64(detailStudent.academicDetails!.ug!.certificateUrl!)} className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center hover:ring-2 ring-blue-300 transition-all mb-2">
+                      <button onClick={() => openBase64(detailStudent.academicDetails!.ug!.certificateUrl as string)} className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center hover:ring-2 ring-blue-300 transition-all mb-2">
                         <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                       </button>
                       <p className="text-[9px] font-bold text-blue-700 text-center leading-tight mb-2">UG</p>
-                      <button onClick={() => downloadDocument(detailStudent.academicDetails!.ug!.certificateUrl!, `${detailStudent.name.replace(/\s+/g, "_")}_UG.jpg`)} className="px-2 py-1 text-[8px] font-bold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-100">Download</button>
+                      <button onClick={() => downloadDocument(detailStudent.academicDetails!.ug!.certificateUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_UG.jpg`)} className="px-2 py-1 text-[8px] font-bold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-100">Download</button>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center p-3 bg-slate-100 border border-slate-200 rounded-lg h-20 w-28 opacity-60">
@@ -689,21 +689,21 @@ export default function StudentsPage() {
                   {/* PG Certificate - Optional, only show if uploaded */}
                   {detailStudent.academicDetails?.pg?.certificateUrl && (
                     <div className="flex flex-col items-center p-3 bg-blue-50 border border-blue-200 rounded-lg h-20 w-28">
-                      <button onClick={() => openBase64(detailStudent.academicDetails!.pg!.certificateUrl!)} className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center hover:ring-2 ring-blue-300 transition-all mb-2">
+                      <button onClick={() => openBase64(detailStudent.academicDetails!.pg!.certificateUrl as string)} className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center hover:ring-2 ring-blue-300 transition-all mb-2">
                         <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                       </button>
                       <p className="text-[9px] font-bold text-blue-700 text-center leading-tight mb-2">PG</p>
-                      <button onClick={() => downloadDocument(detailStudent.academicDetails!.pg!.certificateUrl!, `${detailStudent.name.replace(/\s+/g, "_")}_PG.jpg`)} className="px-2 py-1 text-[8px] font-bold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-100">Download</button>
+                      <button onClick={() => downloadDocument(detailStudent.academicDetails!.pg!.certificateUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_PG.jpg`)} className="px-2 py-1 text-[8px] font-bold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-100">Download</button>
                     </div>
                   )}
                   {/* PhD Certificate - Optional, only show if uploaded */}
                   {detailStudent.academicDetails?.phd?.certificateUrl && (
                     <div className="flex flex-col items-center p-3 bg-blue-50 border border-blue-200 rounded-lg h-20 w-28">
-                      <button onClick={() => openBase64(detailStudent.academicDetails!.phd!.certificateUrl!)} className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center hover:ring-2 ring-blue-300 transition-all mb-2">
+                      <button onClick={() => openBase64(detailStudent.academicDetails!.phd!.certificateUrl as string)} className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center hover:ring-2 ring-blue-300 transition-all mb-2">
                         <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                       </button>
                       <p className="text-[9px] font-bold text-blue-700 text-center leading-tight mb-2">PhD</p>
-                      <button onClick={() => downloadDocument(detailStudent.academicDetails!.phd!.certificateUrl!, `${detailStudent.name.replace(/\s+/g, "_")}_PhD.jpg`)} className="px-2 py-1 text-[8px] font-bold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-100">Download</button>
+                      <button onClick={() => downloadDocument(detailStudent.academicDetails!.phd!.certificateUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_PhD.jpg`)} className="px-2 py-1 text-[8px] font-bold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-100">Download</button>
                     </div>
                   )}
                 </div>
