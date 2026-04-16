@@ -335,23 +335,24 @@ export default function StudentsPage() {
     <div className="flex flex-col gap-4 h-full">
 
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div>
-          <h1 className="text-base font-bold text-slate-900">Students</h1>
-          <p className="text-xs font-medium text-slate-700">{students.length} students enrolled</p>
+          <h1 className="text-sm lg:text-base font-bold text-slate-900">Students</h1>
+          <p className="text-[11px] lg:text-xs font-medium text-slate-700">{students.length} students enrolled</p>
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white rounded-xl gradient-bg hover:shadow-lg transition-all"
+          className="inline-flex items-center gap-1.5 lg:gap-2 px-3 lg:px-5 py-2 lg:py-2.5 text-xs lg:text-sm font-bold text-white rounded-xl gradient-bg hover:shadow-lg transition-all flex-shrink-0"
         >
-          <Plus className="w-4 h-4" />
-          Add Student
+          <Plus className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+          <span className="hidden sm:inline">Add Student</span>
+          <span className="sm:hidden">Add</span>
         </button>
       </div>
 
       {/* Stat Cards */}
       {!loading && students.length > 0 && (
-        <div className="grid grid-cols-4 gap-3 flex-shrink-0">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-3 flex-shrink-0">
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2.5 flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg gradient-bg flex items-center justify-center flex-shrink-0">
               <GraduationCap className="w-3.5 h-3.5 text-white" />
@@ -396,18 +397,18 @@ export default function StudentsPage() {
 
         {/* Search bar */}
         {!loading && students.length > 0 && (
-          <div className="px-5 py-3 border-b border-slate-100 flex items-center gap-3">
+          <div className="px-3 lg:px-5 py-2 lg:py-3 border-b border-slate-100 flex items-center gap-2 lg:gap-3">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search name, phone, course..."
-                className="w-full pl-9 pr-4 py-2 text-sm rounded-xl border border-slate-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none"
+                placeholder="Search name, phone..."
+                className="w-full pl-9 pr-4 py-2 text-xs lg:text-sm rounded-xl border border-slate-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none"
               />
             </div>
-            <span className="text-xs font-semibold text-slate-700 ml-auto">{filtered.length} of {students.length} students</span>
+            <span className="text-[10px] lg:text-xs font-semibold text-slate-700 ml-auto flex-shrink-0">{filtered.length} of {students.length}</span>
           </div>
         )}
 
@@ -425,24 +426,24 @@ export default function StudentsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-red-50 border-y-2 border-red-100 sticky top-0 z-10">
-                  <th className="text-left px-5 py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest">Name</th>
-                  <th className="text-left px-5 py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest">Phone</th>
-                  <th className="text-left px-5 py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest">Total Fee</th>
-                  <th className="text-left px-5 py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest">Due Amount</th>
-                  <th className="text-left px-5 py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest">Course</th>
+                  <th className="text-left px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest">Name</th>
+                  <th className="text-left px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest">Phone</th>
+                  <th className="text-left px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest hidden sm:table-cell">Total Fee</th>
+                  <th className="text-left px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest">Due</th>
+                  <th className="text-left px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest hidden md:table-cell">Course</th>
                   <th
-                    className="text-left px-5 py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-red-600 transition-colors"
+                    className="text-left px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-red-600 transition-colors hidden lg:table-cell"
                     onClick={() => { setSortCol("university"); setSortDir(sortCol === "university" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     University <ArrowUpDown className="inline w-3 h-3 ml-0.5" />
                   </th>
                   <th
-                    className="text-left px-5 py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-red-600 transition-colors"
+                    className="text-left px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-red-600 transition-colors hidden lg:table-cell"
                     onClick={() => { setSortCol("year"); setSortDir(sortCol === "year" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     Year <ArrowUpDown className="inline w-3 h-3 ml-0.5" />
                   </th>
-                  <th className="text-right px-5 py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest">Actions</th>
+                  <th className="text-right px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -458,48 +459,48 @@ export default function StudentsPage() {
                   const photoUrl = student.personalDetails?.photo;
                   return (
                     <tr key={student.id} className={`border-b border-red-50 hover:bg-red-50/60 transition-colors ${idx % 2 !== 0 ? "bg-red-50/20" : "bg-white"}`}>
-                      <td className="px-5 py-3">
-                        <button onClick={() => setDetailStudent(student)} className="text-left flex items-center gap-3 group/name">
-                          <div className="w-9 h-9 rounded-full gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
+                      <td className="px-3 lg:px-5 py-2 lg:py-3">
+                        <button onClick={() => setDetailStudent(student)} className="text-left flex items-center gap-2 lg:gap-3 group/name">
+                          <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
                             {photoUrl ? (
                               <img src={photoUrl} alt={student.name} className="w-full h-full object-cover" />
                             ) : (
-                              <span className="text-[10px] font-extrabold text-white">{initials}</span>
+                              <span className="text-[9px] lg:text-[10px] font-extrabold text-white">{initials}</span>
                             )}
                           </div>
-                          <div>
-                            <p className="font-bold text-slate-900 text-xs group-hover/name:text-red-700 transition-colors">{student.name}</p>
-                            <p className="text-[11px] text-slate-600 mt-0.5">{student.email}</p>
+                          <div className="min-w-0">
+                            <p className="font-bold text-slate-900 text-[11px] lg:text-xs group-hover/name:text-red-700 transition-colors truncate max-w-[100px] lg:max-w-none">{student.name}</p>
+                            <p className="text-[10px] text-slate-600 mt-0.5 hidden sm:block">{student.email}</p>
                           </div>
                         </button>
                       </td>
-                      <td className="px-5 py-3 text-slate-800 text-xs font-mono whitespace-nowrap">{student.phone}</td>
-                      <td className="px-5 py-3 whitespace-nowrap">
-                        <span className="text-xs font-bold text-slate-800">₹{(student.totalFee || 0).toLocaleString("en-IN")}</span>
+                      <td className="px-3 lg:px-5 py-2 lg:py-3 text-slate-800 text-[10px] lg:text-xs font-mono whitespace-nowrap">{student.phone}</td>
+                      <td className="px-3 lg:px-5 py-2 lg:py-3 whitespace-nowrap hidden sm:table-cell">
+                        <span className="text-[10px] lg:text-xs font-bold text-slate-800">₹{(student.totalFee || 0).toLocaleString("en-IN")}</span>
                       </td>
-                      <td className="px-5 py-3 whitespace-nowrap">
+                      <td className="px-3 lg:px-5 py-2 lg:py-3 whitespace-nowrap">
                         {due <= 0 ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-100 text-green-800 text-[11px] font-bold">✓ Cleared</span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 lg:px-2.5 lg:py-1 rounded-full bg-green-100 text-green-800 text-[10px] lg:text-[11px] font-bold">✓</span>
                         ) : (
                           <div>
-                            <p className="text-xs font-bold text-red-600">₹{due.toLocaleString("en-IN")}</p>
-                            <span className="inline-block mt-0.5 px-2 py-0.5 text-[10px] font-medium bg-red-100 text-red-700 rounded-md">Due Amount</span>
+                            <p className="text-[10px] lg:text-xs font-bold text-red-600">₹{due.toLocaleString("en-IN")}</p>
+                            <span className="inline-block mt-0.5 px-1.5 lg:px-2 py-0.5 text-[9px] lg:text-[10px] font-medium bg-red-100 text-red-700 rounded-md">Due</span>
                           </div>
                         )}
                       </td>
-                      <td className="px-5 py-3 max-w-[160px]">
-                        <p className="text-xs font-bold text-slate-900 leading-tight">{student.course}</p>
+                      <td className="px-3 lg:px-5 py-2 lg:py-3 max-w-[100px] lg:max-w-[160px] hidden md:table-cell">
+                        <p className="text-[10px] lg:text-xs font-bold text-slate-900 leading-tight truncate">{student.course}</p>
                         {student.stream && (
-                          <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold bg-indigo-100 text-indigo-700 rounded-md">{student.stream}</span>
+                          <span className="inline-block mt-1 px-1.5 lg:px-2 py-0.5 text-[9px] lg:text-[10px] font-bold bg-indigo-100 text-indigo-700 rounded-md truncate">{student.stream}</span>
                         )}
                       </td>
-                      <td className="px-5 py-3 text-xs text-slate-800 font-semibold">{student.university}</td>
-                      <td className="px-5 py-3 whitespace-nowrap">
-                        <span className="text-[11px] font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">
+                      <td className="px-3 lg:px-5 py-2 lg:py-3 text-[10px] lg:text-xs text-slate-800 font-semibold hidden lg:table-cell">{student.university}</td>
+                      <td className="px-3 lg:px-5 py-2 lg:py-3 whitespace-nowrap hidden lg:table-cell">
+                        <span className="text-[10px] lg:text-[11px] font-bold text-slate-800 bg-slate-100 px-1.5 lg:px-2 py-0.5 rounded-md">
                           {student.startYear}{student.endYear ? ` – ${student.endYear}` : ""}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-2 lg:px-4 py-2 lg:py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => openPaymentsModal(student)}
@@ -538,30 +539,30 @@ export default function StudentsPage() {
 
       {/* Student Detail Modal */}
       {detailStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 overflow-auto">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 overflow-hidden border border-slate-200 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-2 sm:px-4 py-4 sm:py-6 overflow-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-2 sm:mx-4 overflow-hidden border border-slate-200 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             {/* Header with Photo */}
-            <div className="gradient-bg px-7 py-5 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/30">
+            <div className="gradient-bg px-4 sm:px-7 py-3 sm:py-5 flex items-center justify-between">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/30 flex-shrink-0">
                   {detailStudent.personalDetails?.photo ? (
                     <img src={detailStudent.personalDetails.photo} alt={detailStudent.name} className="w-full h-full object-cover" />
                   ) : (
-                    <User className="w-7 h-7 text-white" />
+                    <User className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
                   )}
                 </div>
-                <div>
-                  <h2 className="text-lg font-extrabold text-white tracking-tight">{detailStudent.name}</h2>
-                  <a href={`tel:${detailStudent.phone}`} className="text-sm text-red-100 mt-0.5 font-medium hover:text-white hover:underline block">{detailStudent.phone}</a>
-                  <p className="text-xs text-red-200 mt-0.5">{detailStudent.email}</p>
+                <div className="min-w-0">
+                  <h2 className="text-sm sm:text-lg font-extrabold text-white tracking-tight truncate">{detailStudent.name}</h2>
+                  <a href={`tel:${detailStudent.phone}`} className="text-xs sm:text-sm text-red-100 mt-0.5 font-medium hover:text-white hover:underline block">{detailStudent.phone}</a>
+                  <p className="text-[10px] sm:text-xs text-red-200 mt-0.5 truncate">{detailStudent.email}</p>
                 </div>
               </div>
-              <button onClick={() => setDetailStudent(null)} className="text-white/60 hover:text-white transition-colors">
+              <button onClick={() => setDetailStudent(null)} className="text-white/60 hover:text-white transition-colors p-1">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-6">
+            <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
               {/* Enrollment Details - First */}
               <div>
                 <div className="flex items-center gap-3 mb-3">
@@ -569,7 +570,7 @@ export default function StudentsPage() {
                   <span className="text-xs font-bold uppercase tracking-widest text-slate-800">Enrollment Details</span>
                   <div className="flex-1 h-px bg-slate-200" />
                 </div>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                   {[
                     { label: "Faculty", value: detailStudent.faculty },
                     { label: "Course", value: detailStudent.course },
