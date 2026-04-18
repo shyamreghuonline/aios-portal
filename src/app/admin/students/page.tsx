@@ -25,7 +25,6 @@ import {
   Loader2,
   Trash2,
   Eye,
-  ArrowUpDown,
   Receipt,
   GraduationCap,
   Bell,
@@ -48,6 +47,7 @@ interface Payment {
 
 interface Student {
   id: string;
+  studentId?: string;
   name: string;
   email: string;
   phone: string;
@@ -59,6 +59,7 @@ interface Student {
   startYear: string;
   endYear: string;
   totalFee: number;
+  discountAmount?: number;
   enrollmentDate: string;
   profileEditEnabled?: boolean;
   createdAt?: unknown;
@@ -129,7 +130,7 @@ export default function StudentsPage() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [customUniversity, setCustomUniversity] = useState(false);
-  const [sortCol, setSortCol] = useState<"university" | "year" | null>(null);
+  const [sortCol, setSortCol] = useState<"name" | "phone" | "studentId" | "fee" | "due" | "course" | "university" | "year" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [paidMap, setPaidMap] = useState<Record<string, number>>({});
   const [paymentsModal, setPaymentsModal] = useState<{ student: Student; payments: Payment[] } | null>(null);
@@ -149,6 +150,7 @@ export default function StudentsPage() {
     startYear: String(currentYear),
     endYear: "",
     totalFee: "",
+    discountAmount: "",
     enrollmentDate: new Date().toISOString().split("T")[0],
   });
 
@@ -265,12 +267,61 @@ export default function StudentsPage() {
     return () => window.removeEventListener("keydown", handleEscape);
   }, []);
 
+  // Month code mapping
+  const MONTH_CODES: Record<number, string> = {
+    0: "JA", // Jan
+    1: "FB", // Feb
+    2: "MR", // Mar
+    3: "AP", // Apr
+    4: "MY", // May
+    5: "JU", // Jun
+    6: "JL", // Jul
+    7: "AG", // Aug
+    8: "SP", // Sep
+    9: "OC", // Oct
+    10: "NV", // Nov
+    11: "DC", // Dec
+  };
+
+  // Generate unique student ID: [YY][MonthCode]AIOS[5-Digit Serial]
+  async function generateStudentId(): Promise<string> {
+    const now = new Date();
+    const year = String(now.getFullYear()).slice(-2); // Last 2 digits
+    const monthCode = MONTH_CODES[now.getMonth()];
+    const prefix = `${year}${monthCode}AIOS`;
+
+    // Query all students to find highest serial for current year-month
+    const snapshot = await getDocs(collection(db, "students"));
+    let maxSerial = 0;
+
+    snapshot.forEach((doc) => {
+      const studentId = doc.data().studentId as string;
+      if (studentId && studentId.startsWith(prefix)) {
+        const serialPart = studentId.slice(-5); // Get last 5 digits
+        const serial = parseInt(serialPart, 10);
+        if (!isNaN(serial) && serial > maxSerial) {
+          maxSerial = serial;
+        }
+      }
+    });
+
+    const nextSerial = maxSerial + 1;
+    const paddedSerial = String(nextSerial).padStart(5, "0");
+    return `${prefix}${paddedSerial}`;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     try {
       const phoneKey = "+91" + formData.phone.replace(/\D/g, "");
+      const studentId = await generateStudentId();
+      const discountAmount = parseFloat(formData.discountAmount) || 0;
+      const totalFee = parseFloat(formData.totalFee) || 0;
+
+      // Save student data
       await setDoc(doc(db, "students", phoneKey), {
+        studentId: studentId,
         name: formData.name,
         email: formData.email,
         phone: phoneKey,
@@ -281,10 +332,35 @@ export default function StudentsPage() {
         university: formData.university,
         startYear: formData.startYear,
         endYear: formData.endYear,
-        totalFee: parseFloat(formData.totalFee),
+        totalFee: totalFee,
+        discountAmount: discountAmount,
         enrollmentDate: formData.enrollmentDate,
         createdAt: serverTimestamp(),
       });
+
+      // If discount exists, create a discount payment record
+      if (discountAmount > 0) {
+        const discountPaymentId = `DISC-${studentId}-${Date.now()}`;
+        await setDoc(doc(db, "payments", discountPaymentId), {
+          receiptNumber: discountPaymentId,
+          amountPaid: discountAmount,
+          paymentDate: formData.enrollmentDate,
+          paymentMode: "Discount",
+          installmentNumber: 0,
+          totalInstallments: 0,
+          balanceAmount: totalFee - discountAmount,
+          transactionRef: "Administrative Discount",
+          remarks: `Discount given to ${formData.name}`,
+          studentPhone: phoneKey,
+          studentName: formData.name,
+          studentEmail: formData.email,
+          program: formData.course,
+          totalFee: totalFee,
+          createdAt: serverTimestamp(),
+          isDiscount: true,
+        });
+      }
+
       setFormData({
         name: "",
         email: "",
@@ -297,6 +373,7 @@ export default function StudentsPage() {
         startYear: String(currentYear),
         endYear: "",
         totalFee: "",
+        discountAmount: "",
         enrollmentDate: new Date().toISOString().split("T")[0],
       });
       setShowForm(false);
@@ -425,37 +502,82 @@ export default function StudentsPage() {
           <div className="overflow-auto flex-1 min-h-0">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-red-50 border-y-2 border-red-100 sticky top-0 z-10">
-                  <th className="text-left px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest">Name</th>
-                  <th className="text-left px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest">Phone</th>
-                  <th className="text-left px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest hidden sm:table-cell">Total Fee</th>
-                  <th className="text-left px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest">Due</th>
-                  <th className="text-left px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest hidden md:table-cell">Course</th>
+                <tr className="gradient-bg sticky top-0 z-10 shadow-md">
                   <th
-                    className="text-left px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-red-600 transition-colors hidden lg:table-cell"
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors ${sortCol === "name" ? "bg-white/20" : ""}`}
+                    onClick={() => { setSortCol("name"); setSortDir(sortCol === "name" && sortDir === "asc" ? "desc" : "asc"); }}
+                  >
+                    Name {sortCol === "name" && (sortDir === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors ${sortCol === "phone" ? "bg-white/20" : ""}`}
+                    onClick={() => { setSortCol("phone"); setSortDir(sortCol === "phone" && sortDir === "asc" ? "desc" : "asc"); }}
+                  >
+                    Phone {sortCol === "phone" && (sortDir === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden sm:table-cell ${sortCol === "studentId" ? "bg-white/20" : ""}`}
+                    onClick={() => { setSortCol("studentId"); setSortDir(sortCol === "studentId" && sortDir === "asc" ? "desc" : "asc"); }}
+                  >
+                    Student ID {sortCol === "studentId" && (sortDir === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden sm:table-cell ${sortCol === "fee" ? "bg-white/20" : ""}`}
+                    onClick={() => { setSortCol("fee"); setSortDir(sortCol === "fee" && sortDir === "asc" ? "desc" : "asc"); }}
+                  >
+                    Total Fee {sortCol === "fee" && (sortDir === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors ${sortCol === "due" ? "bg-white/20" : ""}`}
+                    onClick={() => { setSortCol("due"); setSortDir(sortCol === "due" && sortDir === "asc" ? "desc" : "asc"); }}
+                  >
+                    Due {sortCol === "due" && (sortDir === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden md:table-cell ${sortCol === "course" ? "bg-white/20" : ""}`}
+                    onClick={() => { setSortCol("course"); setSortDir(sortCol === "course" && sortDir === "asc" ? "desc" : "asc"); }}
+                  >
+                    Course {sortCol === "course" && (sortDir === "asc" ? "↑" : "↓")}
+                  </th>
+                  <th
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden lg:table-cell ${sortCol === "university" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("university"); setSortDir(sortCol === "university" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
-                    University <ArrowUpDown className="inline w-3 h-3 ml-0.5" />
+                    University {sortCol === "university" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
                   <th
-                    className="text-left px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest cursor-pointer select-none hover:text-red-600 transition-colors hidden lg:table-cell"
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden lg:table-cell ${sortCol === "year" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("year"); setSortDir(sortCol === "year" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
-                    Year <ArrowUpDown className="inline w-3 h-3 ml-0.5" />
+                    Year {sortCol === "year" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
-                  <th className="text-right px-3 lg:px-5 py-2 lg:py-3 font-bold text-red-800 text-[10px] uppercase tracking-widest">Actions</th>
+                  <th className="text-right px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {[...filtered].sort((a, b) => {
                   if (!sortCol) return 0;
                   const dir = sortDir === "asc" ? 1 : -1;
+                  const effectiveFeeA = (a.totalFee || 0) - (a.discountAmount || 0);
+                  const effectiveFeeB = (b.totalFee || 0) - (b.discountAmount || 0);
+                  const paidA = paidMap[a.phone] || 0;
+                  const paidB = paidMap[b.phone] || 0;
+                  const dueA = effectiveFeeA - paidA;
+                  const dueB = effectiveFeeB - paidB;
+
+                  if (sortCol === "name") return (a.name || "").localeCompare(b.name || "") * dir;
+                  if (sortCol === "phone") return (a.phone || "").localeCompare(b.phone || "") * dir;
+                  if (sortCol === "studentId") return ((a.studentId || a.id || "").localeCompare(b.studentId || b.id || "")) * dir;
+                  if (sortCol === "fee") return ((a.totalFee || 0) - (b.totalFee || 0)) * dir;
+                  if (sortCol === "due") return (dueA - dueB) * dir;
+                  if (sortCol === "course") return (a.course || "").localeCompare(b.course || "") * dir;
                   if (sortCol === "university") return (a.university || "").localeCompare(b.university || "") * dir;
                   if (sortCol === "year") return ((a.startYear || "").localeCompare(b.startYear || "")) * dir;
                   return 0;
                 }).map((student, idx) => {
                   const initials = student.name?.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase() || "?";
-                  const due = (student.totalFee || 0) - (paidMap[student.phone] || 0);
+                  const effectiveFee = (student.totalFee || 0) - (student.discountAmount || 0);
+                  const due = effectiveFee - (paidMap[student.phone] || 0);
                   const photoUrl = student.personalDetails?.photo;
                   return (
                     <tr key={student.id} className={`border-b border-red-50 hover:bg-red-50/60 transition-colors ${idx % 2 !== 0 ? "bg-red-50/20" : "bg-white"}`}>
@@ -475,6 +597,9 @@ export default function StudentsPage() {
                         </button>
                       </td>
                       <td className="px-3 lg:px-5 py-2 lg:py-3 text-slate-800 text-[10px] lg:text-xs font-mono whitespace-nowrap">{student.phone}</td>
+                      <td className="px-3 lg:px-5 py-2 lg:py-3 whitespace-nowrap hidden sm:table-cell">
+                        <span className="text-[10px] lg:text-xs font-mono font-semibold text-blue-700">{student.studentId || student.id}</span>
+                      </td>
                       <td className="px-3 lg:px-5 py-2 lg:py-3 whitespace-nowrap hidden sm:table-cell">
                         <span className="text-[10px] lg:text-xs font-bold text-slate-800">₹{(student.totalFee || 0).toLocaleString("en-IN")}</span>
                       </td>
@@ -572,6 +697,7 @@ export default function StudentsPage() {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                   {[
+                    { label: "Student ID", value: detailStudent.studentId || detailStudent.id },
                     { label: "Faculty", value: detailStudent.faculty },
                     { label: "Course", value: detailStudent.course },
                     { label: "Stream", value: detailStudent.stream || "—" },
@@ -579,11 +705,17 @@ export default function StudentsPage() {
                     { label: "University", value: detailStudent.university },
                     { label: "Academic Year", value: `${detailStudent.startYear}${detailStudent.endYear ? ` – ${detailStudent.endYear}` : ""}` },
                     { label: "Total Fee", value: `₹${(detailStudent.totalFee || 0).toLocaleString("en-IN")}` },
+                    ...(detailStudent.discountAmount && detailStudent.discountAmount > 0
+                      ? [
+                          { label: "Discount", value: `₹${detailStudent.discountAmount.toLocaleString("en-IN")}`, isDiscount: true },
+                          { label: "Effective Fee", value: `₹${((detailStudent.totalFee || 0) - detailStudent.discountAmount).toLocaleString("en-IN")}`, isEffective: true },
+                        ]
+                      : []),
                     { label: "Enrolled On", value: detailStudent.enrollmentDate || "—" },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
-                      <p className="text-[9px] font-bold uppercase tracking-wider text-red-500 mb-0.5">{label}</p>
-                      <p className="text-xs font-medium text-slate-800">{value}</p>
+                  ].map(({ label, value, isDiscount, isEffective }) => (
+                    <div key={label} className={`rounded-lg px-3 py-2 border ${isDiscount ? 'bg-green-50 border-green-200' : isEffective ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-100'}`}>
+                      <p className={`text-[9px] font-bold uppercase tracking-wider mb-0.5 ${isDiscount ? 'text-green-600' : isEffective ? 'text-blue-600' : 'text-red-500'}`}>{label}</p>
+                      <p className={`text-xs font-medium ${isDiscount ? 'text-green-700' : isEffective ? 'text-blue-700' : 'text-slate-800'}`}>{value}</p>
                     </div>
                   ))}
                 </div>
@@ -836,35 +968,45 @@ export default function StudentsPage() {
 
       {/* Payments Modal */}
       {paymentsModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl w-full max-w-2xl mx-4">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 overflow-auto">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between px-4 lg:px-6 py-3 lg:py-4 border-b border-slate-100 flex-shrink-0">
               <div>
-                <h2 className="text-base font-bold text-slate-900">{paymentsModal.student.name}</h2>
-                <p className="text-xs text-slate-500 mt-0.5">{paymentsModal.student.phone} &bull; {paymentsModal.student.course}</p>
+                <h2 className="text-sm lg:text-base font-bold text-slate-900">{paymentsModal.student.name}</h2>
+                <p className="text-[10px] lg:text-xs text-slate-500 mt-0.5">{paymentsModal.student.phone} &bull; {paymentsModal.student.course}</p>
               </div>
-              <button onClick={() => setPaymentsModal(null)} className="text-slate-400 hover:text-slate-700">
+              <button onClick={() => setPaymentsModal(null)} className="text-slate-400 hover:text-slate-700 p-1">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 grid grid-cols-3 gap-4 text-center">
+            <div className="px-4 lg:px-6 py-3 lg:py-4 bg-slate-50 border-b border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-2 lg:gap-4 text-center flex-shrink-0">
               <div>
-                <p className="text-[11px] text-slate-500 uppercase tracking-wide mb-1">Total Fee</p>
-                <p className="text-base font-bold text-slate-800">₹{(paymentsModal.student.totalFee || 0).toLocaleString("en-IN")}</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Total Fee</p>
+                <p className="text-sm lg:text-base font-bold text-slate-800">₹{(paymentsModal.student.totalFee || 0).toLocaleString("en-IN")}</p>
+              </div>
+              {(paymentsModal.student.discountAmount && paymentsModal.student.discountAmount > 0) && (
+                <div>
+                  <p className="text-[10px] text-green-600 uppercase tracking-wide mb-1">Discount</p>
+                  <p className="text-sm lg:text-base font-bold text-green-700">₹{paymentsModal.student.discountAmount.toLocaleString("en-IN")}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Paid</p>
+                <p className="text-sm lg:text-base font-bold text-blue-700">
+                  ₹{((paidMap[paymentsModal.student.phone] || 0) + (paymentsModal.student.discountAmount || 0)).toLocaleString("en-IN")}
+                </p>
               </div>
               <div>
-                <p className="text-[11px] text-slate-500 uppercase tracking-wide mb-1">Paid</p>
-                <p className="text-base font-bold text-green-700">₹{(paidMap[paymentsModal.student.phone] || 0).toLocaleString("en-IN")}</p>
-              </div>
-              <div>
-                <p className="text-[11px] text-slate-500 uppercase tracking-wide mb-1">Balance</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Balance</p>
                 {(() => {
-                  const due = (paymentsModal.student.totalFee || 0) - (paidMap[paymentsModal.student.phone] || 0);
-                  return <p className={`text-base font-bold ${due <= 0 ? "text-green-700" : "text-red-600"}`}>{due <= 0 ? "✓ Cleared" : `₹${due.toLocaleString("en-IN")}`}</p>;
+                  const effectiveFee = (paymentsModal.student.totalFee || 0) - (paymentsModal.student.discountAmount || 0);
+                  const totalPaid = (paidMap[paymentsModal.student.phone] || 0) + (paymentsModal.student.discountAmount || 0);
+                  const due = effectiveFee - (paidMap[paymentsModal.student.phone] || 0);
+                  return <p className={`text-sm lg:text-base font-bold ${due <= 0 ? "text-green-700" : "text-red-600"}`}>{due <= 0 ? "✓ Cleared" : `₹${due.toLocaleString("en-IN")}`}</p>;
                 })()}
               </div>
             </div>
-            <div className="max-h-96 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto min-h-0">
               {loadingPayments ? (
                 <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-red-600" /></div>
               ) : paymentsModal.payments.length === 0 ? (
@@ -874,31 +1016,31 @@ export default function StudentsPage() {
                 </div>
               ) : (
                 <table className="w-full">
-                  <thead>
+                  <thead className="sticky top-0 z-10">
                     <tr className="gradient-bg">
-                      <th className="text-left px-6 py-2.5 text-white text-[10px] font-bold uppercase tracking-widest">Receipt</th>
-                      <th className="text-left px-6 py-2.5 text-white text-[10px] font-bold uppercase tracking-widest">Date</th>
-                      <th className="text-left px-6 py-2.5 text-white text-[10px] font-bold uppercase tracking-widest">Mode</th>
-                      <th className="text-right px-6 py-2.5 text-white text-[10px] font-bold uppercase tracking-widest">Amount</th>
+                      <th className="text-left px-4 lg:px-6 py-2 lg:py-2.5 text-white text-[10px] font-bold uppercase tracking-widest">Receipt</th>
+                      <th className="text-left px-4 lg:px-6 py-2 lg:py-2.5 text-white text-[10px] font-bold uppercase tracking-widest">Date</th>
+                      <th className="text-left px-4 lg:px-6 py-2 lg:py-2.5 text-white text-[10px] font-bold uppercase tracking-widest">Mode</th>
+                      <th className="text-right px-4 lg:px-6 py-2 lg:py-2.5 text-white text-[10px] font-bold uppercase tracking-widest">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
                     {paymentsModal.payments.map((p) => (
                       <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50">
-                        <td className="px-6 py-3">
+                        <td className="px-4 lg:px-6 py-2 lg:py-3">
                           <Link href={`/admin/payments/${p.id}`} className="text-xs font-mono text-blue-600 hover:underline" target="_blank">{p.receiptNumber}</Link>
                           <p className="text-[10px] text-slate-400 mt-0.5">Installment {p.installmentNumber}</p>
                         </td>
-                        <td className="px-6 py-3 text-xs text-slate-700">{p.paymentDate}</td>
-                        <td className="px-6 py-3 text-xs text-slate-600">{p.paymentMode}</td>
-                        <td className="px-6 py-3 text-right text-sm font-bold text-green-700">₹{(p.amountPaid || 0).toLocaleString("en-IN")}</td>
+                        <td className="px-4 lg:px-6 py-2 lg:py-3 text-xs text-slate-700">{p.paymentDate}</td>
+                        <td className="px-4 lg:px-6 py-2 lg:py-3 text-xs text-slate-600">{p.paymentMode}</td>
+                        <td className="px-4 lg:px-6 py-2 lg:py-3 text-right text-sm font-bold text-green-700">₹{(p.amountPaid || 0).toLocaleString("en-IN")}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               )}
             </div>
-            <div className="px-6 py-3 border-t border-slate-100 flex justify-end">
+            <div className="px-4 lg:px-6 py-3 border-t border-slate-100 flex justify-end flex-shrink-0">
               <button onClick={() => setPaymentsModal(null)} className="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">Close</button>
             </div>
           </div>
@@ -1141,8 +1283,8 @@ export default function StudentsPage() {
                 </div>
               </div>
 
-              {/* Fee & Enrollment Date */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Fee, Discount & Enrollment Date */}
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Total Fee (₹) *</label>
                   <div className="relative">
@@ -1157,6 +1299,23 @@ export default function StudentsPage() {
                       placeholder="50000"
                     />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Discount (₹)</label>
+                  <div className="relative">
+                    <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      type="number"
+                      value={formData.discountAmount}
+                      onChange={(e) => setFormData({ ...formData, discountAmount: e.target.value })}
+                      min="0"
+                      className="w-full pl-9 pr-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
+                      placeholder="0"
+                    />
+                  </div>
+                  {formData.discountAmount && parseFloat(formData.discountAmount) > 0 && (
+                    <p className="text-[10px] text-green-600 mt-1">Effective Fee: ₹{(parseFloat(formData.totalFee || "0") - parseFloat(formData.discountAmount || "0")).toLocaleString("en-IN")}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Enrollment Date</label>

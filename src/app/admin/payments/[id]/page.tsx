@@ -180,7 +180,7 @@ export default function ReceiptPage() {
             {/* Installment Bar */}
             <div className="flex flex-wrap justify-between bg-gray-50 rounded-lg px-4 py-3 text-xs mb-5">
               <div>Installment: <span className="font-bold">{payment.installmentNumber} of {payment.totalInstallments}</span></div>
-              <div>Total Fee: <span className="font-bold">₹{payment.totalFee.toLocaleString("en-IN")}</span></div>
+              <div>Total Fee: <span className="font-bold">₹{(payment.totalFee || 0).toLocaleString("en-IN")}</span></div>
               <div>Balance: <span className={`font-bold ${payment.balanceAmount > 0 ? "text-red-600" : "text-green-600"}`}>₹{payment.balanceAmount.toLocaleString("en-IN")}</span></div>
             </div>
 

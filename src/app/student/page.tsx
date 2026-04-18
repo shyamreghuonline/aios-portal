@@ -98,25 +98,25 @@ function CertUpload({ level, url, uploading, onUpload, disabled }: {
   level: string; url?: string; uploading: boolean;
   onUpload: (f: File) => void; disabled?: boolean;
 }) {
-  const ref = useRef<HTMLInputElement>(null);
+  const inputId = `cert-upload-${level.replace(/\s+/g, '-').toLowerCase()}`;
   return (
     <div className="col-span-2">
       <label className="block text-[10px] font-bold text-slate-700 mb-1">Upload Certificate / Marksheet</label>
-      <button onClick={() => ref.current?.click()} disabled={uploading || disabled}
-        className={`w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg border-2 border-dashed transition-all disabled:opacity-50 ${
+      <label htmlFor={inputId}
+        className={`w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg border-2 border-dashed transition-all cursor-pointer ${(uploading || disabled) ? 'opacity-50 pointer-events-none' : ''} ${
           url
             ? "border-green-500 bg-green-50 text-green-800"
             : "border-slate-300 bg-slate-50 text-slate-700 hover:border-red-400 hover:bg-red-50/30 hover:text-red-700"
         }`}>
         {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : url ? <CheckCircle className="w-3.5 h-3.5" /> : <Upload className="w-3.5 h-3.5" />}
         {uploading ? "Uploading…" : url ? "Certificate Uploaded ✓ — Click to Replace" : `Upload ${level} Certificate / Marksheet (PDF or Image)`}
-      </button>
+      </label>
       {url && (
         <button onClick={() => openBase64(url)} className="text-[10px] text-green-700 underline mt-0.5 block hover:text-green-900">
           View uploaded certificate
         </button>
       )}
-      <input ref={ref} type="file" accept="image/*,application/pdf" className="hidden"
+      <input id={inputId} type="file" accept="image/*,application/pdf" className="hidden"
         onChange={e => e.target.files?.[0] && onUpload(e.target.files[0])} />
     </div>
   );
@@ -135,6 +135,8 @@ export default function StudentDashboard() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [totalPaid, setTotalPaid] = useState(0);
   const [totalFee, setTotalFee] = useState(0);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [studentId, setStudentId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [personal, setPersonal] = useState<PersonalDetails>({});
   const [academic, setAcademic] = useState<AcademicDetails>({});
@@ -159,6 +161,8 @@ export default function StudentDashboard() {
       if (authLoading || !user?.phone) return;
       const studentData = user.studentData as Record<string, unknown> | undefined;
       if (studentData?.totalFee) setTotalFee(studentData.totalFee as number);
+      if (studentData?.discountAmount) setDiscountAmount(studentData.discountAmount as number);
+      if (studentData?.studentId) setStudentId(studentData.studentId as string);
 
       try {
         const snap = await getDoc(doc(db, "students", user.phone));
@@ -166,6 +170,8 @@ export default function StudentDashboard() {
           const d = snap.data();
           if (d.personalDetails) setPersonal(d.personalDetails as PersonalDetails);
           if (d.academicDetails) setAcademic(d.academicDetails as AcademicDetails);
+          if (d.discountAmount) setDiscountAmount(d.discountAmount as number);
+          if (d.studentId) setStudentId(d.studentId as string);
         }
       } catch (err) {
         console.error("students fetch error:", err);
@@ -333,8 +339,9 @@ export default function StudentDashboard() {
   const canEdit = sd.profileEditEnabled !== false;
   const name = (sd.name as string) || "Student";
   const initials = name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
-  const balance = totalFee - totalPaid;
-  const progressPercent = totalFee > 0 ? Math.min(100, (totalPaid / totalFee) * 100) : 0;
+  const effectiveFee = totalFee - discountAmount;
+  const balance = effectiveFee - totalPaid;
+  const progressPercent = effectiveFee > 0 ? Math.min(100, (totalPaid / effectiveFee) * 100) : 0;
 
   return (
     <div className="pb-24 lg:pb-6">
@@ -350,12 +357,13 @@ export default function StudentDashboard() {
                   : <span className="text-lg font-extrabold text-white">{initials}</span>}
               </div>
               {canEdit && (
-                <button onClick={() => photoRef.current?.click()} disabled={uploadingPhoto}
-                  className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white flex items-center justify-center shadow border border-slate-200" title="Change photo">
+                <label htmlFor="student-photo-upload"
+                  className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white flex items-center justify-center shadow border border-slate-200 cursor-pointer ${uploadingPhoto ? 'opacity-50' : ''}`}
+                  title="Change photo">
                   {uploadingPhoto ? <Loader2 className="w-2.5 h-2.5 text-red-600 animate-spin" /> : <Camera className="w-2.5 h-2.5 text-red-600" />}
-                </button>
+                </label>
               )}
-              <input ref={photoRef} type="file" accept="image/*" className="hidden"
+              <input id="student-photo-upload" ref={photoRef} type="file" accept="image/*" className="hidden"
                 onChange={e => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])} />
             </div>
             <div>
@@ -366,6 +374,9 @@ export default function StudentDashboard() {
                 {sd.stream ? ` | ${sd.stream}` : ""}
                 {sd.university ? ` · ${sd.university}` : ""}
               </p>
+              {studentId && (
+                <p className="text-[10px] font-mono text-white/80 mt-0.5">ID: {studentId}</p>
+              )}
             </div>
           </div>
           {/* Print Button - Header */}
@@ -415,10 +426,11 @@ export default function StudentDashboard() {
               <div className="h-2 rounded-full gradient-bg transition-all duration-700" style={{ width: `${progressPercent}%` }} />
             </div>
             <p className="text-[10px] font-semibold text-slate-700 text-right mb-3">{Math.round(progressPercent)}% paid</p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className={`grid gap-2 ${discountAmount > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}>
               {[
                 { label: "Total Fee", value: `₹${totalFee.toLocaleString("en-IN")}`, color: "text-slate-900" },
-                { label: "Paid",      value: `₹${totalPaid.toLocaleString("en-IN")}`, color: "text-green-700" },
+                ...(discountAmount > 0 ? [{ label: "Discount", value: `₹${discountAmount.toLocaleString("en-IN")}`, color: "text-green-700" }] : []),
+                { label: "Paid",      value: `₹${(totalPaid + discountAmount).toLocaleString("en-IN")}`, color: "text-blue-700" },
                 { label: "Balance",   value: `₹${Math.max(0, balance).toLocaleString("en-IN")}`, color: balance > 0 ? "text-red-600" : "text-green-700" },
               ].map(({ label, value, color }) => (
                 <div key={label} className="bg-slate-50 rounded-lg p-2.5 text-center">
@@ -593,17 +605,17 @@ export default function StudentDashboard() {
                     placeholder="XXXX-XXXX-XXXX" inputMode="numeric" disabled={!canEdit} />
                   <div>
                     <label className="block text-[10px] font-bold text-slate-700 mb-1">Upload Aadhaar Card (Scan/Photo)</label>
-                    <button onClick={() => aadhaarRef.current?.click()} disabled={uploadingAadhaar || !canEdit}
-                      className={`w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded border transition-all disabled:opacity-50 ${
+                    <label htmlFor="student-aadhaar-upload"
+                      className={`w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded border transition-all cursor-pointer ${(uploadingAadhaar || !canEdit) ? 'opacity-50 pointer-events-none' : ''} ${
                         personal.aadhaarUrl ? "border-green-500 bg-green-50 text-green-800" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
                       }`}>
                       {uploadingAadhaar ? <Loader2 className="w-3 h-3 animate-spin" /> : personal.aadhaarUrl ? <CheckCircle className="w-3 h-3" /> : <Upload className="w-3 h-3" />}
-                      {uploadingAadhaar ? "Uploading\u2026" : personal.aadhaarUrl ? "Uploaded \u2713" : "Upload Aadhaar Card (Scan/Photo)"}
-                    </button>
+                      {uploadingAadhaar ? "Uploading…" : personal.aadhaarUrl ? "Uploaded ✓" : "Upload Aadhaar Card (Scan/Photo)"}
+                    </label>
                     {personal.aadhaarUrl && (
                       <button onClick={() => openBase64(personal.aadhaarUrl!)} className="text-[10px] text-green-700 underline mt-0.5 block hover:text-green-900">View document</button>
                     )}
-                    <input ref={aadhaarRef} type="file" accept="image/*,application/pdf" className="hidden"
+                    <input id="student-aadhaar-upload" ref={aadhaarRef} type="file" accept="image/*,application/pdf" className="hidden"
                       onChange={e => e.target.files?.[0] && handleAadhaarUpload(e.target.files[0])} />
                   </div>
                 </div>
