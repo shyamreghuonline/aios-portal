@@ -321,7 +321,7 @@ export default function StudentDashboard() {
       const imgY = 0;
       
       pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-      pdf.save(`AIOS_Application_${user?.phone || 'Student'}.pdf`);
+      pdf.save(`AIOS_${sd.studentId}_Admission.pdf`);
     } catch (error) {
       console.error('PDF generation failed:', error);
       alert('Failed to generate PDF. Please try again.');
@@ -457,7 +457,7 @@ export default function StudentDashboard() {
             ) : (
               <>
                 <div className="grid grid-cols-4 px-4 py-1.5 border-b border-slate-100 bg-slate-50">
-                  {["Date", "Description", "Amount", "Status"].map(h => (
+                  {["Date", "Receipt No", "Amount", "Status"].map(h => (
                     <p key={h} className="text-[9px] font-extrabold uppercase tracking-wider text-slate-600">{h}</p>
                   ))}
                 </div>
@@ -465,7 +465,7 @@ export default function StudentDashboard() {
                   {payments.slice(0, 6).map(p => (
                     <div key={p.id} className="grid grid-cols-4 px-4 py-2 items-center">
                       <p className="text-[10px] text-slate-700">{p.paymentDate}</p>
-                      <p className="text-[10px] font-semibold text-slate-900 truncate">Inst. {p.installmentNumber}</p>
+                      <p className="text-[10px] font-mono font-semibold text-slate-900 truncate">{p.receiptNumber}</p>
                       <p className="text-[10px] font-bold text-green-700">₹{p.amountPaid.toLocaleString("en-IN")}</p>
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-800 w-fit">Paid</span>
                     </div>
@@ -531,7 +531,7 @@ export default function StudentDashboard() {
                 {[
                   { label: "Contact Email",    value: (sd.email as string) || "" },
                   { label: "Contact Number",   value: user?.phone || "" },
-                  { label: "Enrollment Date",  value: (sd.enrollmentDate as string) || "" },
+                  { label: "Enrollment ID",  value: (sd.studentId as string) || "—" },
                 ].map(({ label, value }) => (
                   <div key={label} className="px-4 py-2.5 cursor-not-allowed select-none" title="Managed by admin">
                     <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">{label}</p>

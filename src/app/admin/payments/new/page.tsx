@@ -27,9 +27,11 @@ import { useRouter } from "next/navigation";
 
 interface Student {
   id: string;
+  studentId?: string;
   name: string;
   email: string;
   phone: string;
+  university?: string;
   course: string;
   faculty: string;
   stream: string;
@@ -37,13 +39,54 @@ interface Student {
   totalFee: number;
 }
 
-function generateReceiptNumber() {
+// Month code mapping for receipt IDs
+const MONTH_CODES: Record<number, string> = {
+  0: "JA", // Jan
+  1: "FB", // Feb
+  2: "MR", // Mar
+  3: "AP", // Apr
+  4: "MY", // May
+  5: "JU", // Jun
+  6: "JL", // Jul
+  7: "AG", // Aug
+  8: "SP", // Sep
+  9: "OC", // Oct
+  10: "NV", // Nov
+  11: "DC", // Dec
+};
+
+// Generate receipt/voucher ID with shared global serial
+// RCP[YY][MonthCode][6-Digit Serial] - for standard payments
+// VCH[YY][MonthCode][6-Digit Serial] - for discounts/vouchers
+// Both share the same serial counter (continuous, never resets)
+async function generateReceiptId(type: "payment" | "discount" = "payment"): Promise<string> {
   const now = new Date();
-  const y = now.getFullYear().toString().slice(-2);
-  const m = (now.getMonth() + 1).toString().padStart(2, "0");
-  const d = now.getDate().toString().padStart(2, "0");
-  const rand = Math.floor(1000 + Math.random() * 9000);
-  return `AIOS-${y}${m}${d}-${rand}`;
+  const year = String(now.getFullYear()).slice(-2);
+  const monthCode = MONTH_CODES[now.getMonth()];
+  const prefix = type === "discount" ? "VCH" : "RCP";
+
+  // Query all payments to find the highest serial number across ALL prefixes
+  const snapshot = await getDocs(collection(db, "payments"));
+  let maxSerial = 0;
+
+  snapshot.forEach((doc) => {
+    const receiptNumber = doc.data().receiptNumber as string;
+    if (receiptNumber && (receiptNumber.startsWith("RCP") || receiptNumber.startsWith("VCH"))) {
+      // Extract serial from [Prefix][YY][Month][Serial] format
+      // RCP = 3 chars, YY = 2 chars, Month = 2 chars, Serial = 6 chars
+      const serialPart = receiptNumber.slice(7); // After 3-char prefix + 2 digit year + 2 char month
+      if (serialPart && serialPart.length === 6) {
+        const serial = parseInt(serialPart, 10);
+        if (!isNaN(serial) && serial > maxSerial) {
+          maxSerial = serial;
+        }
+      }
+    }
+  });
+
+  const nextSerial = maxSerial + 1;
+  const paddedSerial = String(nextSerial).padStart(6, "0");
+  return `${prefix}${year}${monthCode}${paddedSerial}`;
 }
 
 export default function NewPaymentPage() {
@@ -108,7 +151,7 @@ export default function NewPaymentPage() {
     setSaving(true);
 
     try {
-      const receiptNumber = generateReceiptNumber();
+      const receiptNumber = await generateReceiptId("payment");
       const paymentId = receiptNumber;
 
       await setDoc(doc(db, "payments", paymentId), {
@@ -118,6 +161,9 @@ export default function NewPaymentPage() {
         studentPhone: selectedStudent.phone,
         phone: selectedStudent.phone,
         program: selectedStudent.course || selectedStudent.program || "",
+        university: selectedStudent.university || "",
+        course: selectedStudent.course || "",
+        stream: selectedStudent.stream || "",
         totalFee: selectedStudent.totalFee,
         amountPaid: parseFloat(formData.amountPaid),
         installmentNumber: parseInt(formData.installmentNumber),
@@ -173,7 +219,7 @@ export default function NewPaymentPage() {
               <option value="">Choose student...</option>
               {students.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.name} ({s.phone}) — {s.course || s.program}
+                  {s.name} ({s.studentId || s.id}) — {(s.course || s.program || "").replace(/\s*\([^)]*\)/g, "")}{s.stream ? `-${s.stream}` : ""}
                 </option>
               ))}
             </select>

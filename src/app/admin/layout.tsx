@@ -11,14 +11,16 @@ import {
   Loader2,
   Menu,
   X,
+  Phone,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/students", label: "Students", icon: Users },
   { href: "/admin/payments", label: "Payments", icon: CreditCard },
+  { href: "/admin/follow-ups", label: "Follow-Ups", icon: Phone, badge: true },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -75,20 +77,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = item.exact 
+              ? pathname === item.href 
+              : pathname === item.href || pathname?.startsWith(item.href + "/");
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all ${
                   isActive
                     ? "gradient-bg text-white font-semibold shadow-sm"
                     : "text-slate-400 hover:text-white hover:bg-slate-800"
                 }`}
               >
-                <item.icon className="w-4 h-4" />
-                {item.label}
+                <div className="flex items-center gap-3">
+                  <item.icon className="w-4 h-4" />
+                  {item.label}
+                </div>
+                {item.badge && (
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                )}
               </Link>
             );
           })}

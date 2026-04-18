@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   collection,
   getDocs,
@@ -28,7 +28,10 @@ import {
   Receipt,
   GraduationCap,
   Bell,
+  Printer,
 } from "lucide-react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 import Link from "next/link";
 import { getFaculties, getCourses, getStreams, getDuration } from "@/lib/courses-data";
 
@@ -137,6 +140,11 @@ export default function StudentsPage() {
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [togglingProfileId, setTogglingProfileId] = useState<string | null>(null);
   const [detailStudent, setDetailStudent] = useState<Student | null>(null);
+  const [showDiscountModal, setShowDiscountModal] = useState(false);
+  const [discountForm, setDiscountForm] = useState({ amount: "", remarks: "" });
+  const [savingDiscount, setSavingDiscount] = useState(false);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
   const currentYear = new Date().getFullYear();
   const [formData, setFormData] = useState({
     name: "",
@@ -310,6 +318,64 @@ export default function StudentsPage() {
     return `${prefix}${paddedSerial}`;
   }
 
+  // Generate receipt/voucher ID with shared global serial
+  // RCP[YY][MonthCode][6-Digit Serial] - for standard payments
+  // VCH[YY][MonthCode][6-Digit Serial] - for discounts/vouchers
+  // Both share the same serial counter (continuous, never resets)
+  async function generateReceiptId(type: "payment" | "discount" = "payment"): Promise<string> {
+    const now = new Date();
+    const year = String(now.getFullYear()).slice(-2);
+    const monthCode = MONTH_CODES[now.getMonth()];
+    const prefix = type === "discount" ? "VCH" : "RCP";
+
+    // Query all payments to find the highest serial number across ALL prefixes
+    const snapshot = await getDocs(collection(db, "payments"));
+    let maxSerial = 0;
+
+    snapshot.forEach((doc) => {
+      const receiptNumber = doc.data().receiptNumber as string;
+      if (receiptNumber && (receiptNumber.startsWith("RCP") || receiptNumber.startsWith("VCH"))) {
+        // Extract serial from [Prefix][YY][Month][Serial] format
+        // Prefix = 3 chars, YY = 2 chars, Month = 2 chars, Serial = 6 chars
+        const serialPart = receiptNumber.slice(7); // After 3-char prefix + 2 digit year + 2 char month
+        if (serialPart && serialPart.length === 6) {
+          const serial = parseInt(serialPart, 10);
+          if (!isNaN(serial) && serial > maxSerial) {
+            maxSerial = serial;
+          }
+        }
+      }
+    });
+
+    const nextSerial = maxSerial + 1;
+    const paddedSerial = String(nextSerial).padStart(6, "0");
+    return `${prefix}${year}${monthCode}${paddedSerial}`;
+  }
+
+  // Generate PDF for student details
+  async function generateStudentPDF() {
+    if (!printRef.current || !detailStudent) return;
+    setGeneratingPDF(true);
+    try {
+      const element = printRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${detailStudent.studentId}_${detailStudent.name.replace(/\s+/g, "_")}_Admission.pdf`);
+    } catch (err) {
+      console.error("PDF generation error:", err);
+    } finally {
+      setGeneratingPDF(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -340,9 +406,9 @@ export default function StudentsPage() {
 
       // If discount exists, create a discount payment record
       if (discountAmount > 0) {
-        const discountPaymentId = `DISC-${studentId}-${Date.now()}`;
-        await setDoc(doc(db, "payments", discountPaymentId), {
-          receiptNumber: discountPaymentId,
+        const discountReceiptId = await generateReceiptId("discount");
+        await setDoc(doc(db, "payments", discountReceiptId), {
+          receiptNumber: discountReceiptId,
           amountPaid: discountAmount,
           paymentDate: formData.enrollmentDate,
           paymentMode: "Discount",
@@ -412,19 +478,9 @@ export default function StudentsPage() {
     <div className="flex flex-col gap-4 h-full">
 
       {/* Page Header */}
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <h1 className="text-sm lg:text-base font-bold text-slate-900">Students</h1>
-          <p className="text-[11px] lg:text-xs font-medium text-slate-700">{students.length} students enrolled</p>
-        </div>
-        <button
-          onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-1.5 lg:gap-2 px-3 lg:px-5 py-2 lg:py-2.5 text-xs lg:text-sm font-bold text-white rounded-xl gradient-bg hover:shadow-lg transition-all flex-shrink-0"
-        >
-          <Plus className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
-          <span className="hidden sm:inline">Add Student</span>
-          <span className="sm:hidden">Add</span>
-        </button>
+      <div>
+        <h1 className="text-sm lg:text-base font-bold text-slate-900">Students</h1>
+        <p className="text-[11px] lg:text-xs font-medium text-slate-700">{students.length} students enrolled</p>
       </div>
 
       {/* Stat Cards */}
@@ -472,7 +528,7 @@ export default function StudentsPage() {
       {/* Students Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0">
 
-        {/* Search bar */}
+        {/* Search bar with Add Student button */}
         {!loading && students.length > 0 && (
           <div className="px-3 lg:px-5 py-2 lg:py-3 border-b border-slate-100 flex items-center gap-2 lg:gap-3">
             <div className="relative flex-1 max-w-sm">
@@ -486,6 +542,14 @@ export default function StudentsPage() {
               />
             </div>
             <span className="text-[10px] lg:text-xs font-semibold text-slate-700 ml-auto flex-shrink-0">{filtered.length} of {students.length}</span>
+            <button
+              onClick={() => setShowForm(true)}
+              className="inline-flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 text-xs lg:text-sm font-bold text-white rounded-xl gradient-bg hover:shadow-lg transition-all flex-shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+              <span className="hidden sm:inline">Add Student</span>
+              <span className="sm:hidden">Add</span>
+            </button>
           </div>
         )}
 
@@ -556,7 +620,12 @@ export default function StudentsPage() {
               </thead>
               <tbody>
                 {[...filtered].sort((a, b) => {
-                  if (!sortCol) return 0;
+                  // Default sort: newest first by createdAt
+                  if (!sortCol) {
+                    const timeA = a.createdAt ? (a.createdAt as any).toMillis?.() : 0;
+                    const timeB = b.createdAt ? (b.createdAt as any).toMillis?.() : 0;
+                    return timeB - timeA;
+                  }
                   const dir = sortDir === "asc" ? 1 : -1;
                   const effectiveFeeA = (a.totalFee || 0) - (a.discountAmount || 0);
                   const effectiveFeeB = (b.totalFee || 0) - (b.discountAmount || 0);
@@ -598,7 +667,9 @@ export default function StudentsPage() {
                       </td>
                       <td className="px-3 lg:px-5 py-2 lg:py-3 text-slate-800 text-[10px] lg:text-xs font-mono whitespace-nowrap">{student.phone}</td>
                       <td className="px-3 lg:px-5 py-2 lg:py-3 whitespace-nowrap hidden sm:table-cell">
-                        <span className="text-[10px] lg:text-xs font-mono font-semibold text-blue-700">{student.studentId || student.id}</span>
+                        <button onClick={() => setDetailStudent(student)} className="text-[10px] lg:text-xs font-mono font-semibold text-blue-700 hover:text-blue-900 hover:underline transition-colors">
+                          {student.studentId || student.id}
+                        </button>
                       </td>
                       <td className="px-3 lg:px-5 py-2 lg:py-3 whitespace-nowrap hidden sm:table-cell">
                         <span className="text-[10px] lg:text-xs font-bold text-slate-800">₹{(student.totalFee || 0).toLocaleString("en-IN")}</span>
@@ -682,9 +753,25 @@ export default function StudentsPage() {
                   <p className="text-[10px] sm:text-xs text-red-200 mt-0.5 truncate">{detailStudent.email}</p>
                 </div>
               </div>
-              <button onClick={() => setDetailStudent(null)} className="text-white/60 hover:text-white transition-colors p-1">
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowDiscountModal(true)}
+                  className="px-3 py-1.5 text-[10px] sm:text-xs font-bold text-green-700 bg-white rounded-lg hover:bg-green-50 transition-colors shadow-sm"
+                >
+                  Add Discount
+                </button>
+                <button
+                  onClick={generateStudentPDF}
+                  disabled={generatingPDF}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-blue-700 bg-white rounded-lg hover:bg-blue-50 transition-colors shadow-sm disabled:opacity-60"
+                >
+                  {generatingPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
+                  {generatingPDF ? "..." : "Print"}
+                </button>
+                <button onClick={() => setDetailStudent(null)} className="text-white/60 hover:text-white transition-colors p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
@@ -842,59 +929,6 @@ export default function StudentsPage() {
                 </div>
               </div>
 
-              {/* Personal Information */}
-              <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-1 h-4 rounded-full bg-red-600" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-800">Personal Information</span>
-                  <div className="flex-1 h-px bg-slate-200" />
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: "Date of Birth", value: detailStudent.personalDetails?.dob || "—" },
-                    { label: "Gender", value: detailStudent.personalDetails?.gender || "—" },
-                    { label: "Blood Group", value: detailStudent.personalDetails?.bloodGroup || "—" },
-                    { label: "Father's Name", value: detailStudent.personalDetails?.fatherName || "—" },
-                    { label: "Mother's Name", value: detailStudent.personalDetails?.motherName || "—" },
-                    { label: "Guardian", value: detailStudent.personalDetails?.guardianName || "—" },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
-                      <p className="text-[9px] font-bold uppercase tracking-wider text-red-500 mb-0.5">{label}</p>
-                      <p className="text-xs font-medium text-slate-800 truncate">{value}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Address */}
-              <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-1 h-4 rounded-full bg-red-600" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-800">Address & Contact</span>
-                  <div className="flex-1 h-px bg-slate-200" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 col-span-2">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-red-500 mb-0.5">Complete Address</p>
-                    <p className="text-xs font-medium text-slate-800">
-                      {[detailStudent.personalDetails?.address, detailStudent.personalDetails?.city, detailStudent.personalDetails?.state, detailStudent.personalDetails?.pincode].filter(Boolean).join(", ") || "—"}
-                    </p>
-                  </div>
-                  <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-red-500 mb-0.5">Guardian Phone</p>
-                    {detailStudent.personalDetails?.guardianPhone ? (
-                      <a href={`tel:${detailStudent.personalDetails.guardianPhone}`} className="text-xs font-medium text-red-600 hover:underline">{detailStudent.personalDetails.guardianPhone}</a>
-                    ) : (
-                      <p className="text-xs font-medium text-slate-800">—</p>
-                    )}
-                  </div>
-                  <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-red-500 mb-0.5">Aadhaar Number</p>
-                    <p className="text-xs font-medium text-slate-800 font-mono">{detailStudent.personalDetails?.aadhaarNumber || "—"}</p>
-                  </div>
-                </div>
-              </div>
-
               {/* Academic Background - Table Format */}
               {(detailStudent.academicDetails?.sslc?.institution || detailStudent.academicDetails?.plustwo?.institution || detailStudent.academicDetails?.ug?.institution || detailStudent.academicDetails?.pg?.institution) && (
                 <div>
@@ -957,10 +991,410 @@ export default function StudentsPage() {
                 </div>
               )}
 
+              {/* Personal Information */}
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-1 h-4 rounded-full bg-red-600" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-slate-800">Personal Information</span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: "Date of Birth", value: detailStudent.personalDetails?.dob || "—" },
+                    { label: "Gender", value: detailStudent.personalDetails?.gender || "—" },
+                    { label: "Blood Group", value: detailStudent.personalDetails?.bloodGroup || "—" },
+                    { label: "Father's Name", value: detailStudent.personalDetails?.fatherName || "—" },
+                    { label: "Mother's Name", value: detailStudent.personalDetails?.motherName || "—" },
+                    { label: "Guardian", value: detailStudent.personalDetails?.guardianName || "—" },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                      <p className="text-[9px] font-bold uppercase tracking-wider text-red-500 mb-0.5">{label}</p>
+                      <p className="text-xs font-medium text-slate-800 truncate">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Address */}
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-1 h-4 rounded-full bg-red-600" />
+                  <span className="text-xs font-bold uppercase tracking-widest text-slate-800">Address & Contact</span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 col-span-2">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-red-500 mb-0.5">Complete Address</p>
+                    <p className="text-xs font-medium text-slate-800">
+                      {[detailStudent.personalDetails?.address, detailStudent.personalDetails?.city, detailStudent.personalDetails?.state, detailStudent.personalDetails?.pincode].filter(Boolean).join(", ") || "—"}
+                    </p>
+                  </div>
+                  <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-red-500 mb-0.5">Guardian Phone</p>
+                    {detailStudent.personalDetails?.guardianPhone ? (
+                      <a href={`tel:${detailStudent.personalDetails.guardianPhone}`} className="text-xs font-medium text-red-600 hover:underline">{detailStudent.personalDetails.guardianPhone}</a>
+                    ) : (
+                      <p className="text-xs font-medium text-slate-800">—</p>
+                    )}
+                  </div>
+                  <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
+                    <p className="text-[9px] font-bold uppercase tracking-wider text-red-500 mb-0.5">Aadhaar Number</p>
+                    <p className="text-xs font-medium text-slate-800 font-mono">{detailStudent.personalDetails?.aadhaarNumber || "—"}</p>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             <div className="px-7 py-4 border-t border-slate-100 flex justify-end bg-slate-50">
               <button onClick={() => setDetailStudent(null)} className="px-5 py-2 text-xs font-bold text-white gradient-bg rounded-lg hover:shadow-md transition-all">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Print Form for PDF Generation - Admission Form */}
+      {detailStudent && (
+        <div ref={printRef} style={{ position: "absolute", left: "-9999px", top: 0 }}>
+          <div style={{ backgroundColor: "#ffffff", padding: "20px 24px", width: "210mm", minHeight: "297mm", fontFamily: "Arial, sans-serif", boxSizing: "border-box" }}>
+            {/* Header with Emblem Left, Details Right */}
+            <div style={{ border: "2px solid #dc2626", marginBottom: "16px" }}>
+              <div style={{ display: "flex", alignItems: "flex-start", padding: "12px" }}>
+                {/* Left: Emblem */}
+                <div style={{ flexShrink: 0, marginRight: "16px" }}>
+                  <img src="/emblem.png" alt="Emblem" style={{ width: "80px", height: "80px", objectFit: "contain" }} />
+                </div>
+                {/* Center: Institute Name */}
+                <div style={{ flex: 1, textAlign: "center" }}>
+                  <h1 style={{ fontSize: "22px", fontWeight: "bold", color: "#b91c1c", margin: 0, lineHeight: 1.2 }}>AIOS Institute of Advanced Management</h1>
+                  <h2 style={{ fontSize: "18px", fontWeight: "bold", color: "#dc2626", margin: "4px 0", lineHeight: 1.2 }}>& Technology Pvt. Ltd</h2>
+                  <p style={{ fontSize: "11px", color: "#475569", margin: "4px 0" }}>An ISO 9001:2015 Certified Organisation</p>
+                  <p style={{ fontSize: "10px", color: "#334155", margin: "2px 0" }}>Phone: 0481 291 9090, +91 62829 69090 | Email: institute.aios@gmail.com</p>
+                  <p style={{ fontSize: "10px", color: "#334155", margin: "2px 0" }}>www.aiosinstitute.com | 2nd Floor, Vishnu Arcade, Maruthi Nagar Main Road, Bangalore, Karnataka, India</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Application Title - Compact */}
+            <div style={{ textAlign: "center", marginBottom: "10px", borderBottom: "2px solid #dc2626", paddingBottom: "6px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "bold", color: "#1a1a1a", textTransform: "uppercase", letterSpacing: "1px", margin: 0 }}>
+                ADMISSION FORM
+              </h3>
+              <p style={{ fontSize: "10px", color: "#555555", margin: "2px 0 0 0" }}>Student Admission - Academic Year {detailStudent.startYear || new Date().getFullYear()}-{detailStudent.endYear || (new Date().getFullYear() + 1)}</p>
+            </div>
+
+            {/* Photo + Enrollment Details - Side by Side Aligned */}
+            <div style={{ display: "flex", gap: "10px", marginBottom: "10px", alignItems: "stretch" }}>
+              {/* Photo Box - Left Side */}
+              <div style={{ width: "110px", minHeight: "130px", border: "2px solid #333333", backgroundColor: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", flexShrink: 0 }}>
+                {detailStudent.personalDetails?.photo ? (
+                  <img src={detailStudent.personalDetails.photo} alt="Student Photo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <div>
+                    <span style={{ fontSize: "8px", color: "#666666", display: "block" }}>Affix</span>
+                    <span style={{ fontSize: "8px", color: "#666666", display: "block" }}>Recent</span>
+                    <span style={{ fontSize: "8px", color: "#666666", display: "block" }}>Photo</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Enrollment Details - Right Side */}
+              <div style={{ flex: 1, border: "2px solid #dc2626", display: "flex", flexDirection: "column" }}>
+                <div style={{ backgroundColor: "#dc2626", padding: "5px 10px", textAlign: "center" }}>
+                  <h4 style={{ fontSize: "11px", fontWeight: "bold", color: "#ffffff", margin: 0, textTransform: "uppercase" }}>Enrollment Details</h4>
+                </div>
+                <div style={{ padding: "6px", backgroundColor: "#fef2f2", flex: 1 }}>
+                  <table style={{ width: "100%", fontSize: "9px", borderCollapse: "separate", borderSpacing: "0 3px" }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ width: "20%", padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>University</td>
+                        <td style={{ width: "30%", padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.university || "—"}</td>
+                        <td style={{ width: "20%", padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Faculty</td>
+                        <td style={{ width: "30%", padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.faculty || "—"}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Course</td>
+                        <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.course || "—"}</td>
+                        <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Stream</td>
+                        <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.stream || "—"}</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Duration</td>
+                        <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.duration ? `${detailStudent.duration} Years` : "—"}</td>
+                        <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Academic Year</td>
+                        <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.startYear ? `${detailStudent.startYear}-${detailStudent.endYear}` : "—"}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Personal Information - Same Style as Enrollment */}
+            <div style={{ marginBottom: "10px", border: "1px solid #dc2626" }}>
+              <div style={{ backgroundColor: "#dc2626", padding: "5px 10px", textAlign: "center" }}>
+                <h4 style={{ fontSize: "11px", fontWeight: "bold", color: "#ffffff", margin: 0, textTransform: "uppercase" }}>Personal Information</h4>
+              </div>
+              <div style={{ padding: "6px", backgroundColor: "#fef2f2" }}>
+                <table style={{ width: "100%", fontSize: "9px", borderCollapse: "separate", borderSpacing: "0 3px" }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: "20%", padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Full Name</td>
+                      <td style={{ width: "30%", padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.name || "—"}</td>
+                      <td style={{ width: "20%", padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Date of Birth</td>
+                      <td style={{ width: "30%", padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.personalDetails?.dob || "—"}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Gender</td>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.personalDetails?.gender || "—"}</td>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Blood Group</td>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.personalDetails?.bloodGroup || "—"}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Father&apos;s Name</td>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.personalDetails?.fatherName || "—"}</td>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Mother&apos;s Name</td>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.personalDetails?.motherName || "—"}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Guardian</td>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.personalDetails?.guardianName || "—"}</td>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Aadhaar No</td>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0", fontFamily: "monospace" }}>{detailStudent.personalDetails?.aadhaarNumber || "—"}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Contact</td>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.phone || "—"}</td>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Email</td>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.email || "—"}</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Address</td>
+                      <td colSpan={3} style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>
+                        {[detailStudent.personalDetails?.address, detailStudent.personalDetails?.city, detailStudent.personalDetails?.state, detailStudent.personalDetails?.pincode].filter(Boolean).join(", ") || "—"}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Academic Details Section */}
+            {(detailStudent.academicDetails?.sslc?.institution || detailStudent.academicDetails?.plustwo?.institution || detailStudent.academicDetails?.ug?.institution || detailStudent.academicDetails?.pg?.institution) && (
+              <div style={{ marginBottom: "16px", border: "1px solid #dc2626" }}>
+                <div style={{ backgroundColor: "#dc2626", padding: "6px 12px" }}>
+                  <h4 style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff", margin: 0 }}>ACADEMIC DETAILS</h4>
+                </div>
+                <table style={{ width: "100%", fontSize: "11px", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ backgroundColor: "#fef2f2" }}>
+                      <th style={{ padding: "6px 8px", fontWeight: "bold", color: "#b91c1c", border: "1px solid #fecaca", textAlign: "left", width: "20%" }}>Qualification</th>
+                      <th style={{ padding: "6px 8px", fontWeight: "bold", color: "#b91c1c", border: "1px solid #fecaca", textAlign: "left", width: "30%" }}>Institution / University</th>
+                      <th style={{ padding: "6px 8px", fontWeight: "bold", color: "#b91c1c", border: "1px solid #fecaca", textAlign: "left", width: "20%" }}>Board / Stream</th>
+                      <th style={{ padding: "6px 8px", fontWeight: "bold", color: "#b91c1c", border: "1px solid #fecaca", textAlign: "left", width: "15%" }}>Year</th>
+                      <th style={{ padding: "6px 8px", fontWeight: "bold", color: "#b91c1c", border: "1px solid #fecaca", textAlign: "left", width: "15%" }}>Percentage</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detailStudent.academicDetails?.sslc?.institution && (
+                      <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                        <td style={{ padding: "6px 8px", fontWeight: 600, color: "#334155", border: "1px solid #e2e8f0" }}>SSLC / 10th</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.sslc.institution}</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.sslc.board || "—"}</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.sslc.year || "—"}</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.sslc.percentage || "—"}</td>
+                      </tr>
+                    )}
+                    {detailStudent.academicDetails?.plustwo?.institution && (
+                      <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                        <td style={{ padding: "6px 8px", fontWeight: 600, color: "#334155", border: "1px solid #e2e8f0" }}>HSC / 12th</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.plustwo.institution}</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.plustwo.stream || detailStudent.academicDetails.plustwo.board || "—"}</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.plustwo.year || "—"}</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.plustwo.percentage || "—"}</td>
+                      </tr>
+                    )}
+                    {detailStudent.academicDetails?.ug?.institution && (
+                      <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
+                        <td style={{ padding: "6px 8px", fontWeight: 600, color: "#334155", border: "1px solid #e2e8f0" }}>Under Graduate (UG)</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.ug.institution}</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.ug.degree || detailStudent.academicDetails.ug.board || "—"}</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.ug.year || "—"}</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.ug.percentage || "—"}</td>
+                      </tr>
+                    )}
+                    {detailStudent.academicDetails?.pg?.institution && (
+                      <tr>
+                        <td style={{ padding: "6px 8px", fontWeight: 600, color: "#334155", border: "1px solid #e2e8f0" }}>Post Graduate (PG)</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.pg.institution}</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.pg.degree || detailStudent.academicDetails.pg.board || "—"}</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.pg.year || "—"}</td>
+                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.pg.percentage || "—"}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* Declaration Section */}
+            <div style={{ marginBottom: "16px", border: "1px solid #dc2626" }}>
+              <div style={{ backgroundColor: "#dc2626", padding: "6px 12px" }}>
+                <h4 style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff", margin: 0 }}>DECLARATION</h4>
+              </div>
+              <div style={{ padding: "12px" }}>
+                <p style={{ fontSize: "11px", color: "#334155", lineHeight: "1.5", margin: "0 0 16px 0" }}>
+                  I hereby declare that all the information furnished above is true to the best of my knowledge and belief.
+                  I understand that any false information or concealment of facts may result in the cancellation of my admission
+                  and/or disciplinary action as deemed fit by the institution.
+                </p>
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: "20px" }}>
+                  <div>
+                    <p style={{ fontSize: "11px", color: "#475569", margin: 0 }}>Date: ____________________</p>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ fontSize: "11px", color: "#475569", margin: "0 0 16px 0" }}>Signature of Applicant</p>
+                    <div style={{ width: "140px", borderBottom: "1px solid #64748b", marginLeft: "auto" }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ textAlign: "center", padding: "10px", backgroundColor: "#f3f4f6", borderTop: "2px solid #4b5563", marginTop: "12px" }}>
+              <p style={{ margin: "2px 0", fontSize: "10px", color: "#1f2937", fontWeight: 600 }}>AIOS Institute of Advanced Management & Technology Pvt. Ltd.</p>
+              <p style={{ margin: "2px 0", fontSize: "9px", color: "#4b5563" }}>ISO 9001:2015 Certified | Phone: 0481 291 9090 | www.aiosinstitute.com</p>
+              <p style={{ margin: "2px 0", fontSize: "9px", color: "#6b7280" }}>2nd Floor, Vishnu Arcade, Maruthi Nagar Main Road, Bangalore, Karnataka, India</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Discount Modal */}
+      {showDiscountModal && detailStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 overflow-auto">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden border border-slate-200">
+            <div className="gradient-bg px-6 py-4 flex items-center justify-between">
+              <h2 className="text-base font-bold text-white">Add Discount</h2>
+              <button onClick={() => { setShowDiscountModal(false); setDiscountForm({ amount: "", remarks: "" }); }} className="text-white/60 hover:text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-2">Student</label>
+                <p className="text-sm font-semibold text-slate-900">{detailStudent.name}</p>
+                <p className="text-xs text-slate-500">{detailStudent.phone}</p>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-2">Current Fee Details</label>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="bg-slate-50 p-2 rounded">
+                    <p className="text-slate-500">Total Fee</p>
+                    <p className="font-bold text-slate-900">₹{(detailStudent.totalFee || 0).toLocaleString("en-IN")}</p>
+                  </div>
+                  <div className="bg-green-50 p-2 rounded">
+                    <p className="text-green-600">Discount</p>
+                    <p className="font-bold text-green-700">₹{(detailStudent.discountAmount || 0).toLocaleString("en-IN")}</p>
+                  </div>
+                  <div className="bg-blue-50 p-2 rounded">
+                    <p className="text-blue-600">Effective</p>
+                    <p className="font-bold text-blue-700">₹{((detailStudent.totalFee || 0) - (detailStudent.discountAmount || 0)).toLocaleString("en-IN")}</p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-2">Additional Discount Amount (₹) *</label>
+                <input
+                  type="number"
+                  value={discountForm.amount}
+                  onChange={(e) => setDiscountForm({ ...discountForm, amount: e.target.value })}
+                  min="1"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
+                  placeholder="Enter discount amount"
+                />
+                {discountForm.amount && (
+                  <div className="mt-1 flex items-center gap-3">
+                    <p className="text-[10px] text-green-600">
+                      New Total Discount: ₹{((detailStudent.discountAmount || 0) + parseFloat(discountForm.amount || "0")).toLocaleString("en-IN")}
+                    </p>
+                    <span className="text-slate-300">|</span>
+                    <p className="text-[10px] text-blue-600">
+                      Effective Fee: ₹{((detailStudent.totalFee || 0) - (detailStudent.discountAmount || 0) - parseFloat(discountForm.amount || "0")).toLocaleString("en-IN")}
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-2">Remarks (Optional)</label>
+                <textarea
+                  value={discountForm.remarks}
+                  onChange={(e) => setDiscountForm({ ...discountForm, remarks: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none resize-none"
+                  placeholder="Reason for discount..."
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => { setShowDiscountModal(false); setDiscountForm({ amount: "", remarks: "" }); }}
+                  className="flex-1 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    const amount = parseFloat(discountForm.amount);
+                    if (!amount || amount <= 0) return;
+                    setSavingDiscount(true);
+                    try {
+                      const newDiscountTotal = (detailStudent.discountAmount || 0) + amount;
+                      // Update student discount amount
+                      await setDoc(doc(db, "students", detailStudent.id), { discountAmount: newDiscountTotal }, { merge: true });
+                      // Create voucher payment record
+                      const voucherId = await generateReceiptId("discount");
+                      await setDoc(doc(db, "payments", voucherId), {
+                        receiptNumber: voucherId,
+                        amountPaid: amount,
+                        paymentDate: new Date().toISOString().split("T")[0],
+                        paymentMode: "Discount",
+                        installmentNumber: 0,
+                        totalInstallments: 0,
+                        balanceAmount: (detailStudent.totalFee || 0) - newDiscountTotal,
+                        transactionRef: discountForm.remarks || "Administrative Discount",
+                        remarks: discountForm.remarks || `Discount given to ${detailStudent.name}`,
+                        studentPhone: detailStudent.phone,
+                        studentName: detailStudent.name,
+                        studentEmail: detailStudent.email,
+                        program: detailStudent.course,
+                        university: detailStudent.university || "",
+                        course: detailStudent.course || "",
+                        stream: detailStudent.stream || "",
+                        totalFee: detailStudent.totalFee,
+                        createdAt: serverTimestamp(),
+                        isDiscount: true,
+                      });
+                      // Refresh and close
+                      await fetchStudents();
+                      setShowDiscountModal(false);
+                      setDiscountForm({ amount: "", remarks: "" });
+                      // Refresh detail student
+                      const refreshed = await getDoc(doc(db, "students", detailStudent.id));
+                      if (refreshed.exists()) {
+                        setDetailStudent({ ...detailStudent, ...refreshed.data(), id: detailStudent.id } as Student);
+                      }
+                    } catch (err) {
+                      console.error("Error saving discount:", err);
+                    } finally {
+                      setSavingDiscount(false);
+                    }
+                  }}
+                  disabled={savingDiscount || !discountForm.amount || parseFloat(discountForm.amount || "0") <= 0}
+                  className="flex-1 py-2 text-xs font-bold text-white gradient-bg rounded-lg hover:shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {savingDiscount ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Discount"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

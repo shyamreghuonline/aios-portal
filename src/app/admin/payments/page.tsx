@@ -12,6 +12,9 @@ interface Payment {
   studentName: string;
   phone: string;
   program: string;
+  university?: string;
+  course?: string;
+  stream?: string;
   amountPaid: number;
   totalFee: number;
   installmentNumber: number;
@@ -98,54 +101,53 @@ export default function PaymentsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="gradient-bg border-b-2 border-red-900">
-                <th className="text-left px-4 py-3 font-bold text-white text-[10px] uppercase tracking-widest">Receipt</th>
-                <th className="text-left px-4 py-3 font-bold text-white text-[10px] uppercase tracking-widest">Student</th>
-                <th className="text-left px-4 py-3 font-bold text-white text-[10px] uppercase tracking-widest">Program</th>
-                <th className="text-left px-4 py-3 font-bold text-white text-[10px] uppercase tracking-widest">Amount</th>
-                <th className="text-left px-4 py-3 font-bold text-white text-[10px] uppercase tracking-widest">Installment</th>
-                <th className="text-left px-4 py-3 font-bold text-white text-[10px] uppercase tracking-widest">Balance</th>
-                <th className="text-left px-4 py-3 font-bold text-white text-[10px] uppercase tracking-widest">Date</th>
-                <th className="text-right px-4 py-3 font-bold text-white text-[10px] uppercase tracking-widest">Actions</th>
+                <th className="text-left px-3 py-2.5 font-bold text-white text-[10px] uppercase tracking-widest">Receipt</th>
+                <th className="text-left px-3 py-2.5 font-bold text-white text-[10px] uppercase tracking-widest">Student</th>
+                <th className="text-left px-3 py-2.5 font-bold text-white text-[10px] uppercase tracking-widest">University</th>
+                <th className="text-left px-3 py-2.5 font-bold text-white text-[10px] uppercase tracking-widest">Course</th>
+                <th className="text-left px-3 py-2.5 font-bold text-white text-[10px] uppercase tracking-widest">Amount</th>
+                <th className="text-left px-3 py-2.5 font-bold text-white text-[10px] uppercase tracking-widest">Inst.</th>
+                <th className="text-left px-3 py-2.5 font-bold text-white text-[10px] uppercase tracking-widest">Balance</th>
+                <th className="text-left px-3 py-2.5 font-bold text-white text-[10px] uppercase tracking-widest whitespace-nowrap">Date</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((payment) => (
                 <tr key={payment.id} className="border-b border-red-100 hover:bg-slate-50/50 transition-colors">
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-xs text-slate-900 font-medium">
+                  <td className="px-3 py-2.5">
+                    <Link
+                      href={`/admin/payments/${payment.id}`}
+                      className="font-mono text-xs text-blue-700 font-medium hover:text-blue-900 hover:underline transition-colors"
+                    >
                       {payment.receiptNumber}
+                    </Link>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <p className="text-slate-900 text-sm">{payment.studentName}</p>
+                    <p className="text-[11px] text-slate-600">{payment.phone}</p>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <span className="text-[11px] text-slate-700">
+                      {payment.university || "—"}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
-                    <p className="font-semibold text-slate-900">{payment.studentName}</p>
-                    <p className="text-xs text-slate-600">{payment.phone}</p>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="px-2 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 rounded-full">
-                      {payment.program}
+                  <td className="px-3 py-2.5">
+                    <span className="px-1.5 py-0.5 text-[11px] font-medium bg-blue-50 text-blue-700 rounded-full">
+                      {(payment.course || payment.program || "").replace(/\s*\([^)]*\)/g, "")}{payment.stream ? `-${payment.stream}` : ""}
                     </span>
                   </td>
-                  <td className="px-4 py-3 font-bold text-green-600">
+                  <td className="px-3 py-2.5 font-bold text-green-600 text-sm">
                     ₹{(payment.amountPaid || 0).toLocaleString("en-IN")}
                   </td>
-                  <td className="px-4 py-3 text-slate-700 font-medium">
+                  <td className="px-3 py-2.5 text-slate-700 font-medium text-sm">
                     #{payment.installmentNumber}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2.5 text-sm">
                     <span className={`font-medium ${(payment.balanceAmount || 0) > 0 ? "text-red-600" : "text-green-600"}`}>
                       ₹{(payment.balanceAmount || 0).toLocaleString("en-IN")}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-slate-600 text-xs font-medium">{payment.paymentDate}</td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/admin/payments/${payment.id}`}
-                      className="p-1.5 text-slate-600 hover:text-blue-600 transition-colors inline-flex"
-                      title="View Receipt"
-                    >
-                      <Printer className="w-4 h-4" />
-                    </Link>
-                  </td>
+                  <td className="px-3 py-2.5 text-slate-600 text-xs font-medium whitespace-nowrap">{payment.paymentDate}</td>
                 </tr>
               ))}
             </tbody>

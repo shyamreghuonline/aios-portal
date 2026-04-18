@@ -7,7 +7,7 @@ import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import {
   Phone, Mail, BookOpen, IndianRupee, Building2,
-  MapPin, Upload, Save, CheckCircle, Loader2, Camera, Shield,
+  MapPin, Upload, Save, CheckCircle, XCircle, Loader2, Camera, Shield,
   ChevronDown, ChevronUp, Lock,
 } from "lucide-react";
 
@@ -98,7 +98,7 @@ function AcademicBlock({
   onChange: (key: string, value: string) => void;
   fields: FieldDef[]; optional?: boolean; disabled?: boolean;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const filled = fields.filter(f => (level as Record<string, string>)[f.key]).length;
   const pct = Math.round((filled / fields.length) * 100);
   return (
@@ -232,13 +232,13 @@ export default function StudentProfilePage() {
       {/* ══ IDENTITY CARD ══════════════════════════════════════════════════ */}
       <div className="gradient-bg rounded-xl shadow-md overflow-hidden">
         <div className="p-4">
-          <div className="flex items-start gap-3 mb-3">
+          <div className="flex items-start gap-4 mb-4">
             {/* Avatar */}
             <div className="relative flex-shrink-0">
-              <div className="w-14 h-14 rounded-xl border-2 border-white/40 overflow-hidden bg-white/20 flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 rounded-xl border-2 border-white/40 overflow-hidden bg-white/20 flex items-center justify-center shadow-md">
                 {personal.photo
                   ? <img src={personal.photo} alt="Photo" className="w-full h-full object-cover" />
-                  : <span className="text-lg font-extrabold text-white">{initials}</span>}
+                  : <span className="text-xl font-extrabold text-white">{initials}</span>}
               </div>
               {canEdit && (
                 <label htmlFor="photo-upload"
@@ -250,35 +250,51 @@ export default function StudentProfilePage() {
               <input id="photo-upload" ref={photoRef} type="file" accept="image/*" className="hidden"
                 onChange={e => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])} />
             </div>
+            
             {/* Name + info */}
             <div className="flex-1 min-w-0">
-              <p className="text-base font-extrabold text-white leading-tight truncate">{name}</p>
-              <p className="text-xs font-semibold text-white/80 truncate mt-0.5">{(sd.course as string) || ""}{sd.stream ? ` · ${sd.stream}` : ""}</p>
-              <p className="text-[10px] text-white/60 truncate mt-0.5">{(sd.university as string) || ""}</p>
+              <p className="text-lg font-extrabold text-white leading-tight truncate">{name}</p>
+              <p className="text-sm font-semibold text-white/80 truncate mt-0.5">{(sd.course as string) || ""}{(sd.stream as string) ? `-${(sd.stream as string)}` : ""}</p>
+              <p className="text-xs text-white/60 truncate mt-0.5">Specialization: {(sd.stream as string) || "Finance"}</p>
+              <p className="text-xs text-white/60 truncate mt-0.5">University: {(sd.university as string) || ""}</p>
             </div>
-            {/* Completion */}
-            <div className="text-right flex-shrink-0 pl-2">
-              <p className="text-2xl font-extrabold text-white leading-none">{overallPct}%</p>
-              <p className="text-[9px] text-white/60 uppercase tracking-wider mt-0.5">Complete</p>
-            </div>
-          </div>
-          {/* Progress */}
-          <div className="w-full bg-white/20 rounded-full h-1 mb-2.5">
-            <div className="h-1 rounded-full bg-white transition-all duration-700" style={{ width: `${overallPct}%` }} />
-          </div>
-          {/* Section status pills */}
-          <div className="grid grid-cols-3 gap-1.5">
-            {[
-              { label: "Enrollment", pct: 100 },
-              { label: "Personal", pct: personalPct },
-              { label: "Academic", pct: academicPct },
-            ].map(({ label, pct }) => (
-              <div key={label} className={`text-center py-1 rounded text-[9px] font-bold border ${
-                pct === 100 ? "bg-white/20 border-white/30 text-white"
-                : pct > 0 ? "bg-amber-300/30 border-amber-200/40 text-white"
-                : "bg-black/20 border-white/10 text-white/60"
+            
+            {/* Completion % + Verified */}
+            <div className="text-right flex-shrink-0">
+              <p className="text-3xl font-extrabold text-white leading-none">{overallPct}%</p>
+              <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 border ${
+                (sd.adminVerified || sd.kycVerified)
+                  ? "bg-green-100 text-green-800 border-green-300"
+                  : "bg-amber-100 text-amber-800 border-amber-300"
               }`}>
-                {pct === 100 ? "✓ " : ""}{label}{pct < 100 ? ` — ${pct}%` : ""}
+                {(sd.adminVerified || sd.kycVerified)
+                  ? <><CheckCircle className="w-3 h-3" /> Verified by Admin</>
+                  : <><XCircle className="w-3 h-3" /> Not Verified</>
+                }
+              </span>
+            </div>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="w-full bg-white/20 rounded-full h-2 mb-3">
+            <div className="h-2 rounded-full bg-white transition-all duration-700" style={{ width: `${overallPct}%` }} />
+          </div>
+          
+          {/* Section status pills */}
+          <div className="flex gap-2">
+            {[
+              { label: "Enrollment", pct: 100, icon: "✓" },
+              { label: "Personal", pct: personalPct, icon: "👤" },
+              { label: "Academic", pct: academicPct, icon: "✓" },
+            ].map(({ label, pct, icon }) => (
+              <div key={label} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs ${
+                pct === 100 ? "bg-white/20 text-white" : pct > 0 ? "bg-amber-300/30 text-white" : "bg-black/20 text-white/60"
+              }`}>
+                <span>
+                  {icon}
+                </span>
+                <span className="font-medium">{label}</span>
+                {pct < 100 && <span className="opacity-70">: {pct}%</span>}
               </div>
             ))}
           </div>
@@ -295,9 +311,10 @@ export default function StudentProfilePage() {
             </span>
             <p className="text-xs font-extrabold text-slate-900 uppercase tracking-wide">Enrollment Details</p>
           </div>
-          <span className="flex items-center gap-1 text-[10px] font-bold bg-green-100 text-green-800 border border-green-300 px-2 py-0.5 rounded-full">
-            <CheckCircle className="w-3 h-3" /> Verified by Admin
-          </span>
+          <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
+            <Lock className="w-3 h-3" />
+            <span>Admin Managed</span>
+          </div>
         </div>
 
         {/* Bordered table grid — Program */}
@@ -375,7 +392,7 @@ export default function StudentProfilePage() {
         {/* Admin notice */}
         <div className="flex items-center gap-2 bg-amber-50 border-t border-amber-100 px-4 py-2">
           <Lock className="w-3 h-3 text-amber-700 flex-shrink-0" />
-          <p className="text-[10px] font-semibold text-amber-800">Managed by institute admin. Contact admin to request changes.</p>
+          <p className="text-[10px] font-semibold text-amber-800">Managed by institute. Contact admin to request changes.</p>
         </div>
       </div>
 
