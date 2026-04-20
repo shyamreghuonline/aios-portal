@@ -12,7 +12,11 @@ interface Payment {
   studentName: string;
   studentEmail: string;
   studentPhone: string;
+  studentId?: string;
   program: string;
+  university: string;
+  course: string;
+  stream: string;
   totalFee: number;
   amountPaid: number;
   installmentNumber: number;
@@ -73,26 +77,66 @@ export default function ReceiptPage() {
             <title>Receipt - ${payment?.receiptNumber}</title>
             <style>
               * { margin: 0; padding: 0; box-sizing: border-box; }
-              body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
-              .receipt { max-width: 700px; margin: 0 auto; border: 2px solid #a31d21; border-radius: 8px; overflow: hidden; }
-              .header { background: linear-gradient(135deg, #a31d21, #c0392b); padding: 24px; text-align: center; color: white; }
-              .header h1 { font-size: 28px; margin-bottom: 4px; letter-spacing: 2px; }
-              .header p { font-size: 12px; opacity: 0.9; }
-              .info-bar { display: flex; justify-content: space-between; padding: 12px 24px; background: #fef2f2; border-bottom: 1px solid #fecaca; font-size: 13px; }
-              .info-bar span { font-weight: 600; color: #a31d21; }
-              .body { padding: 24px; }
-              .section-title { font-size: 13px; font-weight: 700; color: #a31d21; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #fecaca; }
-              table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-              table td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #f0f0f0; }
-              table td:first-child { color: #888; font-weight: 600; width: 40%; }
-              .amount-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; text-align: center; margin: 16px 0; }
-              .amount-box .amount { font-size: 28px; font-weight: 800; color: #166534; }
-              .amount-box .label { font-size: 12px; color: #666; margin-top: 4px; }
-              .installment-bar { background: #f8f8f8; border-radius: 6px; padding: 12px 16px; display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 16px; }
-              .installment-bar span { font-weight: 600; }
-              .stamp { text-align: right; margin-top: 30px; padding-top: 16px; border-top: 1px dashed #ccc; }
-              .stamp .auth { font-weight: 700; color: #a31d21; font-size: 14px; margin-top: 40px; }
-              .footer { background: #1a1a1a; padding: 12px 24px; text-align: center; color: #999; font-size: 11px; }
+              body { font-family: Arial, Helvetica, sans-serif; color: #333; }
+              .receipt { width: 800px; margin: 0 auto; background: white; border: 2px solid #8B0000; box-sizing: border-box; }
+              header { padding: 24px 32px; display: flex; justify-content: space-between; align-items: flex-start; }
+              header h1 { font-size: 24px; font-weight: bold; color: #111; margin-bottom: 4px; }
+              header p { font-size: 11px; color: #666; margin: 2px 0; }
+              .text-right { text-align: right; }
+              .text-xs { font-size: 11px; }
+              .text-xl { font-size: 20px; }
+              .font-bold { font-weight: bold; }
+              .font-semibold { font-weight: 600; }
+              .uppercase { text-transform: uppercase; }
+              .tracking-wider { letter-spacing: 0.05em; }
+              .bg-gray-100 { background-color: #f3f4f6; }
+              .border-b { border-bottom: 1px solid #e5e7eb; }
+              .px-8 { padding-left: 32px; padding-right: 32px; }
+              .py-2 { padding-top: 8px; padding-bottom: 8px; }
+              .py-4 { padding-top: 16px; padding-bottom: 16px; }
+              .py-6 { padding-top: 24px; padding-bottom: 24px; }
+              .px-4 { padding-left: 16px; padding-right: 16px; }
+              .px-3 { padding-left: 12px; padding-right: 12px; }
+              .py-3 { padding-top: 12px; padding-bottom: 12px; }
+              .mb-6 { margin-bottom: 24px; }
+              .mb-3 { margin-bottom: 12px; }
+              .mb-1 { margin-bottom: 4px; }
+              .mt-2 { margin-top: 8px; }
+              .mt-4 { margin-top: 16px; }
+              .ml-2 { margin-left: 8px; }
+              .gap-8 { gap: 32px; }
+              .gap-y-2 { row-gap: 8px; }
+              .gap-x-8 { column-gap: 32px; }
+              .flex { display: flex; }
+              .grid { display: grid; }
+              .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+              .col-span-2 { grid-column: span 2; }
+              .justify-between { justify-content: space-between; }
+              .justify-end { justify-content: flex-end; }
+              .items-start { align-items: flex-start; }
+              .w-64 { width: 256px; }
+              .w-full { width: 100%; }
+              .border-2 { border-width: 2px; }
+              .border-red-800 { border-color: #8B0000; }
+              .text-gray-500 { color: #6b7280; }
+              .text-gray-600 { color: #4b5563; }
+              .text-gray-900 { color: #111827; }
+              .text-white { color: white; }
+              .text-red-600 { color: #dc2626; }
+              .text-green-600 { color: #16a34a; }
+              .text-left { text-align: left; }
+              .text-right { text-align: right; }
+              .text-center { text-align: center; }
+              .border-collapse { border-collapse: collapse; }
+              .text-sm { font-size: 13px; }
+              table { width: 100%; border-collapse: collapse; }
+              th, td { padding: 12px 16px; text-align: left; }
+              th { background-color: #8B0000; color: white; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+              td { font-size: 13px; color: #374151; border-bottom: 1px solid #e5e7eb; }
+              .h-px { height: 1px; }
+              .italic { font-style: italic; }
+              footer { padding: 16px 32px; }
+              .rounded { border-radius: 4px; }
               @media print { body { padding: 0; } }
             </style>
           </head>
@@ -141,73 +185,126 @@ export default function ReceiptPage() {
         </button>
       </div>
 
-      <div ref={printRef}>
-        <div className="receipt bg-white rounded-xl border-2 border-red-700 overflow-hidden shadow-lg">
+      <div ref={printRef} className="flex justify-center">
+        <div className="receipt bg-white w-[800px] border-2 border-red-800" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
           {/* Header */}
-          <div style={{ background: "linear-gradient(135deg, #a31d21, #c0392b)" }} className="px-8 py-6 text-center text-white">
-            <h1 className="text-2xl font-bold tracking-wider mb-1">AIOS EDU</h1>
-            <p className="text-xs opacity-90 tracking-wide">Institute of Advanced Management &amp; Technology Pvt. Ltd.</p>
-            <p className="text-xs opacity-75 mt-1">Education Beyond Boundaries</p>
+          <header className="px-8 py-6 flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">AIOS EDU</h1>
+              <p className="text-xs text-gray-600 mt-1">Institute of Advanced Management &amp; Technology</p>
+              <p className="text-xs text-gray-500">Education Beyond Boundaries</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Receipt No</p>
+              <p className="text-xl font-bold" style={{ color: '#8B0000' }}>{payment.receiptNumber}</p>
+            </div>
+          </header>
+
+          {/* Metadata Strip */}
+          <div className="bg-gray-100 px-8 py-2 flex gap-8 text-sm">
+            <span><span className="text-gray-500">Date:</span> <span className="font-semibold text-gray-900">{new Date(payment.paymentDate).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}</span></span>
+            <span><span className="text-gray-500">Payment Mode:</span> <span className="font-semibold text-gray-900">{payment.paymentMode}</span></span>
+            {payment.transactionRef && <span><span className="text-gray-500">Ref:</span> <span className="font-mono text-gray-900">{payment.transactionRef}</span></span>}
           </div>
 
-          {/* Receipt Info Bar */}
-          <div className="flex flex-wrap justify-between px-6 py-3 bg-red-50 border-b border-red-100 text-xs">
-            <div>Receipt No: <span className="font-bold text-red-700">{payment.receiptNumber}</span></div>
-            <div>Date: <span className="font-bold text-red-700">
-              {new Date(payment.paymentDate).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}
-            </span></div>
-          </div>
+          {/* Main Content */}
+          <div className="px-8 py-6">
+            {/* Bill To Section */}
+            <section className="mb-6">
+              <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3 border-b border-gray-200 pb-1">Bill To</h2>
+              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                <div>
+                  <span style={{ color: '#8B0000' }} className="font-semibold">Name:</span>
+                  <span className="ml-2 text-gray-900">{payment.studentName}</span>
+                </div>
+                <div>
+                  <span style={{ color: '#8B0000' }} className="font-semibold">Enrollment ID:</span>
+                  <span className="ml-2 text-gray-900">{payment.studentId || "—"}</span>
+                </div>
+                <div>
+                  <span style={{ color: '#8B0000' }} className="font-semibold">Phone:</span>
+                  <span className="ml-2 text-gray-900">{payment.studentPhone}</span>
+                </div>
+                <div>
+                  <span style={{ color: '#8B0000' }} className="font-semibold">Email:</span>
+                  <span className="ml-2 text-gray-900">{payment.studentEmail}</span>
+                </div>
+                <div>
+                  <span style={{ color: '#8B0000' }} className="font-semibold">University:</span>
+                  <span className="ml-2 text-gray-900">{payment.university || "—"}</span>
+                </div>
+                <div>
+                  <span style={{ color: '#8B0000' }} className="font-semibold">Course:</span>
+                  <span className="ml-2 text-gray-900">{(payment.course || payment.program || "").replace(/\s*\([^)]*\)/g, "")}{payment.stream ? `-${payment.stream}` : ""}</span>
+                </div>
+              </div>
+            </section>
 
-          <div className="px-6 py-5">
-            {/* Student Info */}
-            <p className="text-xs font-bold text-red-700 uppercase tracking-wider mb-3 pb-1.5 border-b-2 border-red-100">Student Information</p>
-            <table className="w-full text-sm mb-5">
-              <tbody>
-                <tr className="border-b border-gray-100"><td className="py-2 pr-4 text-gray-500 font-semibold w-2/5">Name</td><td className="py-2 text-gray-900">{payment.studentName}</td></tr>
-                <tr className="border-b border-gray-100"><td className="py-2 pr-4 text-gray-500 font-semibold">Email</td><td className="py-2 text-gray-900">{payment.studentEmail}</td></tr>
-                <tr className="border-b border-gray-100"><td className="py-2 pr-4 text-gray-500 font-semibold">Phone</td><td className="py-2 text-gray-900">{payment.studentPhone}</td></tr>
-                <tr><td className="py-2 pr-4 text-gray-500 font-semibold">Program</td><td className="py-2 text-gray-900">{payment.program}</td></tr>
-              </tbody>
-            </table>
+            {/* Financial Table */}
+            <section className="mb-6">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr style={{ backgroundColor: '#8B0000' }}>
+                    <th className="text-left py-3 px-4 text-white font-semibold uppercase text-xs tracking-wider">Description</th>
+                    <th className="text-right py-3 px-4 text-white font-semibold uppercase text-xs tracking-wider">Installment</th>
+                    <th className="text-right py-3 px-4 text-white font-semibold uppercase text-xs tracking-wider">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-gray-200">
+                    <td className="py-3 px-4 text-gray-900">Course Fee Payment</td>
+                    <td className="py-3 px-4 text-gray-700 text-right">{payment.installmentNumber} of {payment.totalInstallments}</td>
+                    <td className="py-3 px-4 text-gray-900 font-semibold text-right">₹{payment.amountPaid.toLocaleString("en-IN")}</td>
+                  </tr>
+                </tbody>
+              </table>
 
-            {/* Amount Box */}
-            <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center mb-5">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Amount Received</p>
-              <p className="text-3xl font-extrabold text-green-700">₹{payment.amountPaid.toLocaleString("en-IN")}</p>
-              <p className="text-xs text-gray-500 mt-1">({numberToWords(payment.amountPaid)} Rupees Only)</p>
-            </div>
+              {/* Summary */}
+              <div className="flex justify-end mt-4">
+                <div className="w-64">
+                  <div className="flex justify-between py-1 text-sm">
+                    <span className="text-gray-600">Total Fee:</span>
+                    <span className="text-gray-900 font-semibold">₹{(payment.totalFee || 0).toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex justify-between py-1 text-sm">
+                    <span className="text-gray-600">Balance:</span>
+                    <span className={`font-semibold ${payment.balanceAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>₹{payment.balanceAmount.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex justify-between py-2 mt-2 px-3" style={{ backgroundColor: '#8B0000' }}>
+                    <span className="text-white font-semibold text-sm">Amount Received:</span>
+                    <span className="text-white font-bold text-sm">₹{payment.amountPaid.toLocaleString("en-IN")}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
 
-            {/* Installment Bar */}
-            <div className="flex flex-wrap justify-between bg-gray-50 rounded-lg px-4 py-3 text-xs mb-5">
-              <div>Installment: <span className="font-bold">{payment.installmentNumber} of {payment.totalInstallments}</span></div>
-              <div>Total Fee: <span className="font-bold">₹{(payment.totalFee || 0).toLocaleString("en-IN")}</span></div>
-              <div>Balance: <span className={`font-bold ${payment.balanceAmount > 0 ? "text-red-600" : "text-green-600"}`}>₹{payment.balanceAmount.toLocaleString("en-IN")}</span></div>
-            </div>
+            {/* Amount in Words */}
+            <section className="mb-6">
+              <div className="border p-3" style={{ borderColor: '#8B0000', borderWidth: '1px' }}>
+                <p className="text-xs text-gray-500 uppercase mb-1">Amount in Words:</p>
+                <p className="text-sm font-semibold text-gray-800">{numberToWords(payment.amountPaid)} Rupees Only</p>
+              </div>
+            </section>
 
-            {/* Payment Details */}
-            <p className="text-xs font-bold text-red-700 uppercase tracking-wider mb-3 pb-1.5 border-b-2 border-red-100">Payment Details</p>
-            <table className="w-full text-sm mb-5">
-              <tbody>
-                <tr className="border-b border-gray-100"><td className="py-2 pr-4 text-gray-500 font-semibold w-2/5">Payment Date</td><td className="py-2 text-gray-900">{new Date(payment.paymentDate).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}</td></tr>
-                <tr className="border-b border-gray-100"><td className="py-2 pr-4 text-gray-500 font-semibold">Payment Mode</td><td className="py-2 text-gray-900">{payment.paymentMode}</td></tr>
-                {payment.transactionRef && <tr className="border-b border-gray-100"><td className="py-2 pr-4 text-gray-500 font-semibold">Transaction Ref</td><td className="py-2 text-gray-900 font-mono text-xs">{payment.transactionRef}</td></tr>}
-                {payment.remarks && <tr><td className="py-2 pr-4 text-gray-500 font-semibold">Remarks</td><td className="py-2 text-gray-900">{payment.remarks}</td></tr>}
-              </tbody>
-            </table>
-
-            {/* Signature */}
-            <div className="text-right mt-8 pt-4 border-t border-dashed border-gray-300">
-              <p className="text-xs text-gray-400 mb-10">Authorized Signature</p>
-              <p className="text-sm font-bold text-red-700">AIOS EDU</p>
-              <p className="text-xs text-gray-500">Institute of Advanced Management &amp; Technology</p>
-            </div>
+            {/* Remarks */}
+            {payment.remarks && (
+              <section className="mb-6">
+                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Remarks</h2>
+                <p className="text-sm text-gray-700 bg-gray-50 p-3">{payment.remarks}</p>
+              </section>
+            )}
           </div>
 
           {/* Footer */}
-          <div className="bg-gray-900 px-6 py-3 text-center">
-            <p className="text-xs text-gray-400">+91 74111 33333 | 080 - 2222 2228 | info@aiosedu.com | www.aiosedu.com</p>
-            <p className="text-xs text-gray-500 mt-1">This is a computer-generated receipt and does not require a physical signature.</p>
-          </div>
+          <footer className="px-8 py-4">
+            <p className="text-center text-xs text-gray-500 italic mb-3">
+              This is a system-generated document and requires no physical signature.
+            </p>
+            <div className="w-full h-px mb-3" style={{ backgroundColor: '#8B0000' }}></div>
+            <p className="text-center text-xs text-gray-600">
+              +91 74111 33333 | 080 - 2222 2228 | info@aiosedu.com | www.aiosedu.com
+            </p>
+          </footer>
         </div>
       </div>
     </div>

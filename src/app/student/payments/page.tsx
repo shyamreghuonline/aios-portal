@@ -14,7 +14,7 @@ import {
   AlertCircle,
   TrendingUp,
   Landmark,
-  Clock
+  Clock,
 } from "lucide-react";
 
 interface Payment {
@@ -215,7 +215,6 @@ export default function StudentPaymentsPage() {
                     })}
                   </tbody>
                 </table>
-                
               </div>
             )}
           </div>

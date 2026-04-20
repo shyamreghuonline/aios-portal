@@ -665,34 +665,33 @@ export default function StudentsPage() {
                           </div>
                         </button>
                       </td>
-                      <td className="px-3 lg:px-5 py-2 lg:py-3 text-slate-800 text-[10px] lg:text-xs font-mono whitespace-nowrap">{student.phone}</td>
+                      <td className="px-3 lg:px-5 py-2 lg:py-3 text-slate-800 text-[11px] lg:text-xs whitespace-nowrap">{student.phone}</td>
                       <td className="px-3 lg:px-5 py-2 lg:py-3 whitespace-nowrap hidden sm:table-cell">
-                        <button onClick={() => setDetailStudent(student)} className="text-[10px] lg:text-xs font-mono font-semibold text-blue-700 hover:text-blue-900 hover:underline transition-colors">
+                        <button onClick={() => setDetailStudent(student)} className="text-[11px] lg:text-xs text-blue-700 hover:text-blue-900 hover:underline transition-colors">
                           {student.studentId || student.id}
                         </button>
                       </td>
                       <td className="px-3 lg:px-5 py-2 lg:py-3 whitespace-nowrap hidden sm:table-cell">
-                        <span className="text-[10px] lg:text-xs font-bold text-slate-800">₹{(student.totalFee || 0).toLocaleString("en-IN")}</span>
+                        <span className="text-[11px] lg:text-xs text-slate-800">₹{(student.totalFee || 0).toLocaleString("en-IN")}</span>
                       </td>
                       <td className="px-3 lg:px-5 py-2 lg:py-3 whitespace-nowrap">
                         {due <= 0 ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 lg:px-2.5 lg:py-1 rounded-full bg-green-100 text-green-800 text-[10px] lg:text-[11px] font-bold">✓</span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 lg:px-2.5 lg:py-1 rounded-full bg-green-100 text-green-800 text-[11px] lg:text-xs">✓</span>
                         ) : (
                           <div>
-                            <p className="text-[10px] lg:text-xs font-bold text-red-600">₹{due.toLocaleString("en-IN")}</p>
-                            <span className="inline-block mt-0.5 px-1.5 lg:px-2 py-0.5 text-[9px] lg:text-[10px] font-medium bg-red-100 text-red-700 rounded-md">Due</span>
+                            <p className="text-[11px] lg:text-xs text-red-600">₹{due.toLocaleString("en-IN")}</p>
+                            <span className="inline-block mt-0.5 px-1.5 lg:px-2 py-0.5 text-[10px] lg:text-xs bg-red-100 text-red-700 rounded-md">Due</span>
                           </div>
                         )}
                       </td>
                       <td className="px-3 lg:px-5 py-2 lg:py-3 max-w-[100px] lg:max-w-[160px] hidden md:table-cell">
-                        <p className="text-[10px] lg:text-xs font-bold text-slate-900 leading-tight truncate">{student.course}</p>
-                        {student.stream && (
-                          <span className="inline-block mt-1 px-1.5 lg:px-2 py-0.5 text-[9px] lg:text-[10px] font-bold bg-indigo-100 text-indigo-700 rounded-md truncate">{student.stream}</span>
-                        )}
+                        <span className="text-[11px] lg:text-xs text-slate-900 leading-tight truncate">
+                          {(student.course || "").replace(/\s*\([^)]*\)/g, "")}{student.stream ? `-${student.stream}` : ""}
+                        </span>
                       </td>
-                      <td className="px-3 lg:px-5 py-2 lg:py-3 text-[10px] lg:text-xs text-slate-800 font-semibold hidden lg:table-cell">{student.university}</td>
+                      <td className="px-3 lg:px-5 py-2 lg:py-3 text-[11px] lg:text-xs text-slate-800 font-bold hidden lg:table-cell">{student.university}</td>
                       <td className="px-3 lg:px-5 py-2 lg:py-3 whitespace-nowrap hidden lg:table-cell">
-                        <span className="text-[10px] lg:text-[11px] font-bold text-slate-800 bg-slate-100 px-1.5 lg:px-2 py-0.5 rounded-md">
+                        <span className="text-[11px] lg:text-xs text-slate-800 bg-slate-100 px-1.5 lg:px-2 py-0.5 rounded-md">
                           {student.startYear}{student.endYear ? ` – ${student.endYear}` : ""}
                         </span>
                       </td>
