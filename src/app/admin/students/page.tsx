@@ -560,7 +560,14 @@ export default function StudentsPage() {
         ) : students.length === 0 ? (
           <div className="text-center py-16">
             <GraduationCap className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <p className="text-sm font-semibold text-slate-700">No students yet. Add one to get started.</p>
+            <p className="text-sm font-semibold text-slate-700 mb-4">No students yet. Add one to get started.</p>
+            <button
+              onClick={() => setShowForm(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-white rounded-xl gradient-bg hover:shadow-lg transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              Add Student
+            </button>
           </div>
         ) : (
           <div className="overflow-auto flex-1 min-h-0">
