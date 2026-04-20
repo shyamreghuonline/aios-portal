@@ -227,14 +227,18 @@ export default function StudentsPage() {
   async function fetchStudents() {
     setLoading(true);
     try {
+      console.log("Fetching students from Firestore...");
       const snap = await getDocs(collection(db, "students"));
+      console.log(`Found ${snap.docs.length} students in Firestore`);
       const data = snap.docs.map((d) => ({
         id: d.id,
         ...d.data(),
       })) as Student[];
+      console.log("Student data:", data);
       setStudents(data.sort((a, b) => a.name.localeCompare(b.name)));
     } catch (err) {
       console.error("Error fetching students:", err);
+      alert("Failed to load students. Check console for errors.");
     } finally {
       setLoading(false);
     }
