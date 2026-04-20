@@ -159,22 +159,42 @@ export default function StudentDashboard() {
   useEffect(() => {
     async function fetchData() {
       if (authLoading || !user?.phone) return;
+      
+      // First try to use studentData from auth context
       const studentData = user.studentData as Record<string, unknown> | undefined;
-      if (studentData?.totalFee) setTotalFee(studentData.totalFee as number);
-      if (studentData?.discountAmount) setDiscountAmount(studentData.discountAmount as number);
-      if (studentData?.studentId) setStudentId(studentData.studentId as string);
-
+      
       try {
+        // Always fetch fresh data from Firestore
         const snap = await getDoc(doc(db, "students", user.phone));
         if (snap.exists()) {
           const d = snap.data();
+          
+          // Merge Firestore data with auth context data (Firestore takes precedence)
+          const mergedData = { ...studentData, ...d };
+          
+          // Set all student data fields
+          if (mergedData.totalFee) setTotalFee(mergedData.totalFee as number);
+          if (mergedData.discountAmount) setDiscountAmount(mergedData.discountAmount as number);
+          if (mergedData.studentId) setStudentId(mergedData.studentId as string);
           if (d.personalDetails) setPersonal(d.personalDetails as PersonalDetails);
           if (d.academicDetails) setAcademic(d.academicDetails as AcademicDetails);
-          if (d.discountAmount) setDiscountAmount(d.discountAmount as number);
-          if (d.studentId) setStudentId(d.studentId as string);
+          
+          // Update auth context studentData with fresh data for other components
+          if (user.studentData) {
+            Object.assign(user.studentData, d);
+          }
+        } else {
+          // No Firestore document - fallback to auth context data only
+          if (studentData?.totalFee) setTotalFee(studentData.totalFee as number);
+          if (studentData?.discountAmount) setDiscountAmount(studentData.discountAmount as number);
+          if (studentData?.studentId) setStudentId(studentData.studentId as string);
         }
       } catch (err) {
         console.error("students fetch error:", err);
+        // On error, fallback to auth context data
+        if (studentData?.totalFee) setTotalFee(studentData.totalFee as number);
+        if (studentData?.discountAmount) setDiscountAmount(studentData.discountAmount as number);
+        if (studentData?.studentId) setStudentId(studentData.studentId as string);
       }
 
       try {
