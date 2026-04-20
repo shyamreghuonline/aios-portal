@@ -133,6 +133,9 @@ export default function StudentsPage() {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [customUniversity, setCustomUniversity] = useState(false);
+  const [customFaculty, setCustomFaculty] = useState(false);
+  const [customCourse, setCustomCourse] = useState(false);
+  const [customStream, setCustomStream] = useState(false);
   const [sortCol, setSortCol] = useState<"name" | "phone" | "studentId" | "fee" | "due" | "course" | "university" | "year" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [paidMap, setPaidMap] = useState<Record<string, number>>({});
@@ -215,7 +218,7 @@ export default function StudentsPage() {
       const map: Record<string, number> = {};
       snap.docs.forEach((d) => {
         const p = d.data();
-        const phone = p.phone as string;
+        const phone = (p.studentPhone as string) || (p.phone as string);
         if (phone) map[phone] = (map[phone] || 0) + (p.amountPaid as number || 0);
       });
       setPaidMap(map);
@@ -227,18 +230,14 @@ export default function StudentsPage() {
   async function fetchStudents() {
     setLoading(true);
     try {
-      console.log("Fetching students from Firestore...");
       const snap = await getDocs(collection(db, "students"));
-      console.log(`Found ${snap.docs.length} students in Firestore`);
       const data = snap.docs.map((d) => ({
         id: d.id,
         ...d.data(),
       })) as Student[];
-      console.log("Student data:", data);
       setStudents(data.sort((a, b) => a.name.localeCompare(b.name)));
     } catch (err) {
       console.error("Error fetching students:", err);
-      alert("Failed to load students. Check console for errors.");
     } finally {
       setLoading(false);
     }
@@ -424,6 +423,9 @@ export default function StudentsPage() {
           studentPhone: phoneKey,
           studentName: formData.name,
           studentEmail: formData.email,
+          university: formData.university,
+          course: formData.course,
+          stream: formData.stream || "",
           program: formData.course,
           totalFee: totalFee,
           createdAt: serverTimestamp(),
@@ -448,6 +450,9 @@ export default function StudentsPage() {
       });
       setShowForm(false);
       setCustomUniversity(false);
+      setCustomFaculty(false);
+      setCustomCourse(false);
+      setCustomStream(false);
       fetchStudents();
     } catch (err) {
       console.error("Error adding student:", err);
@@ -475,8 +480,10 @@ export default function StudentsPage() {
   );
 
   const totalFee = students.reduce((sum, s) => sum + (s.totalFee || 0), 0);
+  const totalDiscount = students.reduce((sum, s) => sum + (s.discountAmount || 0), 0);
+  const effectiveTotalFee = totalFee - totalDiscount;
   const totalPaid = Object.values(paidMap).reduce((a, b) => a + b, 0);
-  const totalDue = totalFee - totalPaid;
+  const totalDue = effectiveTotalFee - totalPaid;
 
   return (
     <div className="flex flex-col gap-4 h-full">
@@ -523,7 +530,7 @@ export default function StudentsPage() {
             </div>
             <div>
               <p className="text-[9px] font-bold uppercase tracking-widest text-slate-700">Cleared</p>
-              <p className="text-base font-extrabold text-green-700 leading-tight">{students.filter((s) => (s.totalFee || 0) - (paidMap[s.phone] || 0) <= 0).length}</p>
+              <p className="text-base font-extrabold text-green-700 leading-tight">{students.filter((s) => ((s.totalFee || 0) - (s.discountAmount || 0)) - (paidMap[s.phone] || 0) <= 0).length}</p>
             </div>
           </div>
         </div>
@@ -579,54 +586,54 @@ export default function StudentsPage() {
               <thead>
                 <tr className="gradient-bg sticky top-0 z-10 shadow-md">
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors ${sortCol === "name" ? "bg-white/20" : ""}`}
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors ${sortCol === "name" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("name"); setSortDir(sortCol === "name" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     Name {sortCol === "name" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors ${sortCol === "phone" ? "bg-white/20" : ""}`}
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors ${sortCol === "phone" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("phone"); setSortDir(sortCol === "phone" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     Phone {sortCol === "phone" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden sm:table-cell ${sortCol === "studentId" ? "bg-white/20" : ""}`}
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden sm:table-cell ${sortCol === "studentId" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("studentId"); setSortDir(sortCol === "studentId" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     Student ID {sortCol === "studentId" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden sm:table-cell ${sortCol === "fee" ? "bg-white/20" : ""}`}
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden sm:table-cell ${sortCol === "fee" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("fee"); setSortDir(sortCol === "fee" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     Total Fee {sortCol === "fee" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors ${sortCol === "due" ? "bg-white/20" : ""}`}
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors ${sortCol === "due" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("due"); setSortDir(sortCol === "due" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     Due {sortCol === "due" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden md:table-cell ${sortCol === "course" ? "bg-white/20" : ""}`}
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden md:table-cell ${sortCol === "course" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("course"); setSortDir(sortCol === "course" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     Course {sortCol === "course" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden lg:table-cell ${sortCol === "university" ? "bg-white/20" : ""}`}
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden lg:table-cell ${sortCol === "university" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("university"); setSortDir(sortCol === "university" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     University {sortCol === "university" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden lg:table-cell ${sortCol === "year" ? "bg-white/20" : ""}`}
+                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden lg:table-cell ${sortCol === "year" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("year"); setSortDir(sortCol === "year" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     Year {sortCol === "year" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
-                  <th className="text-right px-3 lg:px-5 py-2.5 lg:py-3.5 font-bold text-white text-[10px] uppercase tracking-widest">Actions</th>
+                  <th className="text-right px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -746,253 +753,281 @@ export default function StudentsPage() {
       {/* Student Detail Modal */}
       {detailStudent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-2 sm:px-4 py-4 sm:py-6 overflow-auto">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-2 sm:mx-4 overflow-hidden border border-slate-200 max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-            {/* Header with Photo */}
-            <div className="gradient-bg px-4 sm:px-7 py-3 sm:py-5 flex items-center justify-between">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="w-10 h-10 sm:w-14 sm:h-14 rounded-full bg-white/20 flex items-center justify-center overflow-hidden border-2 border-white/30 flex-shrink-0">
-                  {detailStudent.personalDetails?.photo ? (
-                    <img src={detailStudent.personalDetails.photo} alt={detailStudent.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <User className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
-                  )}
+          <div className="bg-slate-50 rounded-xl shadow-2xl w-full max-w-3xl mx-2 sm:mx-4 overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto border border-slate-200">
+
+            {/* ── Header ── */}
+            <div className="gradient-bg px-4 sm:px-6 py-3 sm:py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center overflow-hidden flex-shrink-0 border-2 border-white/30">
+                    {detailStudent.personalDetails?.photo ? (
+                      <img src={detailStudent.personalDetails.photo} alt={detailStudent.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <User className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <h2 className="text-sm sm:text-lg font-extrabold text-white tracking-tight truncate">{detailStudent.name}</h2>
+                    <p className="text-[11px] sm:text-xs text-white/90 font-medium mt-0.5">{detailStudent.course?.replace(/\s*\(.*?\)/g, "")}{detailStudent.stream ? `-${detailStudent.stream}` : ""}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] sm:text-[11px] text-white/70">{detailStudent.studentId || detailStudent.id}</span>
+                      <span className="text-white/30">|</span>
+                      <a href={`tel:${detailStudent.phone}`} className="text-[10px] sm:text-[11px] text-white/70 hover:text-white hover:underline">{detailStudent.phone}</a>
+                    </div>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <h2 className="text-sm sm:text-lg font-extrabold text-white tracking-tight truncate">{detailStudent.name}</h2>
-                  <a href={`tel:${detailStudent.phone}`} className="text-xs sm:text-sm text-red-100 mt-0.5 font-medium hover:text-white hover:underline block">{detailStudent.phone}</a>
-                  <p className="text-[10px] sm:text-xs text-red-200 mt-0.5 truncate">{detailStudent.email}</p>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button onClick={() => setShowDiscountModal(true)} className="px-3 py-1.5 text-[10px] sm:text-[11px] font-bold text-green-700 bg-white rounded-lg hover:bg-green-50 transition-colors shadow-sm hidden sm:block">
+                    Add Discount
+                  </button>
+                  <button onClick={generateStudentPDF} disabled={generatingPDF} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-[11px] font-bold text-blue-700 bg-white rounded-lg hover:bg-blue-50 transition-colors shadow-sm disabled:opacity-60">
+                    {generatingPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
+                    {generatingPDF ? "..." : "Print"}
+                  </button>
+                  <button onClick={() => setDetailStudent(null)} className="text-white/60 hover:text-white transition-colors p-1">
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowDiscountModal(true)}
-                  className="px-3 py-1.5 text-[10px] sm:text-xs font-bold text-green-700 bg-white rounded-lg hover:bg-green-50 transition-colors shadow-sm"
-                >
+              {/* Mobile action buttons */}
+              <div className="sm:hidden flex gap-2 mt-3 pt-3 border-t border-white/15">
+                <button onClick={() => setShowDiscountModal(true)} className="flex-1 py-1.5 text-[10px] font-bold text-white bg-white/15 rounded-lg border border-white/20">
                   Add Discount
                 </button>
-                <button
-                  onClick={generateStudentPDF}
-                  disabled={generatingPDF}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-xs font-bold text-blue-700 bg-white rounded-lg hover:bg-blue-50 transition-colors shadow-sm disabled:opacity-60"
-                >
-                  {generatingPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
-                  {generatingPDF ? "..." : "Print"}
-                </button>
-                <button onClick={() => setDetailStudent(null)} className="text-white/60 hover:text-white transition-colors p-1">
-                  <X className="w-5 h-5" />
+                <button onClick={generateStudentPDF} disabled={generatingPDF} className="flex-1 py-1.5 text-[10px] font-bold text-white bg-white/15 rounded-lg border border-white/20 disabled:opacity-50 flex items-center justify-center gap-1">
+                  {generatingPDF ? <Loader2 className="w-3 h-3 animate-spin" /> : <Printer className="w-3 h-3" />}Print
                 </button>
               </div>
             </div>
 
-            <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
-              {/* Enrollment Details - First */}
+            {/* ── Body ── */}
+            <div className="p-4 sm:p-5 space-y-4">
+
+              {/* ── Enrollment Details ── */}
               <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-1 h-4 rounded-full bg-red-600" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-800">Enrollment Details</span>
-                  <div className="flex-1 h-px bg-slate-200" />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-                  {[
-                    { label: "Student ID", value: detailStudent.studentId || detailStudent.id },
-                    { label: "Faculty", value: detailStudent.faculty },
-                    { label: "Course", value: detailStudent.course },
-                    { label: "Stream", value: detailStudent.stream || "—" },
-                    { label: "Duration", value: detailStudent.duration || "—" },
-                    { label: "University", value: detailStudent.university },
-                    { label: "Academic Year", value: `${detailStudent.startYear}${detailStudent.endYear ? ` – ${detailStudent.endYear}` : ""}` },
-                    { label: "Total Fee", value: `₹${(detailStudent.totalFee || 0).toLocaleString("en-IN")}` },
-                    ...(detailStudent.discountAmount && detailStudent.discountAmount > 0
-                      ? [
-                          { label: "Discount", value: `₹${detailStudent.discountAmount.toLocaleString("en-IN")}`, isDiscount: true },
-                          { label: "Effective Fee", value: `₹${((detailStudent.totalFee || 0) - detailStudent.discountAmount).toLocaleString("en-IN")}`, isEffective: true },
-                        ]
-                      : []),
-                    { label: "Enrolled On", value: detailStudent.enrollmentDate || "—" },
-                  ].map(({ label, value, isDiscount, isEffective }) => (
-                    <div key={label} className={`rounded-lg px-3 py-2 border ${isDiscount ? 'bg-green-50 border-green-200' : isEffective ? 'bg-blue-50 border-blue-200' : 'bg-slate-50 border-slate-100'}`}>
-                      <p className={`text-[9px] font-bold uppercase tracking-wider mb-0.5 ${isDiscount ? 'text-green-600' : isEffective ? 'text-blue-600' : 'text-red-500'}`}>{label}</p>
-                      <p className={`text-xs font-medium ${isDiscount ? 'text-green-700' : isEffective ? 'text-blue-700' : 'text-slate-800'}`}>{value}</p>
-                    </div>
-                  ))}
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
+                  <GraduationCap className="w-3.5 h-3.5 text-red-500" />Enrollment Details
+                </h3>
+                <div className="bg-white rounded-lg border border-slate-200 p-3 sm:p-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-2.5">
+                    {[
+                      { label: "Student ID", value: detailStudent.studentId || detailStudent.id },
+                      { label: "Faculty", value: detailStudent.faculty },
+                      { label: "Course", value: detailStudent.course },
+                      { label: "Stream", value: detailStudent.stream || "—" },
+                      { label: "Duration", value: detailStudent.duration || "—" },
+                      { label: "University", value: detailStudent.university },
+                      { label: "Academic Year", value: `${detailStudent.startYear}${detailStudent.endYear ? ` – ${detailStudent.endYear}` : ""}` },
+                      { label: "Total Fee", value: `₹${(detailStudent.totalFee || 0).toLocaleString("en-IN")}` },
+                      ...(detailStudent.discountAmount && detailStudent.discountAmount > 0
+                        ? [
+                            { label: "Discount", value: `₹${detailStudent.discountAmount.toLocaleString("en-IN")}`, color: "text-green-700" },
+                            { label: "Effective Fee", value: `₹${((detailStudent.totalFee || 0) - detailStudent.discountAmount).toLocaleString("en-IN")}`, color: "text-blue-700" },
+                          ]
+                        : []),
+                      { label: "Enrolled On", value: detailStudent.enrollmentDate || "—" },
+                    ].map(({ label, value, color }: any) => (
+                      <div key={label}>
+                        <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">{label}</p>
+                        <p className={`text-[11px] lg:text-xs font-bold ${color || 'text-slate-800'} truncate`}>{value}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Documents */}
-              <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-1 h-4 rounded-full bg-red-600" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-800">Documents</span>
-                  <div className="flex-1 h-px bg-slate-200" />
+              {/* ── Fee Summary Strip ── */}
+              <div className="flex flex-wrap gap-2">
+                <div className="flex-1 min-w-[120px] bg-white rounded-lg border border-slate-200 px-3 py-2 text-center">
+                  <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Total Fee</p>
+                  <p className="text-sm font-bold text-slate-800 mt-0.5">₹{(detailStudent.totalFee || 0).toLocaleString("en-IN")}</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {/* Photo - Mandatory */}
-                  {detailStudent.personalDetails?.photoUrl ? (
-                    <div className="flex flex-col items-center p-3 bg-green-50 border border-green-200 rounded-lg h-20 w-28">
-                      <button onClick={() => openBase64(detailStudent.personalDetails!.photoUrl as string)} className="w-10 h-10 rounded bg-green-100 flex items-center justify-center hover:ring-2 ring-green-300 transition-all mb-2">
-                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                      </button>
-                      <p className="text-[9px] font-bold text-green-700 text-center leading-tight mb-2">Photo</p>
-                      <button onClick={() => downloadDocument(detailStudent.personalDetails!.photoUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_Photo.jpg`)} className="px-2 py-1 text-[8px] font-bold text-green-700 bg-white border border-green-300 rounded hover:bg-green-100">Download</button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center p-3 bg-red-50 border border-red-300 rounded-lg h-20 w-28">
-                      <div className="w-10 h-10 rounded bg-red-100 flex items-center justify-center mb-2">
-                        <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                      </div>
-                      <p className="text-[9px] font-bold text-red-700 text-center leading-tight mb-1">Photo</p>
-                      <span className="text-[8px] text-red-600 font-semibold">Missing</span>
-                    </div>
-                  )}
-                  {/* Aadhaar Card - Mandatory */}
-                  {detailStudent.personalDetails?.aadhaarUrl ? (
-                    <div className="flex flex-col items-center p-3 bg-red-50 border border-red-200 rounded-lg h-20 w-28">
-                      <button onClick={() => openBase64(detailStudent.personalDetails!.aadhaarUrl as string)} className="w-10 h-10 rounded bg-red-100 flex items-center justify-center hover:ring-2 ring-red-300 transition-all mb-2">
-                        <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                      </button>
-                      <p className="text-[9px] font-bold text-red-700 text-center leading-tight mb-2">Aadhaar</p>
-                      <button onClick={() => downloadDocument(detailStudent.personalDetails!.aadhaarUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_Aadhaar.jpg`)} className="px-2 py-1 text-[8px] font-bold text-red-700 bg-white border border-red-300 rounded hover:bg-red-100">Download</button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center p-3 bg-red-50 border border-red-300 rounded-lg h-20 w-28">
-                      <div className="w-10 h-10 rounded bg-red-100 flex items-center justify-center mb-2">
-                        <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                      </div>
-                      <p className="text-[9px] font-bold text-red-700 text-center leading-tight mb-1">Aadhaar</p>
-                      <span className="text-[8px] text-red-600 font-semibold">Missing</span>
-                    </div>
-                  )}
-                  {/* SSLC Certificate - Mandatory */}
-                  {detailStudent.academicDetails?.sslc?.certificateUrl ? (
-                    <div className="flex flex-col items-center p-3 bg-blue-50 border border-blue-200 rounded-lg h-20 w-28">
-                      <button onClick={() => openBase64(detailStudent.academicDetails!.sslc!.certificateUrl as string)} className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center hover:ring-2 ring-blue-300 transition-all mb-2">
-                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                      </button>
-                      <p className="text-[9px] font-bold text-blue-700 text-center leading-tight mb-2">SSLC</p>
-                      <button onClick={() => downloadDocument(detailStudent.academicDetails!.sslc!.certificateUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_SSLC.jpg`)} className="px-2 py-1 text-[8px] font-bold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-100">Download</button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center p-3 bg-red-50 border border-red-300 rounded-lg h-20 w-28">
-                      <div className="w-10 h-10 rounded bg-red-100 flex items-center justify-center mb-2">
-                        <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                      </div>
-                      <p className="text-[9px] font-bold text-red-700 text-center leading-tight mb-1">SSLC</p>
-                      <span className="text-[8px] text-red-600 font-semibold">Missing</span>
-                    </div>
-                  )}
-                  {/* HSC Certificate - Mandatory */}
-                  {detailStudent.academicDetails?.plustwo?.certificateUrl ? (
-                    <div className="flex flex-col items-center p-3 bg-blue-50 border border-blue-200 rounded-lg h-20 w-28">
-                      <button onClick={() => openBase64(detailStudent.academicDetails!.plustwo!.certificateUrl as string)} className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center hover:ring-2 ring-blue-300 transition-all mb-2">
-                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                      </button>
-                      <p className="text-[9px] font-bold text-blue-700 text-center leading-tight mb-2">HSC</p>
-                      <button onClick={() => downloadDocument(detailStudent.academicDetails!.plustwo!.certificateUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_HSC.jpg`)} className="px-2 py-1 text-[8px] font-bold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-100">Download</button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center p-3 bg-red-50 border border-red-300 rounded-lg h-20 w-28">
-                      <div className="w-10 h-10 rounded bg-red-100 flex items-center justify-center mb-2">
-                        <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                      </div>
-                      <p className="text-[9px] font-bold text-red-700 text-center leading-tight mb-1">HSC</p>
-                      <span className="text-[8px] text-red-600 font-semibold">Missing</span>
-                    </div>
-                  )}
-                  {/* UG Certificate - Optional */}
-                  {detailStudent.academicDetails?.ug?.certificateUrl ? (
-                    <div className="flex flex-col items-center p-3 bg-blue-50 border border-blue-200 rounded-lg h-20 w-28">
-                      <button onClick={() => openBase64(detailStudent.academicDetails!.ug!.certificateUrl as string)} className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center hover:ring-2 ring-blue-300 transition-all mb-2">
-                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                      </button>
-                      <p className="text-[9px] font-bold text-blue-700 text-center leading-tight mb-2">UG</p>
-                      <button onClick={() => downloadDocument(detailStudent.academicDetails!.ug!.certificateUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_UG.jpg`)} className="px-2 py-1 text-[8px] font-bold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-100">Download</button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center p-3 bg-slate-100 border border-slate-200 rounded-lg h-20 w-28 opacity-60">
-                      <div className="w-10 h-10 rounded bg-slate-200 flex items-center justify-center mb-2">
-                        <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                      </div>
-                      <p className="text-[9px] font-bold text-slate-500 text-center leading-tight mb-1">UG</p>
-                      <span className="text-[8px] text-slate-400">—</span>
-                    </div>
-                  )}
-                  {/* PG Certificate - Optional, only show if uploaded */}
-                  {detailStudent.academicDetails?.pg?.certificateUrl && (
-                    <div className="flex flex-col items-center p-3 bg-blue-50 border border-blue-200 rounded-lg h-20 w-28">
-                      <button onClick={() => openBase64(detailStudent.academicDetails!.pg!.certificateUrl as string)} className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center hover:ring-2 ring-blue-300 transition-all mb-2">
-                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                      </button>
-                      <p className="text-[9px] font-bold text-blue-700 text-center leading-tight mb-2">PG</p>
-                      <button onClick={() => downloadDocument(detailStudent.academicDetails!.pg!.certificateUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_PG.jpg`)} className="px-2 py-1 text-[8px] font-bold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-100">Download</button>
-                    </div>
-                  )}
-                  {/* PhD Certificate - Optional, only show if uploaded */}
-                  {detailStudent.academicDetails?.phd?.certificateUrl && (
-                    <div className="flex flex-col items-center p-3 bg-blue-50 border border-blue-200 rounded-lg h-20 w-28">
-                      <button onClick={() => openBase64(detailStudent.academicDetails!.phd!.certificateUrl as string)} className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center hover:ring-2 ring-blue-300 transition-all mb-2">
-                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                      </button>
-                      <p className="text-[9px] font-bold text-blue-700 text-center leading-tight mb-2">PhD</p>
-                      <button onClick={() => downloadDocument(detailStudent.academicDetails!.phd!.certificateUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_PhD.jpg`)} className="px-2 py-1 text-[8px] font-bold text-blue-700 bg-white border border-blue-300 rounded hover:bg-blue-100">Download</button>
-                    </div>
-                  )}
+                {detailStudent.discountAmount > 0 && (
+                  <div className="flex-1 min-w-[120px] bg-green-50 rounded-lg border border-green-200 px-3 py-2 text-center">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-green-500">Discount</p>
+                    <p className="text-sm font-bold text-green-700 mt-0.5">₹{detailStudent.discountAmount.toLocaleString("en-IN")}</p>
+                  </div>
+                )}
+                <div className="flex-1 min-w-[120px] bg-red-50 rounded-lg border border-red-200 px-3 py-2 text-center">
+                  <p className="text-[9px] font-semibold uppercase tracking-wider text-red-400">Effective Fee</p>
+                  <p className="text-sm font-bold text-red-700 mt-0.5">₹{((detailStudent.totalFee || 0) - (detailStudent.discountAmount || 0)).toLocaleString("en-IN")}</p>
                 </div>
               </div>
 
-              {/* Academic Background - Table Format */}
+              {/* ── Documents ── */}
+              <div>
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
+                  <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  Documents
+                </h3>
+                <div className="bg-white rounded-lg border border-slate-200 p-3">
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                    {/* Photo */}
+                    {detailStudent.personalDetails?.photo ? (
+                      <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-slate-50 border border-slate-100 hover:border-slate-300 transition-colors">
+                        <button onClick={() => openBase64(detailStudent.personalDetails!.photo as string)} className="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors">
+                          <Eye className="w-3.5 h-3.5 text-slate-500" />
+                        </button>
+                        <span className="text-[9px] font-bold text-slate-700">Photo</span>
+                        <button onClick={() => downloadDocument(detailStudent.personalDetails!.photo as string, `${detailStudent.name.replace(/\s+/g, "_")}_Photo.jpg`)} className="text-[8px] font-semibold text-red-600 hover:underline">Download</button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-red-50/50 border border-red-100">
+                        <div className="w-8 h-8 rounded bg-red-100 flex items-center justify-center">
+                          <X className="w-3.5 h-3.5 text-red-300" />
+                        </div>
+                        <span className="text-[9px] font-bold text-red-400">Photo</span>
+                        <span className="text-[8px] text-red-300">Missing</span>
+                      </div>
+                    )}
+                    {/* Aadhaar */}
+                    {detailStudent.personalDetails?.aadhaarUrl ? (
+                      <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-slate-50 border border-slate-100 hover:border-slate-300 transition-colors">
+                        <button onClick={() => openBase64(detailStudent.personalDetails!.aadhaarUrl as string)} className="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors">
+                          <Eye className="w-3.5 h-3.5 text-slate-500" />
+                        </button>
+                        <span className="text-[9px] font-bold text-slate-700">Aadhaar</span>
+                        <button onClick={() => downloadDocument(detailStudent.personalDetails!.aadhaarUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_Aadhaar.jpg`)} className="text-[8px] font-semibold text-red-600 hover:underline">Download</button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-red-50/50 border border-red-100">
+                        <div className="w-8 h-8 rounded bg-red-100 flex items-center justify-center">
+                          <X className="w-3.5 h-3.5 text-red-300" />
+                        </div>
+                        <span className="text-[9px] font-bold text-red-400">Aadhaar</span>
+                        <span className="text-[8px] text-red-300">Missing</span>
+                      </div>
+                    )}
+                    {/* SSLC */}
+                    {detailStudent.academicDetails?.sslc?.certificateUrl ? (
+                      <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-slate-50 border border-slate-100 hover:border-slate-300 transition-colors">
+                        <button onClick={() => openBase64(detailStudent.academicDetails!.sslc!.certificateUrl as string)} className="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors">
+                          <Eye className="w-3.5 h-3.5 text-slate-500" />
+                        </button>
+                        <span className="text-[9px] font-bold text-slate-700">SSLC</span>
+                        <button onClick={() => downloadDocument(detailStudent.academicDetails!.sslc!.certificateUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_SSLC.jpg`)} className="text-[8px] font-semibold text-red-600 hover:underline">Download</button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-red-50/50 border border-red-100">
+                        <div className="w-8 h-8 rounded bg-red-100 flex items-center justify-center">
+                          <X className="w-3.5 h-3.5 text-red-300" />
+                        </div>
+                        <span className="text-[9px] font-bold text-red-400">SSLC</span>
+                        <span className="text-[8px] text-red-300">Missing</span>
+                      </div>
+                    )}
+                    {/* HSC */}
+                    {detailStudent.academicDetails?.plustwo?.certificateUrl ? (
+                      <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-slate-50 border border-slate-100 hover:border-slate-300 transition-colors">
+                        <button onClick={() => openBase64(detailStudent.academicDetails!.plustwo!.certificateUrl as string)} className="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors">
+                          <Eye className="w-3.5 h-3.5 text-slate-500" />
+                        </button>
+                        <span className="text-[9px] font-bold text-slate-700">HSC</span>
+                        <button onClick={() => downloadDocument(detailStudent.academicDetails!.plustwo!.certificateUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_HSC.jpg`)} className="text-[8px] font-semibold text-red-600 hover:underline">Download</button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-red-50/50 border border-red-100">
+                        <div className="w-8 h-8 rounded bg-red-100 flex items-center justify-center">
+                          <X className="w-3.5 h-3.5 text-red-300" />
+                        </div>
+                        <span className="text-[9px] font-bold text-red-400">HSC</span>
+                        <span className="text-[8px] text-red-300">Missing</span>
+                      </div>
+                    )}
+                    {/* UG */}
+                    {detailStudent.academicDetails?.ug?.certificateUrl ? (
+                      <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-slate-50 border border-slate-100 hover:border-slate-300 transition-colors">
+                        <button onClick={() => openBase64(detailStudent.academicDetails!.ug!.certificateUrl as string)} className="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors">
+                          <Eye className="w-3.5 h-3.5 text-slate-500" />
+                        </button>
+                        <span className="text-[9px] font-bold text-slate-700">UG</span>
+                        <button onClick={() => downloadDocument(detailStudent.academicDetails!.ug!.certificateUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_UG.jpg`)} className="text-[8px] font-semibold text-red-600 hover:underline">Download</button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-slate-50 border border-slate-100 opacity-40">
+                        <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center">
+                          <svg className="w-3.5 h-3.5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        </div>
+                        <span className="text-[9px] font-bold text-slate-400">UG</span>
+                        <span className="text-[8px] text-slate-300">N/A</span>
+                      </div>
+                    )}
+                    {/* PG */}
+                    {detailStudent.academicDetails?.pg?.certificateUrl && (
+                      <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-slate-50 border border-slate-100 hover:border-slate-300 transition-colors">
+                        <button onClick={() => openBase64(detailStudent.academicDetails!.pg!.certificateUrl as string)} className="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors">
+                          <Eye className="w-3.5 h-3.5 text-slate-500" />
+                        </button>
+                        <span className="text-[9px] font-bold text-slate-700">PG</span>
+                        <button onClick={() => downloadDocument(detailStudent.academicDetails!.pg!.certificateUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_PG.jpg`)} className="text-[8px] font-semibold text-red-600 hover:underline">Download</button>
+                      </div>
+                    )}
+                    {/* PhD */}
+                    {detailStudent.academicDetails?.phd?.certificateUrl && (
+                      <div className="flex flex-col items-center gap-1 p-2 rounded-lg bg-slate-50 border border-slate-100 hover:border-slate-300 transition-colors">
+                        <button onClick={() => openBase64(detailStudent.academicDetails!.phd!.certificateUrl as string)} className="w-8 h-8 rounded bg-white border border-slate-200 flex items-center justify-center hover:bg-slate-100 transition-colors">
+                          <Eye className="w-3.5 h-3.5 text-slate-500" />
+                        </button>
+                        <span className="text-[9px] font-bold text-slate-700">PhD</span>
+                        <button onClick={() => downloadDocument(detailStudent.academicDetails!.phd!.certificateUrl as string, `${detailStudent.name.replace(/\s+/g, "_")}_PhD.jpg`)} className="text-[8px] font-semibold text-red-600 hover:underline">Download</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Academic Background ── */}
               {(detailStudent.academicDetails?.sslc?.institution || detailStudent.academicDetails?.plustwo?.institution || detailStudent.academicDetails?.ug?.institution || detailStudent.academicDetails?.pg?.institution) && (
                 <div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-1 h-4 rounded-full bg-red-600" />
-                    <span className="text-xs font-bold uppercase tracking-widest text-slate-800">Academic Background</span>
-                    <div className="flex-1 h-px bg-slate-200" />
-                  </div>
-                  <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-                    <table className="w-full text-xs">
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
+                    <BookOpen className="w-3.5 h-3.5 text-red-500" />Academic Background
+                  </h3>
+                  <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+                    <table className="w-full">
                       <thead>
-                        <tr className="bg-slate-100">
-                          <th className="px-3 py-2 text-left font-bold text-slate-700 text-[10px] uppercase">Qualification</th>
-                          <th className="px-3 py-2 text-left font-bold text-slate-700 text-[10px] uppercase">Institution</th>
-                          <th className="px-3 py-2 text-left font-bold text-slate-700 text-[10px] uppercase">Board/University</th>
-                          <th className="px-3 py-2 text-left font-bold text-slate-700 text-[10px] uppercase">Year</th>
-                          <th className="px-3 py-2 text-left font-bold text-slate-700 text-[10px] uppercase">%</th>
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                          <th className="px-3 py-2 text-left text-[9px] font-bold uppercase tracking-wider text-slate-500">Qualification</th>
+                          <th className="px-3 py-2 text-left text-[9px] font-bold uppercase tracking-wider text-slate-500">Institution</th>
+                          <th className="px-3 py-2 text-left text-[9px] font-bold uppercase tracking-wider text-slate-500">Board / Univ.</th>
+                          <th className="px-3 py-2 text-left text-[9px] font-bold uppercase tracking-wider text-slate-500">Year</th>
+                          <th className="px-3 py-2 text-right text-[9px] font-bold uppercase tracking-wider text-slate-500">%</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-slate-100">
                         {detailStudent.academicDetails?.sslc?.institution && (
-                          <tr className="border-t border-slate-100">
-                            <td className="px-3 py-2 font-semibold text-slate-800">SSLC / 10th</td>
-                            <td className="px-3 py-2 text-slate-600">{detailStudent.academicDetails.sslc.institution}</td>
-                            <td className="px-3 py-2 text-slate-600">{detailStudent.academicDetails.sslc.board || "—"}</td>
-                            <td className="px-3 py-2 text-slate-600">{detailStudent.academicDetails.sslc.year || "—"}</td>
-                            <td className="px-3 py-2 font-semibold text-green-600">{detailStudent.academicDetails.sslc.percentage || "—"}%</td>
+                          <tr className="hover:bg-slate-50 transition-colors">
+                            <td className="px-3 py-2 text-[11px] font-semibold text-slate-800">SSLC / 10th</td>
+                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.sslc.institution}</td>
+                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.sslc.board || "—"}</td>
+                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.sslc.year || "—"}</td>
+                            <td className="px-3 py-2 text-[11px] font-bold text-green-600 text-right">{detailStudent.academicDetails.sslc.percentage || "—"}%</td>
                           </tr>
                         )}
                         {detailStudent.academicDetails?.plustwo?.institution && (
-                          <tr className="border-t border-slate-100 bg-slate-50/50">
-                            <td className="px-3 py-2 font-semibold text-slate-800">HSC / 12th</td>
-                            <td className="px-3 py-2 text-slate-600">{detailStudent.academicDetails.plustwo.institution}</td>
-                            <td className="px-3 py-2 text-slate-600">{detailStudent.academicDetails.plustwo.board || detailStudent.academicDetails.plustwo.stream || "—"}</td>
-                            <td className="px-3 py-2 text-slate-600">{detailStudent.academicDetails.plustwo.year || "—"}</td>
-                            <td className="px-3 py-2 font-semibold text-green-600">{detailStudent.academicDetails.plustwo.percentage || "—"}%</td>
+                          <tr className="hover:bg-slate-50 transition-colors">
+                            <td className="px-3 py-2 text-[11px] font-semibold text-slate-800">HSC / 12th</td>
+                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.plustwo.institution}</td>
+                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.plustwo.board || detailStudent.academicDetails.plustwo.stream || "—"}</td>
+                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.plustwo.year || "—"}</td>
+                            <td className="px-3 py-2 text-[11px] font-bold text-green-600 text-right">{detailStudent.academicDetails.plustwo.percentage || "—"}%</td>
                           </tr>
                         )}
                         {detailStudent.academicDetails?.ug?.institution && (
-                          <tr className="border-t border-slate-100">
-                            <td className="px-3 py-2 font-semibold text-slate-800">UG Degree</td>
-                            <td className="px-3 py-2 text-slate-600">{detailStudent.academicDetails.ug.institution}</td>
-                            <td className="px-3 py-2 text-slate-600">{detailStudent.academicDetails.ug.degree || detailStudent.academicDetails.ug.board || "—"}</td>
-                            <td className="px-3 py-2 text-slate-600">{detailStudent.academicDetails.ug.year || "—"}</td>
-                            <td className="px-3 py-2 font-semibold text-green-600">{detailStudent.academicDetails.ug.percentage || "—"}%</td>
+                          <tr className="hover:bg-slate-50 transition-colors">
+                            <td className="px-3 py-2 text-[11px] font-semibold text-slate-800">UG Degree</td>
+                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.ug.institution}</td>
+                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.ug.degree || detailStudent.academicDetails.ug.board || "—"}</td>
+                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.ug.year || "—"}</td>
+                            <td className="px-3 py-2 text-[11px] font-bold text-green-600 text-right">{detailStudent.academicDetails.ug.percentage || "—"}%</td>
                           </tr>
                         )}
                         {detailStudent.academicDetails?.pg?.institution && (
-                          <tr className="border-t border-slate-100 bg-slate-50/50">
-                            <td className="px-3 py-2 font-semibold text-slate-800">PG Degree</td>
-                            <td className="px-3 py-2 text-slate-600">{detailStudent.academicDetails.pg.institution}</td>
-                            <td className="px-3 py-2 text-slate-600">{detailStudent.academicDetails.pg.degree || detailStudent.academicDetails.pg.board || "—"}</td>
-                            <td className="px-3 py-2 text-slate-600">{detailStudent.academicDetails.pg.year || "—"}</td>
-                            <td className="px-3 py-2 font-semibold text-green-600">{detailStudent.academicDetails.pg.percentage || "—"}%</td>
+                          <tr className="hover:bg-slate-50 transition-colors">
+                            <td className="px-3 py-2 text-[11px] font-semibold text-slate-800">PG Degree</td>
+                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.pg.institution}</td>
+                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.pg.degree || detailStudent.academicDetails.pg.board || "—"}</td>
+                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.pg.year || "—"}</td>
+                            <td className="px-3 py-2 text-[11px] font-bold text-green-600 text-right">{detailStudent.academicDetails.pg.percentage || "—"}%</td>
                           </tr>
                         )}
                       </tbody>
@@ -1001,64 +1036,75 @@ export default function StudentsPage() {
                 </div>
               )}
 
-              {/* Personal Information */}
-              <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-1 h-4 rounded-full bg-red-600" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-800">Personal Information</span>
-                  <div className="flex-1 h-px bg-slate-200" />
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: "Date of Birth", value: detailStudent.personalDetails?.dob || "—" },
-                    { label: "Gender", value: detailStudent.personalDetails?.gender || "—" },
-                    { label: "Blood Group", value: detailStudent.personalDetails?.bloodGroup || "—" },
-                    { label: "Father's Name", value: detailStudent.personalDetails?.fatherName || "—" },
-                    { label: "Mother's Name", value: detailStudent.personalDetails?.motherName || "—" },
-                    { label: "Guardian", value: detailStudent.personalDetails?.guardianName || "—" },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
-                      <p className="text-[9px] font-bold uppercase tracking-wider text-red-500 mb-0.5">{label}</p>
-                      <p className="text-xs font-medium text-slate-800 truncate">{value}</p>
+              {/* ── Personal & Family (side by side) ── */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
+                    <User className="w-3.5 h-3.5 text-red-500" />Personal Information
+                  </h3>
+                  <div className="bg-white rounded-lg border border-slate-200 p-3">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                      {[
+                        { label: "Date of Birth", value: detailStudent.personalDetails?.dob || "—" },
+                        { label: "Gender", value: detailStudent.personalDetails?.gender || "—" },
+                        { label: "Blood Group", value: detailStudent.personalDetails?.bloodGroup || "—" },
+                        { label: "Aadhaar No.", value: detailStudent.personalDetails?.aadhaarNumber || "—" },
+                      ].map(({ label, value }) => (
+                        <div key={label}>
+                          <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">{label}</p>
+                          <p className="text-[11px] font-bold text-slate-800">{value}</p>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
+                    <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    Family Details
+                  </h3>
+                  <div className="bg-white rounded-lg border border-slate-200 p-3">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
+                      {[
+                        { label: "Father's Name", value: detailStudent.personalDetails?.fatherName || "—" },
+                        { label: "Mother's Name", value: detailStudent.personalDetails?.motherName || "—" },
+                        { label: "Guardian", value: detailStudent.personalDetails?.guardianName || "—" },
+                        { label: "Guardian Phone", value: detailStudent.personalDetails?.guardianPhone || "—", isPhone: true },
+                      ].map(({ label, value, isPhone }) => (
+                        <div key={label}>
+                          <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">{label}</p>
+                          {isPhone && value !== "—" ? (
+                            <a href={`tel:${value}`} className="text-[11px] font-bold text-red-600 hover:underline">{value}</a>
+                          ) : (
+                            <p className="text-[11px] font-bold text-slate-800 truncate">{value}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Address */}
+              {/* ── Address ── */}
               <div>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-1 h-4 rounded-full bg-red-600" />
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-800">Address & Contact</span>
-                  <div className="flex-1 h-px bg-slate-200" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100 col-span-2">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-red-500 mb-0.5">Complete Address</p>
-                    <p className="text-xs font-medium text-slate-800">
-                      {[detailStudent.personalDetails?.address, detailStudent.personalDetails?.city, detailStudent.personalDetails?.state, detailStudent.personalDetails?.pincode].filter(Boolean).join(", ") || "—"}
-                    </p>
-                  </div>
-                  <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-red-500 mb-0.5">Guardian Phone</p>
-                    {detailStudent.personalDetails?.guardianPhone ? (
-                      <a href={`tel:${detailStudent.personalDetails.guardianPhone}`} className="text-xs font-medium text-red-600 hover:underline">{detailStudent.personalDetails.guardianPhone}</a>
-                    ) : (
-                      <p className="text-xs font-medium text-slate-800">—</p>
-                    )}
-                  </div>
-                  <div className="bg-slate-50 rounded-lg px-3 py-2 border border-slate-100">
-                    <p className="text-[9px] font-bold uppercase tracking-wider text-red-500 mb-0.5">Aadhaar Number</p>
-                    <p className="text-xs font-medium text-slate-800 font-mono">{detailStudent.personalDetails?.aadhaarNumber || "—"}</p>
-                  </div>
+                <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
+                  <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                  Address
+                </h3>
+                <div className="bg-white rounded-lg border border-slate-200 p-3">
+                  <p className="text-[11px] font-bold text-slate-800">
+                    {[detailStudent.personalDetails?.address, detailStudent.personalDetails?.city, detailStudent.personalDetails?.state, detailStudent.personalDetails?.pincode].filter(Boolean).join(", ") || "—"}
+                  </p>
                 </div>
               </div>
 
             </div>
 
-            <div className="px-7 py-4 border-t border-slate-100 flex justify-end bg-slate-50">
-              <button onClick={() => setDetailStudent(null)} className="px-5 py-2 text-xs font-bold text-white gradient-bg rounded-lg hover:shadow-md transition-all">Close</button>
+            {/* ── Footer ── */}
+            <div className="px-4 sm:px-5 py-3 border-t border-slate-200 bg-white flex items-center justify-end">
+              <button onClick={() => setDetailStudent(null)} className="px-4 py-1.5 text-[11px] font-bold text-white gradient-bg rounded-md hover:shadow-md transition-all">Close</button>
             </div>
+
           </div>
         </div>
       )}
@@ -1423,29 +1469,21 @@ export default function StudentsPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="px-4 lg:px-6 py-3 lg:py-4 bg-slate-50 border-b border-slate-100 grid grid-cols-2 sm:grid-cols-4 gap-2 lg:gap-4 text-center flex-shrink-0">
+            <div className="px-4 lg:px-6 py-3 lg:py-4 bg-slate-50 border-b border-slate-100 grid grid-cols-3 gap-2 lg:gap-4 text-center flex-shrink-0">
               <div>
                 <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Total Fee</p>
                 <p className="text-sm lg:text-base font-bold text-slate-800">₹{(paymentsModal.student.totalFee || 0).toLocaleString("en-IN")}</p>
               </div>
-              {(paymentsModal.student.discountAmount && paymentsModal.student.discountAmount > 0) && (
-                <div>
-                  <p className="text-[10px] text-green-600 uppercase tracking-wide mb-1">Discount</p>
-                  <p className="text-sm lg:text-base font-bold text-green-700">₹{paymentsModal.student.discountAmount.toLocaleString("en-IN")}</p>
-                </div>
-              )}
               <div>
                 <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Paid</p>
                 <p className="text-sm lg:text-base font-bold text-blue-700">
-                  ₹{((paidMap[paymentsModal.student.phone] || 0) + (paymentsModal.student.discountAmount || 0)).toLocaleString("en-IN")}
+                  ₹{(paidMap[paymentsModal.student.phone] || 0).toLocaleString("en-IN")}
                 </p>
               </div>
               <div>
                 <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Balance</p>
                 {(() => {
-                  const effectiveFee = (paymentsModal.student.totalFee || 0) - (paymentsModal.student.discountAmount || 0);
-                  const totalPaid = (paidMap[paymentsModal.student.phone] || 0) + (paymentsModal.student.discountAmount || 0);
-                  const due = effectiveFee - (paidMap[paymentsModal.student.phone] || 0);
+                  const due = (paymentsModal.student.totalFee || 0) - (paidMap[paymentsModal.student.phone] || 0);
                   return <p className={`text-sm lg:text-base font-bold ${due <= 0 ? "text-green-700" : "text-red-600"}`}>{due <= 0 ? "✓ Cleared" : `₹${due.toLocaleString("en-IN")}`}</p>;
                 })()}
               </div>
@@ -1462,10 +1500,10 @@ export default function StudentsPage() {
                 <table className="w-full">
                   <thead className="sticky top-0 z-10">
                     <tr className="gradient-bg">
-                      <th className="text-left px-4 lg:px-6 py-2 lg:py-2.5 text-white text-[10px] font-bold uppercase tracking-widest">Receipt</th>
-                      <th className="text-left px-4 lg:px-6 py-2 lg:py-2.5 text-white text-[10px] font-bold uppercase tracking-widest">Date</th>
-                      <th className="text-left px-4 lg:px-6 py-2 lg:py-2.5 text-white text-[10px] font-bold uppercase tracking-widest">Mode</th>
-                      <th className="text-right px-4 lg:px-6 py-2 lg:py-2.5 text-white text-[10px] font-bold uppercase tracking-widest">Amount</th>
+                      <th className="text-left px-4 lg:px-6 py-2 lg:py-2.5 text-xs font-semibold text-white uppercase tracking-widest">Receipt</th>
+                      <th className="text-left px-4 lg:px-6 py-2 lg:py-2.5 text-xs font-semibold text-white uppercase tracking-widest">Date</th>
+                      <th className="text-left px-4 lg:px-6 py-2 lg:py-2.5 text-xs font-semibold text-white uppercase tracking-widest">Mode</th>
+                      <th className="text-right px-4 lg:px-6 py-2 lg:py-2.5 text-xs font-semibold text-white uppercase tracking-widest">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1553,28 +1591,78 @@ export default function StudentsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Faculty *</label>
-                  <select
-                    value={formData.faculty}
-                    onChange={(e) => setFormData({ ...formData, faculty: e.target.value, course: "", stream: "", duration: "", endYear: "" })}
-                    required
-                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
-                  >
-                    <option value="">Select Faculty</option>
-                    {getFaculties().map((f) => (
-                      <option key={f} value={f}>{f}</option>
-                    ))}
-                  </select>
+                  {customFaculty ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        autoFocus
+                        value={formData.faculty}
+                        onChange={(e) => setFormData({ ...formData, faculty: e.target.value, course: "", stream: "", duration: "", endYear: "" })}
+                        required
+                        className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
+                        placeholder="Type faculty name"
+                      />
+                      <button type="button" onClick={() => { setCustomFaculty(false); setCustomCourse(false); setCustomStream(false); setFormData({ ...formData, faculty: "", course: "", stream: "", duration: "", endYear: "" }); }}
+                        className="px-2 text-xs text-slate-600 hover:text-red-500 whitespace-nowrap">✕</button>
+                    </div>
+                  ) : (
+                    <select
+                      value={formData.faculty}
+                      onChange={(e) => {
+                        if (e.target.value === "__other__") {
+                          setCustomFaculty(true);
+                          setCustomCourse(true);
+                          setCustomStream(true);
+                          setFormData({ ...formData, faculty: "", course: "", stream: "", duration: "", endYear: "" });
+                        } else {
+                          setCustomCourse(false);
+                          setCustomStream(false);
+                          setFormData({ ...formData, faculty: e.target.value, course: "", stream: "", duration: "", endYear: "" });
+                        }
+                      }}
+                      required
+                      className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
+                    >
+                      <option value="">Select Faculty</option>
+                      {getFaculties().map((f) => (
+                        <option key={f} value={f}>{f}</option>
+                      ))}
+                      <option value="__other__">Other (Type custom)</option>
+                    </select>
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Course *</label>
-                  {formData.faculty && formData.faculty !== "Custom/Other" ? (
+                  {customCourse ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={formData.course}
+                        onChange={(e) => setFormData({ ...formData, course: e.target.value, stream: "", duration: "", endYear: "" })}
+                        required
+                        className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
+                        placeholder="Type course name"
+                      />
+                      {!customFaculty && (
+                        <button type="button" onClick={() => { setCustomCourse(false); setCustomStream(false); setFormData({ ...formData, course: "", stream: "", duration: "", endYear: "" }); }}
+                          className="px-2 text-xs text-slate-600 hover:text-red-500 whitespace-nowrap">✕</button>
+                      )}
+                    </div>
+                  ) : formData.faculty ? (
                     <select
                       value={formData.course}
                       onChange={(e) => {
-                        const course = e.target.value;
-                        const dur = formData.faculty && course ? getDuration(formData.faculty, course) : "";
-                        const end = dur ? calcEndYear(dur, formData.startYear) : "";
-                        setFormData({ ...formData, course, stream: "", duration: dur, endYear: end });
+                        if (e.target.value === "__other__") {
+                          setCustomCourse(true);
+                          setCustomStream(true);
+                          setFormData({ ...formData, course: "", stream: "", duration: "", endYear: "" });
+                        } else {
+                          const course = e.target.value;
+                          const dur = formData.faculty && course ? getDuration(formData.faculty, course) : "";
+                          const end = dur ? calcEndYear(dur, formData.startYear) : "";
+                          setCustomStream(false);
+                          setFormData({ ...formData, course, stream: "", duration: dur, endYear: end });
+                        }
                       }}
                       required
                       className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
@@ -1583,6 +1671,7 @@ export default function StudentsPage() {
                       {availableCourses.map((c) => (
                         <option key={c} value={c}>{c}</option>
                       ))}
+                      <option value="__other__">Other (Type custom)</option>
                     </select>
                   ) : (
                     <select disabled className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-500 appearance-none">
@@ -1596,10 +1685,32 @@ export default function StudentsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Stream / Specialization *</label>
-                  {formData.course && formData.faculty !== "Custom/Other" ? (
+                  {customStream ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={formData.stream}
+                        onChange={(e) => setFormData({ ...formData, stream: e.target.value })}
+                        required
+                        className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
+                        placeholder="Type stream / specialization"
+                      />
+                      {!customCourse && (
+                        <button type="button" onClick={() => { setCustomStream(false); setFormData({ ...formData, stream: "" }); }}
+                          className="px-2 text-xs text-slate-600 hover:text-red-500 whitespace-nowrap">✕</button>
+                      )}
+                    </div>
+                  ) : formData.course ? (
                     <select
                       value={formData.stream}
-                      onChange={(e) => setFormData({ ...formData, stream: e.target.value })}
+                      onChange={(e) => {
+                        if (e.target.value === "__other__") {
+                          setCustomStream(true);
+                          setFormData({ ...formData, stream: "" });
+                        } else {
+                          setFormData({ ...formData, stream: e.target.value });
+                        }
+                      }}
                       required
                       className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
                     >
@@ -1607,6 +1718,7 @@ export default function StudentsPage() {
                       {availableStreams.map((s) => (
                         <option key={s} value={s}>{s}</option>
                       ))}
+                      <option value="__other__">Other (Type custom)</option>
                     </select>
                   ) : (
                     <select disabled className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-500 appearance-none">
@@ -1655,43 +1767,27 @@ export default function StudentsPage() {
                 </div>
               </div>
 
-              {/* Custom/Other: Free text for course, stream, duration */}
-              {formData.faculty === "Custom/Other" && (
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">Course *</label>
-                    <input type="text" value={formData.course} required placeholder="Enter course"
-                      onChange={(e) => setFormData({ ...formData, course: e.target.value })}
-                      className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">Stream *</label>
-                    <input type="text" value={formData.stream} required placeholder="Enter stream"
-                      onChange={(e) => setFormData({ ...formData, stream: e.target.value })}
-                      className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">Duration *</label>
-                    <input type="text" value={formData.duration} required placeholder="e.g., 3 Years"
-                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                      className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
-                    />
-                  </div>
-                </div>
-              )}
-
               {/* Duration, Start Year, End Year */}
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Duration</label>
-                  <input
-                    type="text"
-                    value={formData.duration || autoDuration}
-                    readOnly
-                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-700"
-                  />
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Duration{customCourse ? " *" : ""}</label>
+                  {customCourse ? (
+                    <input
+                      type="text"
+                      value={formData.duration}
+                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                      required
+                      placeholder="e.g., 3 Years"
+                      className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={formData.duration || autoDuration}
+                      readOnly
+                      className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-700"
+                    />
+                  )}
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Start Year *</label>

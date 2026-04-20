@@ -25,6 +25,10 @@ interface PersonalDetails {
   pincode?: string;
   aadhaarNumber?: string;
   aadhaarUrl?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+  employmentType?: string;
+  yearsOfExperience?: string;
 }
 
 interface AcademicLevel {
@@ -214,7 +218,7 @@ export default function StudentProfilePage() {
   const initials = name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
 
   // Profile completion
-  const pFields: (keyof PersonalDetails)[] = ["photo","dob","gender","bloodGroup","fatherName","motherName","aadhaarNumber","aadhaarUrl","address","city","state","pincode"];
+  const pFields: (keyof PersonalDetails)[] = ["photo","dob","gender","bloodGroup","fatherName","motherName","aadhaarNumber","aadhaarUrl","address","city","state","pincode","guardianName","guardianPhone","employmentType"];
   const personalPct = Math.round((pFields.filter(f => personal[f]).length / pFields.length) * 100);
   const sslcDone = ["institution","board","year","percentage"].filter(f => academic.sslc?.[f as keyof AcademicLevel]).length;
   const plusDone = ["institution","board","stream","year","percentage"].filter(f => academic.plustwo?.[f as keyof AcademicLevel]).length;
@@ -464,6 +468,16 @@ export default function StudentProfilePage() {
             </div>
           </div>
 
+          {/* Guardian */}
+          <div className="border-t border-slate-100 pt-4">
+            <p className="text-[9px] font-extrabold uppercase tracking-widest text-red-600 mb-3">Family &amp; Guardian Details</p>
+            <div className="grid grid-cols-2 gap-3">
+              <Input label="Guardian Name" value={personal.guardianName || ""} onChange={v => up("guardianName", v)} disabled={!canEdit} />
+              <Input label="Guardian Contact Number" value={personal.guardianPhone || ""}
+                onChange={v => up("guardianPhone", v.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" disabled={!canEdit} />
+            </div>
+          </div>
+
           {/* Address */}
           <div className="border-t border-slate-100 pt-4">
             <p className="text-[9px] font-extrabold uppercase tracking-widest text-red-600 mb-3 flex items-center gap-1.5">
@@ -476,6 +490,19 @@ export default function StudentProfilePage() {
               <Input label="City / Town *" value={personal.city || ""} onChange={v => up("city", v)} disabled={!canEdit} />
               <Input label="State *" value={personal.state || ""} onChange={v => up("state", v)} disabled={!canEdit} />
               <Input label="PIN Code *" value={personal.pincode || ""} onChange={v => up("pincode", v.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" disabled={!canEdit} />
+            </div>
+          </div>
+
+          {/* Employment */}
+          <div className="border-t border-slate-100 pt-4">
+            <p className="text-[9px] font-extrabold uppercase tracking-widest text-red-600 mb-3">Employment Details</p>
+            <div className="grid grid-cols-3 gap-3">
+              <Input label="Employment Type" type="select" options={["Not Employed", "Government", "Private", "Self Employed", "Others"]}
+                value={personal.employmentType || ""} onChange={v => { up("employmentType", v); if (v === "Not Employed") up("yearsOfExperience", ""); }} disabled={!canEdit} />
+              {personal.employmentType && personal.employmentType !== "Not Employed" && (
+                <Input label="Years of Experience" value={personal.yearsOfExperience || ""}
+                  onChange={v => up("yearsOfExperience", v.replace(/\D/g, "").slice(0, 2))} inputMode="numeric" placeholder="e.g., 5" disabled={!canEdit} />
+              )}
             </div>
           </div>
 

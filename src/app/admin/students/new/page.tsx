@@ -55,10 +55,47 @@ async function generateStudentId(): Promise<string> {
   return `${prefix}${nextSerial}`;
 }
 
+// Generate receipt/voucher ID with shared global serial
+// RCP[YY][MonthCode][6-Digit Serial] - for standard payments
+// VCH[YY][MonthCode][6-Digit Serial] - for discounts/vouchers
+// Both share the same serial counter (continuous, never resets)
+async function generateReceiptId(type: "payment" | "discount" = "payment"): Promise<string> {
+  const now = new Date();
+  const year = String(now.getFullYear()).slice(-2);
+  const monthCode = MONTH_CODES[now.getMonth()];
+  const prefix = type === "discount" ? "VCH" : "RCP";
+
+  // Query all payments to find the highest serial number across ALL prefixes
+  const snapshot = await getDocs(collection(db, "payments"));
+  let maxSerial = 0;
+
+  snapshot.forEach((doc) => {
+    const receiptNumber = doc.data().receiptNumber as string;
+    if (receiptNumber && (receiptNumber.startsWith("RCP") || receiptNumber.startsWith("VCH"))) {
+      // Extract serial from [Prefix][YY][Month][Serial] format
+      // Prefix = 3 chars, YY = 2 chars, Month = 2 chars, Serial = 6 chars
+      const serialPart = receiptNumber.slice(7); // After 3-char prefix + 2 digit year + 2 char month
+      if (serialPart && serialPart.length === 6) {
+        const serial = parseInt(serialPart, 10);
+        if (!isNaN(serial) && serial > maxSerial) {
+          maxSerial = serial;
+        }
+      }
+    }
+  });
+
+  const nextSerial = maxSerial + 1;
+  const paddedSerial = String(nextSerial).padStart(6, "0");
+  return `${prefix}${year}${monthCode}${paddedSerial}`;
+}
+
 export default function NewStudentPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [customUniversity, setCustomUniversity] = useState(false);
+  const [customFaculty, setCustomFaculty] = useState(false);
+  const [customCourse, setCustomCourse] = useState(false);
+  const [customStream, setCustomStream] = useState(false);
   const currentYear = new Date().getFullYear();
   
   const [formData, setFormData] = useState({
@@ -117,10 +154,12 @@ export default function NewStudentPage() {
         return;
       }
 
-      await setDoc(doc(db, "students", phone), {
+      const phoneKey = "+91" + phone.replace(/\D/g, "");
+
+      await setDoc(doc(db, "students", phoneKey), {
         name,
         email,
-        phone,
+        phone: phoneKey,
         faculty,
         course,
         stream: stream || "",
@@ -135,6 +174,33 @@ export default function NewStudentPage() {
         profileEditEnabled: true,
         createdAt: serverTimestamp(),
       });
+
+      // If discount exists, create a discount payment record
+      const discountAmt = parseFloat(discountAmount || "0");
+      if (discountAmt > 0) {
+        const discountReceiptId = await generateReceiptId("discount");
+        await setDoc(doc(db, "payments", discountReceiptId), {
+          receiptNumber: discountReceiptId,
+          amountPaid: discountAmt,
+          paymentDate: enrollmentDate,
+          paymentMode: "Discount",
+          installmentNumber: 0,
+          totalInstallments: 0,
+          balanceAmount: parseFloat(totalFee) - discountAmt,
+          transactionRef: "Administrative Discount",
+          remarks: `Discount given to ${name}`,
+          studentPhone: phoneKey,
+          studentName: name,
+          studentEmail: email,
+          university,
+          course,
+          stream: stream || "",
+          program: course,
+          totalFee: parseFloat(totalFee),
+          createdAt: serverTimestamp(),
+          isDiscount: true,
+        });
+      }
 
       router.push("/admin/students");
     } catch (err) {
@@ -219,55 +285,154 @@ export default function NewStudentPage() {
           <div className="grid grid-cols-4 gap-4">
             <div>
               <label className={labelClass}>Faculty *</label>
-              <select
-                value={formData.faculty}
-                onChange={(e) => setFormData({ ...formData, faculty: e.target.value, course: "", stream: "" })}
-                className={inputClass}
-                required
-              >
-                <option value="">Select Faculty</option>
-                {getFaculties().map((f) => (
-                  <option key={f} value={f}>{f}</option>
-                ))}
-              </select>
+              {customFaculty ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    autoFocus
+                    value={formData.faculty}
+                    onChange={(e) => setFormData({ ...formData, faculty: e.target.value, course: "", stream: "", duration: "", endYear: "" })}
+                    required
+                    className={inputClass}
+                    placeholder="Type faculty name"
+                  />
+                  <button type="button" onClick={() => { setCustomFaculty(false); setCustomCourse(false); setCustomStream(false); setFormData({ ...formData, faculty: "", course: "", stream: "", duration: "", endYear: "" }); }}
+                    className="px-2 text-xs text-slate-600 hover:text-red-500 whitespace-nowrap">✕</button>
+                </div>
+              ) : (
+                <select
+                  value={formData.faculty}
+                  onChange={(e) => {
+                    if (e.target.value === "__other__") {
+                      setCustomFaculty(true);
+                      setCustomCourse(true);
+                      setCustomStream(true);
+                      setFormData({ ...formData, faculty: "", course: "", stream: "", duration: "", endYear: "" });
+                    } else {
+                      setCustomCourse(false);
+                      setCustomStream(false);
+                      setFormData({ ...formData, faculty: e.target.value, course: "", stream: "", duration: "", endYear: "" });
+                    }
+                  }}
+                  className={inputClass}
+                  required
+                >
+                  <option value="">Select Faculty</option>
+                  {getFaculties().map((f) => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                  <option value="__other__">Other (Type custom)</option>
+                </select>
+              )}
             </div>
             <div>
               <label className={labelClass}>Course *</label>
-              <select
-                value={formData.course}
-                onChange={(e) => setFormData({ ...formData, course: e.target.value, stream: "" })}
-                className={inputClass}
-                disabled={!formData.faculty}
-                required
-              >
-                <option value="">Select Course</option>
-                {availableCourses.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              {customCourse ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.course}
+                    onChange={(e) => setFormData({ ...formData, course: e.target.value, stream: "", duration: "", endYear: "" })}
+                    required
+                    className={inputClass}
+                    placeholder="Type course name"
+                  />
+                  {!customFaculty && (
+                    <button type="button" onClick={() => { setCustomCourse(false); setCustomStream(false); setFormData({ ...formData, course: "", stream: "", duration: "", endYear: "" }); }}
+                      className="px-2 text-xs text-slate-600 hover:text-red-500 whitespace-nowrap">✕</button>
+                  )}
+                </div>
+              ) : formData.faculty ? (
+                <select
+                  value={formData.course}
+                  onChange={(e) => {
+                    if (e.target.value === "__other__") {
+                      setCustomCourse(true);
+                      setCustomStream(true);
+                      setFormData({ ...formData, course: "", stream: "", duration: "", endYear: "" });
+                    } else {
+                      const course = e.target.value;
+                      const dur = formData.faculty && course ? getDuration(formData.faculty, course) : "";
+                      const end = dur ? calcEndYear(dur, formData.startYear) : "";
+                      setCustomStream(false);
+                      setFormData({ ...formData, course, stream: "", duration: dur, endYear: end });
+                    }
+                  }}
+                  className={inputClass}
+                  required
+                >
+                  <option value="">Select Course</option>
+                  {availableCourses.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                  <option value="__other__">Other (Type custom)</option>
+                </select>
+              ) : (
+                <select disabled className={`${inputClass} bg-slate-50 text-slate-500`}>
+                  <option>Select faculty first</option>
+                </select>
+              )}
             </div>
             <div>
               <label className={labelClass}>Stream / Specialization</label>
-              <select
-                value={formData.stream}
-                onChange={(e) => setFormData({ ...formData, stream: e.target.value })}
-                className={inputClass}
-                disabled={!formData.course}
-              >
-                <option value="">Select Stream</option>
-                {availableStreams.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+              {customStream ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={formData.stream}
+                    onChange={(e) => setFormData({ ...formData, stream: e.target.value })}
+                    className={inputClass}
+                    placeholder="Type stream / specialization"
+                  />
+                  {!customCourse && (
+                    <button type="button" onClick={() => { setCustomStream(false); setFormData({ ...formData, stream: "" }); }}
+                      className="px-2 text-xs text-slate-600 hover:text-red-500 whitespace-nowrap">✕</button>
+                  )}
+                </div>
+              ) : formData.course ? (
+                <select
+                  value={formData.stream}
+                  onChange={(e) => {
+                    if (e.target.value === "__other__") {
+                      setCustomStream(true);
+                      setFormData({ ...formData, stream: "" });
+                    } else {
+                      setFormData({ ...formData, stream: e.target.value });
+                    }
+                  }}
+                  className={inputClass}
+                >
+                  <option value="">Select Stream</option>
+                  {availableStreams.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                  <option value="__other__">Other (Type custom)</option>
+                </select>
+              ) : (
+                <select disabled className={`${inputClass} bg-slate-50 text-slate-500`}>
+                  <option>Select course first</option>
+                </select>
+              )}
             </div>
             <div>
-              <label className={labelClass}>Duration</label>
-              <input
-                type="text"
-                value={formData.duration || autoDuration}
-                readOnly
-                className={`${inputClass} bg-slate-50`}
-              />
+              <label className={labelClass}>Duration{customCourse ? " *" : ""}</label>
+              {customCourse ? (
+                <input
+                  type="text"
+                  value={formData.duration}
+                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                  required
+                  placeholder="e.g., 3 Years"
+                  className={inputClass}
+                />
+              ) : (
+                <input
+                  type="text"
+                  value={formData.duration || autoDuration}
+                  readOnly
+                  className={`${inputClass} bg-slate-50`}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -281,36 +446,41 @@ export default function NewStudentPage() {
           <div className="grid grid-cols-4 gap-4">
             <div>
               <label className={labelClass}>University *</label>
-              <select
-                value={customUniversity ? "__custom__" : formData.university}
-                onChange={(e) => {
-                  if (e.target.value === "__custom__") {
-                    setCustomUniversity(true);
-                    setFormData({ ...formData, university: "" });
-                  } else {
-                    setCustomUniversity(false);
-                    setFormData({ ...formData, university: e.target.value });
-                  }
-                }}
-                className={inputClass}
-                required
-              >
-                <option value="">Select University</option>
-                <option value="Mumbai University">Mumbai University</option>
-                <option value="Delhi University">Delhi University</option>
-                <option value="Bangalore University">Bangalore University</option>
-                <option value="Pune University">Pune University</option>
-                <option value="__custom__">+ Add Custom University</option>
-              </select>
-              {customUniversity && (
-                <input
-                  type="text"
+              {customUniversity ? (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    autoFocus
+                    value={formData.university}
+                    onChange={(e) => setFormData({ ...formData, university: e.target.value })}
+                    required
+                    className={inputClass}
+                    placeholder="Type university name"
+                  />
+                  <button type="button" onClick={() => { setCustomUniversity(false); setFormData({ ...formData, university: "" }); }}
+                    className="px-2 text-xs text-slate-600 hover:text-red-500 whitespace-nowrap">✕</button>
+                </div>
+              ) : (
+                <select
                   value={formData.university}
-                  onChange={(e) => setFormData({ ...formData, university: e.target.value })}
-                  className={`${inputClass} mt-2`}
-                  placeholder="Enter university name"
+                  onChange={(e) => {
+                    if (e.target.value === "__other__") {
+                      setCustomUniversity(true);
+                      setFormData({ ...formData, university: "" });
+                    } else {
+                      setFormData({ ...formData, university: e.target.value });
+                    }
+                  }}
+                  className={inputClass}
                   required
-                />
+                >
+                  <option value="">Select University</option>
+                  <option value="Capital University">Capital University</option>
+                  <option value="Asian International University">Asian International University</option>
+                  <option value="North East Frontier Technical University">North East Frontier Technical University</option>
+                  <option value="Niilm University">Niilm University</option>
+                  <option value="__other__">Other (Type custom)</option>
+                </select>
               )}
             </div>
             <div>

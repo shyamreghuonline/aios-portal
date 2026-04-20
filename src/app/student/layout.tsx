@@ -18,7 +18,7 @@ const navItems = [
   { href: "/student", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/student/payments", label: "My Payments", icon: CreditCard },
   { href: "/student/pay", label: "Make Payment", icon: QrCode },
-  { href: "/student/profile", label: "My Profile", icon: UserCircle },
+  // { href: "/student/profile", label: "My Profile", icon: UserCircle },
 ];
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {

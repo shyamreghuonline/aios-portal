@@ -137,7 +137,101 @@ export default function ReceiptPage() {
               .italic { font-style: italic; }
               footer { padding: 16px 32px; }
               .rounded { border-radius: 4px; }
-              @media print { body { padding: 0; } }
+              .rounded-lg { border-radius: 8px; }
+              .print-header { display: block; }
+              .relative { position: relative; }
+              .absolute { position: absolute; }
+              .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+              .overflow-hidden { overflow: hidden; }
+              .border-2 { border-width: 2px; }
+              .border-r { border-right-width: 1px; }
+              .border-t { border-top-width: 1px; }
+              .border-red-100 { border-color: #fee2e2; }
+              .border-red-200 { border-color: #fecaca; }
+              .border-red-700 { border-color: #b91c1c; }
+              .bg-red-50 { background-color: #fef2f2; }
+              .pointer-events-none { pointer-events: none; }
+              @media print {
+                body { padding: 0; }
+                .print-header { display: none !important; }
+                .receipt {
+                  margin-top: 150px !important;
+                  position: relative !important;
+                  overflow: hidden !important;
+                  border: 3px solid #8B0000 !important;
+                }
+                .receipt::before {
+                  content: '' !important;
+                  position: absolute !important;
+                  top: 0; left: 0; right: 0; bottom: 0 !important;
+                  background: repeating-linear-gradient(45deg, #8B0000 0px, #8B0000 1px, transparent 1px, transparent 10px) !important;
+                  opacity: 0.03 !important;
+                  pointer-events: none !important;
+                  z-index: 1 !important;
+                }
+                .receipt::after {
+                  content: 'RECEIPT' !important;
+                  position: absolute !important;
+                  top: 50% !important;
+                  left: 50% !important;
+                  transform: translate(-50%, -50%) rotate(-30deg) !important;
+                  font-size: 120px !important;
+                  font-weight: bold !important;
+                  color: #8B0000 !important;
+                  opacity: 0.04 !important;
+                  pointer-events: none !important;
+                  z-index: 1 !important;
+                }
+                header {
+                  border-top: 4px solid #8B0000 !important;
+                  border-bottom: 4px solid #dc2626 !important;
+                  background: linear-gradient(90deg, #fef2f2 0%, #ffffff 50%, #fef2f2 100%) !important;
+                  position: relative !important;
+                  z-index: 2 !important;
+                }
+                footer {
+                  border-top: 2px solid #dc2626 !important;
+                  border-bottom: 4px solid #8B0000 !important;
+                  position: relative !important;
+                  z-index: 2 !important;
+                  min-height: 80px !important;
+                  padding: 16px 32px !important;
+                }
+                footer p { display: none !important; }
+                footer::before {
+                  content: 'Authorized Signature' !important;
+                  position: absolute !important;
+                  top: 20px !important;
+                  right: 50px !important;
+                  font-size: 10px !important;
+                  color: #374151 !important;
+                  border-top: 1px solid #374151 !important;
+                  padding-top: 6px !important;
+                  width: 140px !important;
+                  text-align: center !important;
+                }
+                table {
+                  border: 2px solid #8B0000 !important;
+                  border-radius: 8px !important;
+                  overflow: hidden !important;
+                }
+                th {
+                  background-color: #8B0000 !important;
+                  color: white !important;
+                  border-right: 1px solid #b91c1c !important;
+                }
+                td {
+                  border-right: 1px solid #fee2e2 !important;
+                  background-color: #fef2f2 !important;
+                }
+                .bg-gray-100 {
+                  background: linear-gradient(90deg, #f3f4f6 0%, #ffffff 50%, #f3f4f6 100%) !important;
+                  border: 2px solid #8B0000 !important;
+                  border-radius: 8px !important;
+                  padding: 12px 16px !important;
+                }
+                * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+              }
             </style>
           </head>
           <body>${content}<script>window.print();window.close();<\/script></body>
@@ -186,10 +280,10 @@ export default function ReceiptPage() {
       </div>
 
       <div ref={printRef} className="flex justify-center">
-        <div className="receipt bg-white w-[800px] border-2 border-red-800" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
-          {/* Header */}
+        <div className="receipt bg-white w-[800px] border-2 border-red-800 print:mt-32" style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}>
+          {/* Header - Hidden when printing for letterhead */}
           <header className="px-8 py-6 flex justify-between items-start">
-            <div>
+            <div className="print-header">
               <h1 className="text-2xl font-bold text-gray-900">AIOS EDU</h1>
               <p className="text-xs text-gray-600 mt-1">Institute of Advanced Management &amp; Technology</p>
               <p className="text-xs text-gray-500">Education Beyond Boundaries</p>
@@ -295,15 +389,9 @@ export default function ReceiptPage() {
             )}
           </div>
 
-          {/* Footer */}
+          {/* Footer - Minimal in portal, enhanced in print */}
           <footer className="px-8 py-4">
-            <p className="text-center text-xs text-gray-500 italic mb-3">
-              This is a system-generated document and requires no physical signature.
-            </p>
-            <div className="w-full h-px mb-3" style={{ backgroundColor: '#8B0000' }}></div>
-            <p className="text-center text-xs text-gray-600">
-              +91 74111 33333 | 080 - 2222 2228 | info@aiosedu.com | www.aiosedu.com
-            </p>
+            <div className="w-full h-px" style={{ backgroundColor: '#8B0000' }}></div>
           </footer>
         </div>
       </div>

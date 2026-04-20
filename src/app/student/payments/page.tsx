@@ -140,13 +140,13 @@ export default function StudentPaymentsPage() {
                   {/* Table Header */}
                   <thead className="gradient-bg">
                     <tr>
-                      <th className="text-center px-4 py-3 text-[11px] font-bold text-white uppercase tracking-wider w-16">#</th>
-                      <th className="text-left px-4 py-3 text-[11px] font-bold text-white uppercase tracking-wider">Receipt #</th>
-                      <th className="text-left px-4 py-3 text-[11px] font-bold text-white uppercase tracking-wider">Paid On</th>
-                      <th className="text-left px-4 py-3 text-[11px] font-bold text-white uppercase tracking-wider">Amount</th>
-                      <th className="text-center px-4 py-3 text-[11px] font-bold text-white uppercase tracking-wider">Status</th>
-                      <th className="text-left px-4 py-3 text-[11px] font-bold text-white uppercase tracking-wider">Due After</th>
-                      <th className="text-center px-4 py-3 text-[11px] font-bold text-white uppercase tracking-wider">Actions</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider w-12">S.No</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Receipt #</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Paid On</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Amount</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Status</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Due After</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
                   
@@ -163,30 +163,30 @@ export default function StudentPaymentsPage() {
                       return (
                         <tr key={payment.id} className="hover:bg-slate-50 transition-colors">
                           <td className="px-4 py-3 text-center">
-                            <span className="text-xs font-bold text-slate-700">{payment.installmentNumber || index + 1}</span>
+                            <span className="text-[11px] lg:text-xs font-bold text-slate-700">{index + 1}</span>
                           </td>
                           <td className="px-4 py-3">
                             <Link 
                               href={`/student/payments/${payment.id}`}
-                              className="font-mono text-xs text-blue-700 font-medium hover:text-blue-900 hover:underline transition-colors"
+                              className="font-mono text-[11px] lg:text-xs text-blue-700 font-medium hover:text-blue-900 hover:underline transition-colors"
                             >
                               {payment.receiptNumber}
                             </Link>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="text-xs text-slate-700">{payment.paymentDate}</span>
+                            <span className="text-[11px] lg:text-xs text-slate-700">{payment.paymentDate}</span>
                           </td>
                           <td className="px-4 py-3">
-                            <span className="font-bold text-slate-900">₹{payment.amountPaid.toLocaleString("en-IN")}</span>
+                            <span className="font-bold text-[11px] lg:text-xs text-slate-900">₹{payment.amountPaid.toLocaleString("en-IN")}</span>
                           </td>
                           <td className="px-4 py-3 text-center">
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-800 text-[10px] font-bold">
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-800 text-[11px] lg:text-xs font-bold">
                               <span className="w-1.5 h-1.5 rounded-full bg-green-600"></span>
                               Paid
                             </span>
                           </td>
                           <td className="px-4 py-3">
-                            <span className={`font-bold ${dueAfter > 0 ? "text-red-700" : "text-green-700"}`}>
+                            <span className={`font-bold text-[11px] lg:text-xs ${dueAfter > 0 ? "text-red-700" : "text-green-700"}`}>
                               ₹{dueAfter.toLocaleString("en-IN")}
                             </span>
                           </td>

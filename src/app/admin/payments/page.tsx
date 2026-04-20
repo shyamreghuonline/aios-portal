@@ -101,14 +101,14 @@ export default function PaymentsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="gradient-bg border-b-2 border-red-900">
-                <th className="text-left px-3 py-2.5 font-bold text-white text-sm uppercase tracking-widest">Receipt</th>
-                <th className="text-left px-3 py-2.5 font-bold text-white text-sm uppercase tracking-widest">Student</th>
-                <th className="text-left px-3 py-2.5 font-bold text-white text-sm uppercase tracking-widest">University</th>
-                <th className="text-left px-3 py-2.5 font-bold text-white text-sm uppercase tracking-widest">Course</th>
-                <th className="text-left px-3 py-2.5 font-bold text-white text-sm uppercase tracking-widest">Amount</th>
-                <th className="text-left px-3 py-2.5 font-bold text-white text-sm uppercase tracking-widest">Inst.</th>
-                <th className="text-left px-3 py-2.5 font-bold text-white text-sm uppercase tracking-widest">Balance</th>
-                <th className="text-left px-3 py-2.5 font-bold text-white text-sm uppercase tracking-widest whitespace-nowrap">Date</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold text-white uppercase tracking-widest">Receipt</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold text-white uppercase tracking-widest">Student</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold text-white uppercase tracking-widest">University</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold text-white uppercase tracking-widest">Course</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold text-white uppercase tracking-widest">Amount</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold text-white uppercase tracking-widest">Inst.</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold text-white uppercase tracking-widest">Balance</th>
+                <th className="text-left px-3 py-2.5 text-xs font-semibold text-white uppercase tracking-widest whitespace-nowrap">Date</th>
               </tr>
             </thead>
             <tbody>
@@ -117,35 +117,35 @@ export default function PaymentsPage() {
                   <td className="px-3 py-2.5">
                     <Link
                       href={`/admin/payments/${payment.id}`}
-                      className="text-sm text-blue-700 hover:text-blue-900 hover:underline transition-colors"
+                      className="text-[11px] lg:text-xs text-blue-700 hover:text-blue-900 hover:underline transition-colors"
                     >
                       {payment.receiptNumber}
                     </Link>
                   </td>
                   <td className="px-3 py-2.5">
-                    <p className="text-slate-900 text-sm">{payment.studentName}</p>
-                    <p className="text-sm text-slate-600">{payment.phone}</p>
+                    <p className="text-slate-900 text-[11px] lg:text-xs">{payment.studentName}</p>
+                    <p className="text-[11px] lg:text-xs text-slate-600">{payment.phone}</p>
                   </td>
                   <td className="px-3 py-2.5">
-                    <span className="text-sm text-slate-900">
+                    <span className="text-[11px] lg:text-xs text-slate-900">
                       {payment.university || "—"}
                     </span>
                   </td>
-                  <td className="px-3 py-2.5 text-sm text-slate-900">
+                  <td className="px-3 py-2.5 text-[11px] lg:text-xs text-slate-900">
                     {(payment.course || payment.program || "").replace(/\s*\([^)]*\)/g, "")}{payment.stream ? `-${payment.stream}` : ""}
                   </td>
-                  <td className="px-3 py-2.5 font-bold text-green-600 text-sm">
+                  <td className="px-3 py-2.5 font-bold text-green-600 text-[11px] lg:text-xs">
                     ₹{(payment.amountPaid || 0).toLocaleString("en-IN")}
                   </td>
-                  <td className="px-3 py-2.5 text-slate-700 text-sm">
+                  <td className="px-3 py-2.5 text-slate-700 text-[11px] lg:text-xs">
                     #{payment.installmentNumber}
                   </td>
-                  <td className="px-3 py-2.5 text-sm">
+                  <td className="px-3 py-2.5 text-[11px] lg:text-xs">
                     <span className={`${(payment.balanceAmount || 0) > 0 ? "text-red-600" : "text-green-600"}`}>
                       ₹{(payment.balanceAmount || 0).toLocaleString("en-IN")}
                     </span>
                   </td>
-                  <td className="px-3 py-2.5 text-slate-600 text-sm whitespace-nowrap">{payment.paymentDate}</td>
+                  <td className="px-3 py-2.5 text-slate-600 text-[11px] lg:text-xs whitespace-nowrap">{payment.paymentDate}</td>
                 </tr>
               ))}
             </tbody>
