@@ -118,9 +118,9 @@ export default function ReceiptPage() {
               .w-full { width: 100%; }
               .border-2 { border-width: 2px; }
               .border-red-800 { border-color: #8B0000; }
-              .text-gray-500 { color: #6b7280; }
-              .text-gray-600 { color: #4b5563; }
-              .text-gray-900 { color: #111827; }
+              .text-gray-500 { color: #000000; }
+              .text-gray-600 { color: #000000; }
+              .text-gray-900 { color: #000000; }
               .text-white { color: white; }
               .text-red-600 { color: #dc2626; }
               .text-green-600 { color: #16a34a; }
@@ -169,46 +169,51 @@ export default function ReceiptPage() {
                   pointer-events: none !important;
                   z-index: 1 !important;
                 }
-                .receipt::after {
-                  content: 'RECEIPT' !important;
-                  position: absolute !important;
-                  top: 50% !important;
-                  left: 50% !important;
-                  transform: translate(-50%, -50%) rotate(-30deg) !important;
-                  font-size: 120px !important;
-                  font-weight: bold !important;
-                  color: #8B0000 !important;
-                  opacity: 0.04 !important;
-                  pointer-events: none !important;
-                  z-index: 1 !important;
-                }
                 header {
                   border-top: 4px solid #8B0000 !important;
                   border-bottom: 4px solid #dc2626 !important;
                   background: linear-gradient(90deg, #fef2f2 0%, #ffffff 50%, #fef2f2 100%) !important;
                   position: relative !important;
                   z-index: 2 !important;
+                  display: flex !important;
+                  justify-content: flex-end !important;
+                }
+                header > div:last-child {
+                  text-align: right !important;
                 }
                 footer {
                   border-top: 2px solid #dc2626 !important;
                   border-bottom: 4px solid #8B0000 !important;
                   position: relative !important;
                   z-index: 2 !important;
-                  min-height: 80px !important;
-                  padding: 16px 32px !important;
                 }
-                footer p { display: none !important; }
-                footer::before {
-                  content: 'Authorized Signature' !important;
-                  position: absolute !important;
-                  top: 20px !important;
-                  right: 50px !important;
-                  font-size: 10px !important;
-                  color: #374151 !important;
-                  border-top: 1px solid #374151 !important;
-                  padding-top: 6px !important;
-                  width: 140px !important;
+                .print-signature {
+                  display: block !important;
+                }
+                .print-signature > div {
+                  padding-top: 32px !important;
+                }
+                .print-signature > div > div {
+                  width: 200px !important;
+                }
+                .print-signature .border-b-2 {
+                  border-bottom: 2px solid #1f2937 !important;
+                  height: 40px !important;
+                  margin-bottom: 8px !important;
+                }
+                .print-signature p:first-of-type {
+                  font-size: 11px !important;
+                  font-weight: 600 !important;
+                  letter-spacing: 0.05em !important;
                   text-align: center !important;
+                  text-transform: uppercase !important;
+                  color: #000000 !important;
+                }
+                .print-signature p:last-of-type {
+                  font-size: 9px !important;
+                  color: #6b7280 !important;
+                  text-align: center !important;
+                  margin-top: 4px !important;
                 }
                 table {
                   border: 2px solid #8B0000 !important;
@@ -231,6 +236,13 @@ export default function ReceiptPage() {
                   padding: 12px 16px !important;
                 }
                 * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                /* Make all text black for readability */
+                p, span, div, td, th, h1, h2, h3, h4, h5, h6 { color: #000000 !important; }
+                /* Keep white text on red backgrounds */
+                th, .text-white { color: #ffffff !important; }
+                /* Keep red text for status */
+                .text-red-600 { color: #dc2626 !important; }
+                .text-green-600 { color: #16a34a !important; }
               }
             </style>
           </head>
@@ -354,19 +366,19 @@ export default function ReceiptPage() {
               </table>
 
               {/* Summary */}
-              <div className="flex justify-end mt-4">
-                <div className="w-64">
-                  <div className="flex justify-between py-1 text-sm">
+              <div className="flex justify-end mt-6">
+                <div className="w-64 space-y-2">
+                  <div className="flex justify-between py-2 text-sm">
                     <span className="text-gray-600">Total Fee:</span>
                     <span className="text-gray-900 font-semibold">₹{(payment.totalFee || 0).toLocaleString("en-IN")}</span>
                   </div>
-                  <div className="flex justify-between py-1 text-sm">
+                  <div className="flex justify-between py-2 text-sm">
                     <span className="text-gray-600">Balance:</span>
                     <span className={`font-semibold ${payment.balanceAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>₹{payment.balanceAmount.toLocaleString("en-IN")}</span>
                   </div>
-                  <div className="flex justify-between py-2 mt-2 px-3" style={{ backgroundColor: '#8B0000' }}>
+                  <div className="flex justify-between py-3 mt-4 px-3 rounded" style={{ backgroundColor: '#8B0000' }}>
                     <span className="text-white font-semibold text-sm">Amount Received:</span>
-                    <span className="text-white font-bold text-sm">₹{payment.amountPaid.toLocaleString("en-IN")}</span>
+                    <span className="text-white font-bold text-lg">₹{payment.amountPaid.toLocaleString("en-IN")}</span>
                   </div>
                 </div>
               </div>
@@ -380,16 +392,32 @@ export default function ReceiptPage() {
               </div>
             </section>
 
-            {/* Remarks */}
-            {payment.remarks && (
-              <section className="mb-6">
-                <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Remarks</h2>
-                <p className="text-sm text-gray-700 bg-gray-50 p-3">{payment.remarks}</p>
-              </section>
-            )}
+            {/* Remarks & Signature Row */}
+            <section className="flex justify-between items-start gap-8 mb-6">
+              {/* Remarks - Left Side */}
+              {payment.remarks ? (
+                <div className="flex-1">
+                  <h2 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Remarks</h2>
+                  <p className="text-sm text-gray-700 bg-gray-50 p-3">{payment.remarks}</p>
+                </div>
+              ) : (
+                <div className="flex-1"></div>
+              )}
+
+              {/* Authorized Signature - Right Side, Elegant Style */}
+              <div className="print-signature hidden print:block">
+                <div className="pt-8">
+                  <div className="w-48">
+                    <div className="border-b-2 border-gray-800 h-10 mb-2"></div>
+                    <p className="text-xs text-center font-semibold tracking-wide">Authorized Signature</p>
+                    <p className="text-[10px] text-center text-gray-500 mt-1">AIOS EDU</p>
+                  </div>
+                </div>
+              </div>
+            </section>
           </div>
 
-          {/* Footer - Minimal in portal, enhanced in print */}
+          {/* Footer */}
           <footer className="px-8 py-4">
             <div className="w-full h-px" style={{ backgroundColor: '#8B0000' }}></div>
           </footer>
