@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Users, IndianRupee, Receipt, AlertTriangle, TrendingUp, CalendarDays, Plus, ArrowRight } from "lucide-react";
+import { Users, IndianRupee, Receipt, AlertTriangle, TrendingUp, CalendarDays, Plus, ArrowRight, X, Phone, CheckCircle2, Edit3, Trash2, Loader2, Save } from "lucide-react";
 import Link from "next/link";
 
 type PeriodTab = "today" | "week" | "month";
@@ -34,6 +34,13 @@ export default function AdminDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [periodTab, setPeriodTab] = useState<PeriodTab>("today");
+  
+  // Follow-ups data state
+  const [students, setStudents] = useState<any[]>([]);
+  const [payments, setPayments] = useState<any[]>([]);
+  
+  // Student detail modal state
+  const [detailStudent, setDetailStudent] = useState<any>(null);
 
   useEffect(() => {
     async function fetchStats() {
@@ -62,6 +69,12 @@ export default function AdminDashboard() {
           id: doc.id,
           ...doc.data(),
         })) as Payment[];
+        
+        // Fetch students and payments for follow-ups
+        const studentsData = studentsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const paymentsData = paymentsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        setStudents(studentsData);
+        setPayments(paymentsData);
 
         setStats({
           totalStudents,
@@ -159,13 +172,110 @@ export default function AdminDashboard() {
 
       {/* Two Column Layout: Follow-Up List + Action Center */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left: Follow-Up List */}
-        <FollowUpList loading={loading} />
-        
+        <ActionCenter>
+          <FollowUpList 
+            loading={loading} 
+            students={students} 
+            payments={payments}
+            onViewStudent={setDetailStudent}
+          />
+        </ActionCenter>
         {/* Right: Action Center with Payment Report */}
         <ActionCenter>
           <PaymentReport stats={stats} loading={loading} periodTab={periodTab} setPeriodTab={setPeriodTab} />
         </ActionCenter>
+      </div>
+      
+      {/* Student Detail Modal */}
+      {detailStudent && (
+        <StudentDetailModal 
+          student={detailStudent} 
+          onClose={() => setDetailStudent(null)} 
+        />
+      )}
+    </div>
+  );
+}
+
+// Student Detail Modal Component
+function StudentDetailModal({ student, onClose }: { student: any; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 bg-gradient-to-r from-red-700 to-red-600 text-white px-5 py-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold">{student.name}</h2>
+            <p className="text-sm text-white/80">{student.studentId || student.id}</p>
+          </div>
+          <button onClick={onClose} className="text-white/80 hover:text-white transition-colors">
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+        
+        {/* Body */}
+        <div className="p-5 space-y-4">
+          {/* Contact Info */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-slate-50 rounded-lg p-3">
+              <p className="text-xs text-slate-500 uppercase">Phone</p>
+              <a href={`tel:${student.phone}`} className="text-sm font-medium text-blue-700 hover:underline">
+                {student.phone}
+              </a>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-3">
+              <p className="text-xs text-slate-500 uppercase">Email</p>
+              <p className="text-sm font-medium text-slate-900">{student.email || "—"}</p>
+            </div>
+          </div>
+          
+          {/* Course Info */}
+          <div className="bg-slate-50 rounded-lg p-3">
+            <p className="text-xs text-slate-500 uppercase mb-2">Course Details</p>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div><span className="text-slate-500">Faculty:</span> <span className="font-medium">{student.faculty || "—"}</span></div>
+              <div><span className="text-slate-500">Course:</span> <span className="font-medium">{student.course || "—"}</span></div>
+              <div><span className="text-slate-500">Stream:</span> <span className="font-medium">{student.stream || "—"}</span></div>
+              <div><span className="text-slate-500">Duration:</span> <span className="font-medium">{student.duration || "—"}</span></div>
+            </div>
+          </div>
+          
+          {/* Fee Info */}
+          <div className="bg-red-50 rounded-lg p-3 border border-red-100">
+            <p className="text-xs text-red-600 uppercase mb-2">Fee Information</p>
+            <div className="grid grid-cols-3 gap-3 text-sm">
+              <div>
+                <p className="text-slate-500">Total Fee</p>
+                <p className="font-bold text-slate-900">₹{(student.totalFee || 0).toLocaleString("en-IN")}</p>
+              </div>
+              <div>
+                <p className="text-slate-500">Discount</p>
+                <p className="font-bold text-green-700">₹{(student.discountAmount || 0).toLocaleString("en-IN")}</p>
+              </div>
+              <div>
+                <p className="text-red-600">Due Amount</p>
+                <p className="font-bold text-red-700">₹{((student.totalFee || 0) - (student.discountAmount || 0)).toLocaleString("en-IN")}</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Actions */}
+          <div className="flex gap-3 pt-2">
+            <Link 
+              href={`/admin/students?id=${student.id}`}
+              className="flex-1 bg-red-600 text-white text-center py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors"
+            >
+              View Full Profile
+            </Link>
+            <a 
+              href={`tel:${student.phone}`}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors"
+            >
+              <Phone className="w-4 h-4" />
+              Call
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -282,6 +392,25 @@ function PaymentReport({ stats, loading, periodTab, setPeriodTab }: {
   );
 }
 
+// Parse date safely
+function parseLocalDate(dateValue: string | { toDate: () => Date } | unknown): Date {
+  if (!dateValue) return new Date();
+  if (typeof dateValue === "object" && dateValue !== null && "toDate" in dateValue && typeof (dateValue as { toDate: () => Date }).toDate === "function") {
+    return (dateValue as { toDate: () => Date }).toDate();
+  }
+  if (typeof dateValue === "string") {
+    const [year, month, day] = dateValue.split("-");
+    if (!year || !month || !day) return new Date(dateValue);
+    return new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+  }
+  return new Date();
+}
+
+function daysBetween(date1: Date, date2: Date): number {
+  const oneDay = 24 * 60 * 60 * 1000;
+  return Math.round(Math.abs((date1.getTime() - date2.getTime()) / oneDay));
+}
+
 // Action Center Container
 function ActionCenter({ children }: { children: React.ReactNode }) {
   return (
@@ -306,44 +435,60 @@ interface FollowUpStudent {
   daysOverdue: number;
   lastPaymentDays: number;
   status: FollowUpTab;
+  studentData?: any;
 }
 
-function FollowUpList({ loading }: { loading: boolean }) {
+function FollowUpList({ loading, students, payments, onViewStudent }: { loading: boolean; students: any[]; payments: any[]; onViewStudent: (student: any) => void }) {
   const [activeTab, setActiveTab] = useState<FollowUpTab>("pending");
+  const today = new Date();
 
-  // Mock data for demonstration
-  const followUpData: FollowUpStudent[] = [
-    {
-      id: "1",
-      studentName: "Alice Green",
-      studentId: "AIOS0012",
-      phone: "+91-9876543210",
-      dueAmount: 15000,
-      daysOverdue: 15,
-      lastPaymentDays: 20,
-      status: "pending",
-    },
-    {
-      id: "2",
-      studentName: "Bob Brown",
-      studentId: "AIOS0025",
-      phone: "+91-9876543211",
-      dueAmount: 35000,
-      daysOverdue: 200,
-      lastPaymentDays: 15,
-      status: "inprogress",
-    },
-    {
-      id: "3",
-      studentName: "Charlie Davis",
-      studentId: "AIOS0038",
-      phone: "+91-9876543212",
-      dueAmount: 9000,
-      daysOverdue: 20,
-      lastPaymentDays: 9,
-      status: "pending",
-    },
-  ];
+  // Calculate real follow-up data from students and payments
+  const followUpData: FollowUpStudent[] = useMemo(() => {
+    if (!students.length || !payments.length) return [];
+    
+    const items: FollowUpStudent[] = [];
+    
+    students.forEach((student) => {
+      // Get payments for this student
+      const studentPayments = payments.filter((p) => p.studentPhone === student.phone);
+      
+      // Calculate total cash collected (ignore discounts)
+      const totalCashCollected = studentPayments.reduce(
+        (sum, p) => sum + parseFloat(p.amountPaid as string || "0"), 
+        0
+      );
+      
+      // Due amount = Total Fee - Cash Collected
+      const dueAmount = (student.totalFee || 0) - totalCashCollected;
+      
+      // Find last payment date
+      const lastPayment = studentPayments
+        .filter(p => p.paymentDate)
+        .sort((a, b) => 
+          parseLocalDate(b.paymentDate).getTime() - parseLocalDate(a.paymentDate).getTime()
+        )[0];
+      
+      const lastPaymentDate = lastPayment?.paymentDate || student.createdAt || new Date().toISOString();
+      const daysOverdue = daysBetween(today, parseLocalDate(lastPaymentDate));
+      
+      // Only include students with due amount > 0 and overdue > 20 days
+      if (dueAmount > 0 && daysOverdue > 20) {
+        items.push({
+          id: student.id,
+          studentName: student.name,
+          studentId: student.studentId || student.id,
+          phone: student.phone,
+          dueAmount,
+          daysOverdue,
+          lastPaymentDays: daysOverdue,
+          status: "pending", // Default to pending for dashboard view
+          studentData: student,
+        });
+      }
+    });
+    
+    return items.sort((a, b) => b.daysOverdue - a.daysOverdue);
+  }, [students, payments]);
 
   const filteredData = followUpData.filter((s) => s.status === activeTab);
 
@@ -430,7 +575,12 @@ function FollowUpList({ loading }: { loading: boolean }) {
                       </p>
                     </td>
                     <td className="py-3 px-2">
-                      <span className="text-xs font-mono text-blue-700">{student.studentId}</span>
+                      <button 
+                        onClick={() => student.studentData && onViewStudent(student.studentData)}
+                        className="text-xs font-mono text-blue-700 hover:text-blue-900 hover:underline cursor-pointer"
+                      >
+                        {student.studentId}
+                      </button>
                     </td>
                     <td className="py-3 px-2">
                       <a 

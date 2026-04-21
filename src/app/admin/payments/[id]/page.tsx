@@ -28,6 +28,20 @@ interface Payment {
   remarks: string;
 }
 
+function formatPaymentDate(dateString: string): string {
+  // Parse YYYY-MM-DD format without timezone issues
+  if (!dateString) return "—";
+  const [year, month, day] = dateString.split("-");
+  if (!year || !month || !day) return dateString;
+  
+  const monthNames = ["January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"];
+  const monthIndex = parseInt(month, 10) - 1;
+  const monthName = monthNames[monthIndex] || month;
+  
+  return `${day} ${monthName} ${year}`;
+}
+
 function numberToWords(num: number): string {
   if (num === 0) return "Zero";
   const ones = ["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine",
@@ -308,7 +322,7 @@ export default function ReceiptPage() {
 
           {/* Metadata Strip */}
           <div className="bg-gray-100 px-8 py-2 flex gap-8 text-sm">
-            <span><span className="text-gray-500">Date:</span> <span className="font-semibold text-gray-900">{new Date(payment.paymentDate).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}</span></span>
+            <span><span className="text-gray-500">Date:</span> <span className="font-semibold text-gray-900">{formatPaymentDate(payment.paymentDate)}</span></span>
             <span><span className="text-gray-500">Payment Mode:</span> <span className="font-semibold text-gray-900">{payment.paymentMode}</span></span>
             {payment.transactionRef && <span><span className="text-gray-500">Ref:</span> <span className="font-mono text-gray-900">{payment.transactionRef}</span></span>}
           </div>
@@ -366,17 +380,17 @@ export default function ReceiptPage() {
               </table>
 
               {/* Summary */}
-              <div className="flex justify-end mt-6">
-                <div className="w-64 space-y-2">
-                  <div className="flex justify-between py-2 text-sm">
+              <div className="flex justify-end mt-4">
+                <div className="w-64 space-y-1">
+                  <div className="flex justify-between py-1 text-sm">
                     <span className="text-gray-600">Total Fee:</span>
                     <span className="text-gray-900 font-semibold">₹{(payment.totalFee || 0).toLocaleString("en-IN")}</span>
                   </div>
-                  <div className="flex justify-between py-2 text-sm">
+                  <div className="flex justify-between py-1 text-sm">
                     <span className="text-gray-600">Balance:</span>
                     <span className={`font-semibold ${payment.balanceAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>₹{payment.balanceAmount.toLocaleString("en-IN")}</span>
                   </div>
-                  <div className="flex justify-between py-3 mt-4 px-3 rounded" style={{ backgroundColor: '#8B0000' }}>
+                  <div className="flex justify-between py-2 mt-2 px-3 rounded" style={{ backgroundColor: '#8B0000' }}>
                     <span className="text-white font-semibold text-sm">Amount Received:</span>
                     <span className="text-white font-bold text-lg">₹{payment.amountPaid.toLocaleString("en-IN")}</span>
                   </div>

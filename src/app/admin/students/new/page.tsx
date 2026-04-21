@@ -192,6 +192,7 @@ export default function NewStudentPage() {
           studentPhone: phoneKey,
           studentName: name,
           studentEmail: email,
+          studentId,
           university,
           course,
           stream: stream || "",

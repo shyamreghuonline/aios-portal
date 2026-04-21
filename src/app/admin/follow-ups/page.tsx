@@ -36,7 +36,7 @@ interface Payment {
   id: string;
   studentPhone: string;
   amountPaid: number | string;
-  paymentDate: string;
+  paymentDate: string | { toDate: () => Date };
   paymentMode?: string;
   isDiscount?: boolean;
   createdAt?: unknown;
@@ -57,6 +57,26 @@ interface FollowUpRecord {
   stream?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// Parse date string safely without timezone issues
+function parseLocalDate(dateValue: string | { toDate: () => Date } | unknown): Date {
+  if (!dateValue) return new Date();
+  
+  // Handle Firebase Timestamp object
+  if (typeof dateValue === "object" && dateValue !== null && "toDate" in dateValue && typeof (dateValue as { toDate: () => Date }).toDate === "function") {
+    return (dateValue as { toDate: () => Date }).toDate();
+  }
+  
+  // Handle string dates
+  if (typeof dateValue === "string") {
+    const [year, month, day] = dateValue.split("-");
+    if (!year || !month || !day) return new Date(dateValue);
+    // Create date treating the string as local time
+    return new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+  }
+  
+  return new Date();
 }
 
 // Calculate days between dates
@@ -140,17 +160,24 @@ export default function FollowUpsPage() {
       const dueAmount = (student.totalFee || 0) - totalCashCollected;
 
       // Find last payment date
-      const lastPayment = studentPayments.sort((a, b) => 
-        new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
-      )[0];
+      const lastPayment = studentPayments
+        .filter(p => p.paymentDate)
+        .sort((a, b) => 
+          parseLocalDate(b.paymentDate).getTime() - parseLocalDate(a.paymentDate).getTime()
+        )[0];
 
       const lastPaymentDate = lastPayment?.paymentDate || student.createdAt || new Date().toISOString();
-      const daysOverdue = daysBetween(today, new Date(lastPaymentDate));
+      const daysOverdue = daysBetween(today, parseLocalDate(lastPaymentDate));
 
       // Check if student qualifies for follow-up (>20 days AND due amount > 0)
       if (daysOverdue > 20 && dueAmount > 0) {
         // Check if there's an existing follow-up record
         const existingRecord = followUpRecords.find(r => r.studentId === student.id);
+
+        // Convert lastPaymentDate to ISO string format for storage
+        const lastPaymentDateStr = lastPaymentDate && typeof lastPaymentDate === "object" && "toDate" in lastPaymentDate 
+          ? (lastPaymentDate as { toDate: () => Date }).toDate().toISOString()
+          : String(lastPaymentDate);
 
         if (existingRecord) {
           // Update existing record with fresh calculations
@@ -158,7 +185,7 @@ export default function FollowUpsPage() {
             ...existingRecord,
             dueAmount,
             daysOverdue,
-            lastPaymentDate,
+            lastPaymentDate: lastPaymentDateStr,
           });
         } else {
           // Create new pending record
@@ -170,7 +197,7 @@ export default function FollowUpsPage() {
             studentEmail: student.email,
             dueAmount,
             daysOverdue,
-            lastPaymentDate,
+            lastPaymentDate: lastPaymentDateStr,
             status: "pending",
             remarks: [],
             course: student.course,

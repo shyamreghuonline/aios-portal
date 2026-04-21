@@ -423,6 +423,7 @@ export default function StudentsPage() {
           studentPhone: phoneKey,
           studentName: formData.name,
           studentEmail: formData.email,
+          studentId: studentId,
           university: formData.university,
           course: formData.course,
           stream: formData.stream || "",
@@ -805,8 +806,8 @@ export default function StudentsPage() {
 
               {/* ── Enrollment Details ── */}
               <div>
-                <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
-                  <GraduationCap className="w-3.5 h-3.5 text-red-500" />Enrollment Details
+                <h3 className="text-xs font-medium uppercase tracking-wider text-black mb-2 flex items-center gap-2">
+                  <GraduationCap className="w-4 h-4 text-red-500" />Enrollment Details
                 </h3>
                 <div className="bg-white rounded-lg border border-slate-200 p-3 sm:p-4">
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-2.5">
@@ -856,8 +857,8 @@ export default function StudentsPage() {
 
               {/* ── Documents ── */}
               <div>
-                <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
-                  <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <h3 className="text-xs font-medium uppercase tracking-wider text-black mb-2 flex items-center gap-2">
+                  <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                   Documents
                 </h3>
                 <div className="bg-white rounded-lg border border-slate-200 p-3">
@@ -979,8 +980,8 @@ export default function StudentsPage() {
               {/* ── Academic Background ── */}
               {(detailStudent.academicDetails?.sslc?.institution || detailStudent.academicDetails?.plustwo?.institution || detailStudent.academicDetails?.ug?.institution || detailStudent.academicDetails?.pg?.institution) && (
                 <div>
-                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
-                    <BookOpen className="w-3.5 h-3.5 text-red-500" />Academic Background
+                  <h3 className="text-xs font-medium uppercase tracking-wider text-black mb-2 flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-red-500" />Academic Background
                   </h3>
                   <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
                     <table className="w-full">
@@ -1422,6 +1423,7 @@ export default function StudentsPage() {
                         studentPhone: detailStudent.phone,
                         studentName: detailStudent.name,
                         studentEmail: detailStudent.email,
+                        studentId: detailStudent.studentId || "",
                         program: detailStudent.course,
                         university: detailStudent.university || "",
                         course: detailStudent.course || "",

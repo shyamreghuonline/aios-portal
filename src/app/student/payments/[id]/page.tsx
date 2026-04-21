@@ -33,6 +33,20 @@ function cleanCourseName(name: string): string {
   return name.replace(/\s*\([^)]*\)/g, "").trim();
 }
 
+function formatPaymentDate(dateString: string): string {
+  // Parse YYYY-MM-DD format without timezone issues
+  if (!dateString) return "—";
+  const [year, month, day] = dateString.split("-");
+  if (!year || !month || !day) return dateString;
+  
+  const monthNames = ["January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"];
+  const monthIndex = parseInt(month, 10) - 1;
+  const monthName = monthNames[monthIndex] || month;
+  
+  return `${day} ${monthName} ${year}`;
+}
+
 function numberToWords(num: number): string {
   if (num === 0) return "Zero";
   const ones = ["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine",
@@ -207,7 +221,7 @@ export default function ReceiptPage() {
 
           {/* Metadata Strip */}
           <div className="bg-gray-100 px-8 py-2 flex gap-8 text-sm">
-            <span><span className="text-gray-500">Date:</span> <span className="font-semibold text-gray-900">{new Date(payment.paymentDate).toLocaleDateString("en-IN", { day: "2-digit", month: "long", year: "numeric" })}</span></span>
+            <span><span className="text-gray-500">Date:</span> <span className="font-semibold text-gray-900">{formatPaymentDate(payment.paymentDate)}</span></span>
             <span><span className="text-gray-500">Payment Mode:</span> <span className="font-semibold text-gray-900">{payment.paymentMode}</span></span>
             {payment.transactionRef && <span><span className="text-gray-500">Ref:</span> <span className="font-mono text-gray-900">{payment.transactionRef}</span></span>}
           </div>

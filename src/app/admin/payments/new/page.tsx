@@ -159,6 +159,7 @@ export default function NewPaymentPage() {
         studentName: selectedStudent.name,
         studentEmail: selectedStudent.email,
         studentPhone: selectedStudent.phone,
+        studentId: selectedStudent.studentId || "",
         phone: selectedStudent.phone,
         program: selectedStudent.course || selectedStudent.program || "",
         university: selectedStudent.university || "",
