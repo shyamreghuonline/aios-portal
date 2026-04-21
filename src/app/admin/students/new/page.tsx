@@ -203,6 +203,22 @@ export default function NewStudentPage() {
         });
       }
 
+      // Send welcome SMS to student
+      try {
+        await fetch("/api/send-sms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone: phoneKey,
+            studentName: name,
+            studentId: studentId,
+          }),
+        });
+      } catch (smsErr) {
+        console.error("Error sending SMS:", smsErr);
+        // Don't block the flow if SMS fails
+      }
+
       router.push("/admin/students");
     } catch (err) {
       console.error("Error adding student:", err);

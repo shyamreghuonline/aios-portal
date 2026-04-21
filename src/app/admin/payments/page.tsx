@@ -10,6 +10,7 @@ interface Payment {
   id: string;
   receiptNumber: string;
   studentName: string;
+  studentId?: string;
   phone: string;
   program: string;
   university?: string;
@@ -53,6 +54,7 @@ export default function PaymentsPage() {
     (p) =>
       p.studentName?.toLowerCase().includes(search.toLowerCase()) ||
       p.receiptNumber?.toLowerCase().includes(search.toLowerCase()) ||
+      p.studentId?.toLowerCase().includes(search.toLowerCase()) ||
       p.phone?.includes(search)
   );
 
@@ -79,7 +81,7 @@ export default function PaymentsPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by name, receipt no, or phone..."
+          placeholder="Search by name, receipt, phone, or student ID..."
           className="w-full pl-9 pr-4 py-2.5 text-sm rounded-lg border border-slate-200 bg-white focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all"
         />
       </div>
