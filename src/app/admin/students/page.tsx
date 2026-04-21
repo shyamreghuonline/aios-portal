@@ -842,10 +842,10 @@ export default function StudentsPage() {
                   <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">Total Fee</p>
                   <p className="text-sm font-bold text-slate-800 mt-0.5">₹{(detailStudent.totalFee || 0).toLocaleString("en-IN")}</p>
                 </div>
-                {detailStudent.discountAmount > 0 && (
+                {(detailStudent.discountAmount || 0) > 0 && (
                   <div className="flex-1 min-w-[120px] bg-green-50 rounded-lg border border-green-200 px-3 py-2 text-center">
                     <p className="text-[9px] font-semibold uppercase tracking-wider text-green-500">Discount</p>
-                    <p className="text-sm font-bold text-green-700 mt-0.5">₹{detailStudent.discountAmount.toLocaleString("en-IN")}</p>
+                    <p className="text-sm font-bold text-green-700 mt-0.5">₹{(detailStudent.discountAmount || 0).toLocaleString("en-IN")}</p>
                   </div>
                 )}
                 <div className="flex-1 min-w-[120px] bg-red-50 rounded-lg border border-red-200 px-3 py-2 text-center">
