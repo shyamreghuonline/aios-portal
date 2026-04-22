@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { CreditCard, Search, Loader2, Receipt, Plus, Printer } from "lucide-react";
+import { CreditCard, Search, Loader2, Receipt, Plus, Printer, Clock, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 interface Payment {
@@ -73,6 +73,23 @@ export default function PaymentsPage() {
           Record Payment
         </Link>
       </div>
+
+      {/* Pending Payments Alert */}
+      <Link
+        href="/admin/payments/pending"
+        className="flex items-center justify-between p-4 mb-4 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
+            <Clock className="w-5 h-5 text-amber-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-amber-900">Pending Payment Approvals</p>
+            <p className="text-sm text-amber-700">Review and approve student payment screenshots</p>
+          </div>
+        </div>
+        <ArrowRight className="w-5 h-5 text-amber-600" />
+      </Link>
 
       {/* Search */}
       <div className="relative mb-4">

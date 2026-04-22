@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   Phone,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -20,7 +21,8 @@ const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/students", label: "Students", icon: Users },
   { href: "/admin/payments", label: "Payments", icon: CreditCard },
-  { href: "/admin/follow-ups", label: "Follow-Ups", icon: Phone, badge: true },
+  { href: "/admin/payments/pending", label: "Pending Approvals", icon: Clock, badge: true },
+  { href: "/admin/follow-ups", label: "Follow-Ups", icon: Phone },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

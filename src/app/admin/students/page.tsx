@@ -218,6 +218,8 @@ export default function StudentsPage() {
       const map: Record<string, number> = {};
       snap.docs.forEach((d) => {
         const p = d.data();
+        // Skip discount payments - they don't count as cash collected
+        if (p.isDiscount || p.paymentMode === "Discount") return;
         const phone = (p.studentPhone as string) || (p.phone as string);
         if (phone) map[phone] = (map[phone] || 0) + (p.amountPaid as number || 0);
       });
@@ -432,6 +434,22 @@ export default function StudentsPage() {
           createdAt: serverTimestamp(),
           isDiscount: true,
         });
+      }
+
+      // Send welcome SMS to student
+      try {
+        await fetch("/api/send-sms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone: phoneKey,
+            studentName: formData.name,
+            studentId: studentId,
+          }),
+        });
+      } catch (smsErr) {
+        console.error("Error sending SMS:", smsErr);
+        // Don't block the flow if SMS fails
       }
 
       setFormData({
