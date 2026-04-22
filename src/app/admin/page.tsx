@@ -353,15 +353,15 @@ function PaymentReport({ stats, loading, periodTab, setPeriodTab }: {
         ))}
         <div className="ml-auto flex items-center gap-4">
           <div className="text-right">
-            <p className="text-[10px] text-slate-700 uppercase tracking-wide">Discount</p>
+            <p className="text-xs text-slate-700 uppercase tracking-wide">Discount</p>
             <p className="text-sm font-bold text-amber-600">₹{periodDiscount.toLocaleString("en-IN")}</p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] text-slate-700 uppercase tracking-wide">Collected</p>
+            <p className="text-xs text-slate-700 uppercase tracking-wide">Collected</p>
             <p className="text-sm font-bold text-green-700">₹{periodCollected.toLocaleString("en-IN")}</p>
           </div>
           <div className="text-right border-l border-slate-200 pl-4">
-            <p className="text-[10px] text-slate-700 uppercase tracking-wide">Total</p>
+            <p className="text-xs text-slate-700 uppercase tracking-wide">Total</p>
             <p className="text-sm font-bold text-blue-700">₹{periodTotal.toLocaleString("en-IN")}</p>
           </div>
         </div>
@@ -559,19 +559,19 @@ function FollowUpList({ loading, students, payments, onViewStudent }: { loading:
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-2 px-2 text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                  <th className="text-left py-2 px-2 text-sm font-bold text-slate-700 uppercase tracking-wide">
                     Student Name
                   </th>
-                  <th className="text-left py-2 px-2 text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                  <th className="text-left py-2 px-2 text-sm font-bold text-slate-700 uppercase tracking-wide">
                     ID
                   </th>
-                  <th className="text-left py-2 px-2 text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                  <th className="text-left py-2 px-2 text-sm font-bold text-slate-700 uppercase tracking-wide">
                     Contact
                   </th>
-                  <th className="text-left py-2 px-2 text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                  <th className="text-left py-2 px-2 text-sm font-bold text-slate-700 uppercase tracking-wide">
                     Due Amount
                   </th>
-                  <th className="text-left py-2 px-2 text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                  <th className="text-left py-2 px-2 text-sm font-bold text-slate-700 uppercase tracking-wide">
                     Days Overdue
                   </th>
                 </tr>
@@ -581,7 +581,7 @@ function FollowUpList({ loading, students, payments, onViewStudent }: { loading:
                   <tr key={student.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                     <td className="py-3 px-2">
                       <p className="text-sm font-medium text-slate-900">{student.studentName}</p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">
+                      <p className="text-xs text-slate-500 mt-0.5">
                         Last payment done {student.lastPaymentDays} days ago
                       </p>
                     </td>

@@ -402,26 +402,26 @@ export default function FollowUpsPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-auto max-h-[calc(100vh-280px)]">
                 <table className="w-full">
-                  <thead className="bg-slate-50 border-b border-slate-200">
+                  <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
                     <tr>
-                      <th className="text-left px-4 py-3 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 uppercase tracking-wider">
                         Student Name
                       </th>
-                      <th className="text-left px-4 py-3 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 uppercase tracking-wider">
                         ID
                       </th>
-                      <th className="text-left px-4 py-3 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 uppercase tracking-wider">
                         Contact
                       </th>
-                      <th className="text-left px-4 py-3 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 uppercase tracking-wider">
                         Due Amount
                       </th>
-                      <th className="text-left px-4 py-3 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      <th className="text-left px-4 py-3 text-sm font-bold text-slate-700 uppercase tracking-wider">
                         Days Overdue
                       </th>
-                      <th className="text-center px-4 py-3 text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                      <th className="text-center px-4 py-3 text-sm font-bold text-slate-700 uppercase tracking-wider">
                         Quick Actions
                       </th>
                     </tr>
@@ -435,7 +435,7 @@ export default function FollowUpsPage() {
                         <td className="px-4 py-3">
                           <p className="text-sm font-medium text-slate-900">{item.studentName}</p>
                           {item.remarks.length > 0 && (
-                            <p className="text-[10px] text-slate-500 mt-0.5 truncate max-w-[200px]">
+                            <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[200px]">
                               {item.remarks[item.remarks.length - 1]}
                             </p>
                           )}

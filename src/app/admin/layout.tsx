@@ -20,8 +20,8 @@ import { usePathname } from "next/navigation";
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/students", label: "Students", icon: Users },
-  { href: "/admin/payments", label: "Payments", icon: CreditCard },
-  { href: "/admin/payments/pending", label: "Pending Approvals", icon: Clock, badge: true },
+  { href: "/admin/payments", label: "Payments", icon: CreditCard, exact: true },
+  { href: "/admin/payments/pending", label: "Pending Approvals", icon: Clock },
   { href: "/admin/follow-ups", label: "Follow-Ups", icon: Phone },
 ];
 
@@ -51,7 +51,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900 text-white px-4 py-3 flex items-center justify-between shadow-lg">
         <div>
           <h1 className="text-base font-extrabold text-white tracking-wide">AIOS EDU</h1>
-          <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Admin Portal</p>
+          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Admin Portal</p>
         </div>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -69,12 +69,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       `}>
         <div className="px-5 py-5 border-b border-slate-700/60 hidden lg:block">
           <h1 className="text-lg font-extrabold text-white tracking-wide">AIOS EDU</h1>
-          <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Admin Portal</p>
+          <p className="text-sm text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Admin Portal</p>
         </div>
 
         <div className="lg:hidden px-5 py-4 border-b border-slate-700/60">
           <h1 className="text-lg font-extrabold text-white tracking-wide">AIOS EDU</h1>
-          <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Admin Portal</p>
+          <p className="text-sm text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Admin Portal</p>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-0.5">
@@ -97,9 +97,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   <item.icon className="w-4 h-4" />
                   {item.label}
                 </div>
-                {item.badge && (
-                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                )}
               </Link>
             );
           })}

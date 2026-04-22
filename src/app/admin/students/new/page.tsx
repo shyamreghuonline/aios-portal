@@ -253,7 +253,7 @@ export default function NewStudentPage() {
         {/* Personal Info */}
         <div className="border-b border-slate-100 pb-4">
           <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full gradient-bg flex items-center justify-center text-[10px] text-white">1</span>
+            <span className="w-5 h-5 rounded-full gradient-bg flex items-center justify-center text-xs text-white">1</span>
             Personal Information
           </h3>
           <div className="grid grid-cols-3 gap-4">
@@ -296,7 +296,7 @@ export default function NewStudentPage() {
         {/* Course Info */}
         <div className="border-b border-slate-100 pb-4">
           <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full gradient-bg flex items-center justify-center text-[10px] text-white">2</span>
+            <span className="w-5 h-5 rounded-full gradient-bg flex items-center justify-center text-xs text-white">2</span>
             Course & Program Details
           </h3>
           <div className="grid grid-cols-4 gap-4">
@@ -457,7 +457,7 @@ export default function NewStudentPage() {
         {/* Academic Info */}
         <div className="border-b border-slate-100 pb-4">
           <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full gradient-bg flex items-center justify-center text-[10px] text-white">3</span>
+            <span className="w-5 h-5 rounded-full gradient-bg flex items-center justify-center text-xs text-white">3</span>
             Academic Details
           </h3>
           <div className="grid grid-cols-4 gap-4">
@@ -537,7 +537,7 @@ export default function NewStudentPage() {
         {/* Fee Info */}
         <div className="pb-2">
           <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full gradient-bg flex items-center justify-center text-[10px] text-white">4</span>
+            <span className="w-5 h-5 rounded-full gradient-bg flex items-center justify-center text-xs text-white">4</span>
             Fee Details
           </h3>
           <div className="grid grid-cols-3 gap-4">

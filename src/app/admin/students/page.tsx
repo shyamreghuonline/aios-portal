@@ -511,7 +511,7 @@ export default function StudentsPage() {
       {/* Page Header */}
       <div>
         <h1 className="text-sm lg:text-base font-bold text-slate-900">Students</h1>
-        <p className="text-[11px] lg:text-xs font-medium text-slate-700">{students.length} students enrolled</p>
+        <p className="text-sm font-medium text-slate-700">{students.length} students enrolled</p>
       </div>
 
       {/* Stat Cards */}
@@ -561,7 +561,7 @@ export default function StudentsPage() {
 
         {/* Search bar with Add Student button */}
         {!loading && students.length > 0 && (
-          <div className="px-3 lg:px-5 py-2 lg:py-3 border-b border-slate-100 flex items-center gap-2 lg:gap-3">
+          <div className="px-2 lg:px-3 py-2 lg:py-3 border-b border-slate-100 flex items-center gap-2 lg:gap-3">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-700" />
               <input
@@ -572,7 +572,7 @@ export default function StudentsPage() {
                 className="w-full pl-9 pr-4 py-2 text-xs lg:text-sm rounded-xl border border-slate-200 focus:border-red-400 focus:ring-2 focus:ring-red-100 outline-none"
               />
             </div>
-            <span className="text-[10px] lg:text-xs font-semibold text-slate-700 ml-auto flex-shrink-0">{filtered.length} of {students.length}</span>
+            <span className="text-xs lg:text-xs font-semibold text-slate-700 ml-auto flex-shrink-0">{filtered.length} of {students.length}</span>
             <button
               onClick={() => setShowForm(true)}
               className="inline-flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-2 text-xs lg:text-sm font-bold text-white rounded-xl gradient-bg hover:shadow-lg transition-all flex-shrink-0"
@@ -606,54 +606,54 @@ export default function StudentsPage() {
               <thead>
                 <tr className="gradient-bg sticky top-0 z-10 shadow-md">
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors ${sortCol === "name" ? "bg-white/20" : ""}`}
+                    className={`text-left px-2 lg:px-3 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors ${sortCol === "name" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("name"); setSortDir(sortCol === "name" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     Name {sortCol === "name" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors ${sortCol === "phone" ? "bg-white/20" : ""}`}
+                    className={`text-left px-2 lg:px-3 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors ${sortCol === "phone" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("phone"); setSortDir(sortCol === "phone" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     Phone {sortCol === "phone" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden sm:table-cell ${sortCol === "studentId" ? "bg-white/20" : ""}`}
+                    className={`text-left px-2 lg:px-3 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden sm:table-cell ${sortCol === "studentId" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("studentId"); setSortDir(sortCol === "studentId" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     Student ID {sortCol === "studentId" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden sm:table-cell ${sortCol === "fee" ? "bg-white/20" : ""}`}
+                    className={`text-left px-2 lg:px-3 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden sm:table-cell ${sortCol === "fee" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("fee"); setSortDir(sortCol === "fee" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     Total Fee {sortCol === "fee" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors ${sortCol === "due" ? "bg-white/20" : ""}`}
+                    className={`text-left px-2 lg:px-3 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors ${sortCol === "due" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("due"); setSortDir(sortCol === "due" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     Due {sortCol === "due" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden md:table-cell ${sortCol === "course" ? "bg-white/20" : ""}`}
+                    className={`text-left px-2 lg:px-3 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden md:table-cell ${sortCol === "course" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("course"); setSortDir(sortCol === "course" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     Course {sortCol === "course" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden lg:table-cell ${sortCol === "university" ? "bg-white/20" : ""}`}
+                    className={`text-left px-2 lg:px-3 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden lg:table-cell ${sortCol === "university" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("university"); setSortDir(sortCol === "university" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     University {sortCol === "university" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
                   <th
-                    className={`text-left px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden lg:table-cell ${sortCol === "year" ? "bg-white/20" : ""}`}
+                    className={`text-left px-2 lg:px-3 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest cursor-pointer select-none hover:bg-white/10 transition-colors hidden lg:table-cell ${sortCol === "year" ? "bg-white/20" : ""}`}
                     onClick={() => { setSortCol("year"); setSortDir(sortCol === "year" && sortDir === "asc" ? "desc" : "asc"); }}
                   >
                     Year {sortCol === "year" && (sortDir === "asc" ? "↑" : "↓")}
                   </th>
-                  <th className="text-right px-3 lg:px-5 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest">Actions</th>
+                  <th className="text-right px-2 lg:px-3 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -688,52 +688,52 @@ export default function StudentsPage() {
                   const photoUrl = student.personalDetails?.photo;
                   return (
                     <tr key={student.id} className={`border-b border-red-50 hover:bg-red-50/60 transition-colors ${idx % 2 !== 0 ? "bg-red-50/20" : "bg-white"}`}>
-                      <td className="px-3 lg:px-5 py-2 lg:py-3">
+                      <td className="px-2 lg:px-3 py-2 lg:py-3">
                         <button onClick={() => setDetailStudent(student)} className="text-left flex items-center gap-2 lg:gap-3 group/name">
                           <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
                             {photoUrl ? (
                               <img src={photoUrl} alt={student.name} className="w-full h-full object-cover" />
                             ) : (
-                              <span className="text-[9px] lg:text-[10px] font-extrabold text-white">{initials}</span>
+                              <span className="text-[9px] lg:text-xs font-extrabold text-white">{initials}</span>
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-bold text-slate-900 text-[11px] lg:text-xs group-hover/name:text-red-700 transition-colors truncate max-w-[100px] lg:max-w-none">{student.name}</p>
-                            <p className="text-[10px] text-slate-600 mt-0.5 hidden sm:block">{student.email}</p>
+                            <p className="font-bold text-slate-900 text-sm group-hover/name:text-red-700 transition-colors truncate max-w-[100px] lg:max-w-none">{student.name}</p>
+                            <p className="text-xs text-slate-600 mt-0.5 hidden sm:block">{student.email}</p>
                           </div>
                         </button>
                       </td>
-                      <td className="px-3 lg:px-5 py-2 lg:py-3 text-slate-800 text-[11px] lg:text-xs whitespace-nowrap">{student.phone}</td>
-                      <td className="px-3 lg:px-5 py-2 lg:py-3 whitespace-nowrap hidden sm:table-cell">
-                        <button onClick={() => setDetailStudent(student)} className="text-[11px] lg:text-xs text-blue-700 hover:text-blue-900 hover:underline transition-colors">
+                      <td className="px-2 lg:px-3 py-2 lg:py-3 text-slate-800 text-sm whitespace-nowrap">{student.phone}</td>
+                      <td className="px-2 lg:px-3 py-2 lg:py-3 whitespace-nowrap hidden sm:table-cell">
+                        <button onClick={() => setDetailStudent(student)} className="text-sm text-blue-700 hover:text-blue-900 hover:underline transition-colors">
                           {student.studentId || student.id}
                         </button>
                       </td>
-                      <td className="px-3 lg:px-5 py-2 lg:py-3 whitespace-nowrap hidden sm:table-cell">
-                        <span className="text-[11px] lg:text-xs text-slate-800">₹{(student.totalFee || 0).toLocaleString("en-IN")}</span>
+                      <td className="px-2 lg:px-3 py-2 lg:py-3 whitespace-nowrap hidden sm:table-cell">
+                        <span className="text-sm text-slate-800">₹{(student.totalFee || 0).toLocaleString("en-IN")}</span>
                       </td>
-                      <td className="px-3 lg:px-5 py-2 lg:py-3 whitespace-nowrap">
+                      <td className="px-2 lg:px-3 py-2 lg:py-3 whitespace-nowrap">
                         {due <= 0 ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 lg:px-2.5 lg:py-1 rounded-full bg-green-100 text-green-800 text-[11px] lg:text-xs">✓</span>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 lg:px-2.5 lg:py-1 rounded-full bg-green-100 text-green-800 text-sm">✓</span>
                         ) : (
                           <div>
-                            <p className="text-[11px] lg:text-xs text-red-600">₹{due.toLocaleString("en-IN")}</p>
-                            <span className="inline-block mt-0.5 px-1.5 lg:px-2 py-0.5 text-[10px] lg:text-xs bg-red-100 text-red-700 rounded-md">Due</span>
+                            <p className="text-sm text-red-600">₹{due.toLocaleString("en-IN")}</p>
+                            <span className="inline-block mt-0.5 px-1.5 lg:px-2 py-0.5 text-xs lg:text-xs bg-red-100 text-red-700 rounded-md">Due</span>
                           </div>
                         )}
                       </td>
-                      <td className="px-3 lg:px-5 py-2 lg:py-3 max-w-[100px] lg:max-w-[160px] hidden md:table-cell">
-                        <span className="text-[11px] lg:text-xs text-slate-900 leading-tight truncate">
+                      <td className="px-2 lg:px-3 py-2 lg:py-3 max-w-[140px] lg:max-w-[180px] hidden md:table-cell align-top">
+                        <span className="block text-sm text-slate-900 leading-snug break-words">
                           {(student.course || "").replace(/\s*\([^)]*\)/g, "")}{student.stream ? `-${student.stream}` : ""}
                         </span>
                       </td>
-                      <td className="px-3 lg:px-5 py-2 lg:py-3 text-[11px] lg:text-xs text-slate-800 font-bold hidden lg:table-cell">{student.university}</td>
-                      <td className="px-3 lg:px-5 py-2 lg:py-3 whitespace-nowrap hidden lg:table-cell">
-                        <span className="text-[11px] lg:text-xs text-slate-800 bg-slate-100 px-1.5 lg:px-2 py-0.5 rounded-md">
+                      <td className="px-2 lg:px-3 py-2 lg:py-3 text-sm text-slate-800 font-bold hidden lg:table-cell">{student.university}</td>
+                      <td className="px-2 lg:px-3 py-2 lg:py-3 whitespace-nowrap hidden lg:table-cell">
+                        <span className="text-sm text-slate-800 bg-slate-100 px-1.5 lg:px-2 py-0.5 rounded-md">
                           {student.startYear}{student.endYear ? ` – ${student.endYear}` : ""}
                         </span>
                       </td>
-                      <td className="px-2 lg:px-4 py-2 lg:py-3 text-right">
+                      <td className="px-2 lg:px-3 py-2 lg:py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => openPaymentsModal(student)}
@@ -788,19 +788,19 @@ export default function StudentsPage() {
                   </div>
                   <div className="min-w-0">
                     <h2 className="text-sm sm:text-lg font-extrabold text-white tracking-tight truncate">{detailStudent.name}</h2>
-                    <p className="text-[11px] sm:text-xs text-white/90 font-medium mt-0.5">{detailStudent.course?.replace(/\s*\(.*?\)/g, "")}{detailStudent.stream ? `-${detailStudent.stream}` : ""}</p>
+                    <p className="text-sm sm:text-xs text-white/90 font-medium mt-0.5">{detailStudent.course?.replace(/\s*\(.*?\)/g, "")}{detailStudent.stream ? `-${detailStudent.stream}` : ""}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] sm:text-[11px] text-white/70">{detailStudent.studentId || detailStudent.id}</span>
+                      <span className="text-xs sm:text-sm text-white/70">{detailStudent.studentId || detailStudent.id}</span>
                       <span className="text-white/30">|</span>
-                      <a href={`tel:${detailStudent.phone}`} className="text-[10px] sm:text-[11px] text-white/70 hover:text-white hover:underline">{detailStudent.phone}</a>
+                      <a href={`tel:${detailStudent.phone}`} className="text-xs sm:text-sm text-white/70 hover:text-white hover:underline">{detailStudent.phone}</a>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <button onClick={() => setShowDiscountModal(true)} className="px-3 py-1.5 text-[10px] sm:text-[11px] font-bold text-green-700 bg-white rounded-lg hover:bg-green-50 transition-colors shadow-sm hidden sm:block">
+                  <button onClick={() => setShowDiscountModal(true)} className="px-3 py-1.5 text-xs sm:text-sm font-bold text-green-700 bg-white rounded-lg hover:bg-green-50 transition-colors shadow-sm hidden sm:block">
                     Add Discount
                   </button>
-                  <button onClick={generateStudentPDF} disabled={generatingPDF} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-[10px] sm:text-[11px] font-bold text-blue-700 bg-white rounded-lg hover:bg-blue-50 transition-colors shadow-sm disabled:opacity-60">
+                  <button onClick={generateStudentPDF} disabled={generatingPDF} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-bold text-blue-700 bg-white rounded-lg hover:bg-blue-50 transition-colors shadow-sm disabled:opacity-60">
                     {generatingPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
                     {generatingPDF ? "..." : "Print"}
                   </button>
@@ -811,10 +811,10 @@ export default function StudentsPage() {
               </div>
               {/* Mobile action buttons */}
               <div className="sm:hidden flex gap-2 mt-3 pt-3 border-t border-white/15">
-                <button onClick={() => setShowDiscountModal(true)} className="flex-1 py-1.5 text-[10px] font-bold text-white bg-white/15 rounded-lg border border-white/20">
+                <button onClick={() => setShowDiscountModal(true)} className="flex-1 py-1.5 text-xs font-bold text-white bg-white/15 rounded-lg border border-white/20">
                   Add Discount
                 </button>
-                <button onClick={generateStudentPDF} disabled={generatingPDF} className="flex-1 py-1.5 text-[10px] font-bold text-white bg-white/15 rounded-lg border border-white/20 disabled:opacity-50 flex items-center justify-center gap-1">
+                <button onClick={generateStudentPDF} disabled={generatingPDF} className="flex-1 py-1.5 text-xs font-bold text-white bg-white/15 rounded-lg border border-white/20 disabled:opacity-50 flex items-center justify-center gap-1">
                   {generatingPDF ? <Loader2 className="w-3 h-3 animate-spin" /> : <Printer className="w-3 h-3" />}Print
                 </button>
               </div>
@@ -849,7 +849,7 @@ export default function StudentsPage() {
                     ].map(({ label, value, color }: any) => (
                       <div key={label}>
                         <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">{label}</p>
-                        <p className={`text-[11px] lg:text-xs font-bold ${color || 'text-slate-800'} truncate`}>{value}</p>
+                        <p className={`text-sm font-bold ${color || 'text-slate-800'} truncate`}>{value}</p>
                       </div>
                     ))}
                   </div>
@@ -1016,38 +1016,38 @@ export default function StudentsPage() {
                       <tbody className="divide-y divide-slate-100">
                         {detailStudent.academicDetails?.sslc?.institution && (
                           <tr className="hover:bg-slate-50 transition-colors">
-                            <td className="px-3 py-2 text-[11px] font-semibold text-slate-800">SSLC / 10th</td>
-                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.sslc.institution}</td>
-                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.sslc.board || "—"}</td>
-                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.sslc.year || "—"}</td>
-                            <td className="px-3 py-2 text-[11px] font-bold text-green-600 text-right">{detailStudent.academicDetails.sslc.percentage || "—"}%</td>
+                            <td className="px-3 py-2 text-sm font-semibold text-slate-800">SSLC / 10th</td>
+                            <td className="px-3 py-2 text-sm text-slate-600">{detailStudent.academicDetails.sslc.institution}</td>
+                            <td className="px-3 py-2 text-sm text-slate-600">{detailStudent.academicDetails.sslc.board || "—"}</td>
+                            <td className="px-3 py-2 text-sm text-slate-600">{detailStudent.academicDetails.sslc.year || "—"}</td>
+                            <td className="px-3 py-2 text-sm font-bold text-green-600 text-right">{detailStudent.academicDetails.sslc.percentage || "—"}%</td>
                           </tr>
                         )}
                         {detailStudent.academicDetails?.plustwo?.institution && (
                           <tr className="hover:bg-slate-50 transition-colors">
-                            <td className="px-3 py-2 text-[11px] font-semibold text-slate-800">HSC / 12th</td>
-                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.plustwo.institution}</td>
-                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.plustwo.board || detailStudent.academicDetails.plustwo.stream || "—"}</td>
-                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.plustwo.year || "—"}</td>
-                            <td className="px-3 py-2 text-[11px] font-bold text-green-600 text-right">{detailStudent.academicDetails.plustwo.percentage || "—"}%</td>
+                            <td className="px-3 py-2 text-sm font-semibold text-slate-800">HSC / 12th</td>
+                            <td className="px-3 py-2 text-sm text-slate-600">{detailStudent.academicDetails.plustwo.institution}</td>
+                            <td className="px-3 py-2 text-sm text-slate-600">{detailStudent.academicDetails.plustwo.board || detailStudent.academicDetails.plustwo.stream || "—"}</td>
+                            <td className="px-3 py-2 text-sm text-slate-600">{detailStudent.academicDetails.plustwo.year || "—"}</td>
+                            <td className="px-3 py-2 text-sm font-bold text-green-600 text-right">{detailStudent.academicDetails.plustwo.percentage || "—"}%</td>
                           </tr>
                         )}
                         {detailStudent.academicDetails?.ug?.institution && (
                           <tr className="hover:bg-slate-50 transition-colors">
-                            <td className="px-3 py-2 text-[11px] font-semibold text-slate-800">UG Degree</td>
-                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.ug.institution}</td>
-                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.ug.degree || detailStudent.academicDetails.ug.board || "—"}</td>
-                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.ug.year || "—"}</td>
-                            <td className="px-3 py-2 text-[11px] font-bold text-green-600 text-right">{detailStudent.academicDetails.ug.percentage || "—"}%</td>
+                            <td className="px-3 py-2 text-sm font-semibold text-slate-800">UG Degree</td>
+                            <td className="px-3 py-2 text-sm text-slate-600">{detailStudent.academicDetails.ug.institution}</td>
+                            <td className="px-3 py-2 text-sm text-slate-600">{detailStudent.academicDetails.ug.degree || detailStudent.academicDetails.ug.board || "—"}</td>
+                            <td className="px-3 py-2 text-sm text-slate-600">{detailStudent.academicDetails.ug.year || "—"}</td>
+                            <td className="px-3 py-2 text-sm font-bold text-green-600 text-right">{detailStudent.academicDetails.ug.percentage || "—"}%</td>
                           </tr>
                         )}
                         {detailStudent.academicDetails?.pg?.institution && (
                           <tr className="hover:bg-slate-50 transition-colors">
-                            <td className="px-3 py-2 text-[11px] font-semibold text-slate-800">PG Degree</td>
-                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.pg.institution}</td>
-                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.pg.degree || detailStudent.academicDetails.pg.board || "—"}</td>
-                            <td className="px-3 py-2 text-[11px] text-slate-600">{detailStudent.academicDetails.pg.year || "—"}</td>
-                            <td className="px-3 py-2 text-[11px] font-bold text-green-600 text-right">{detailStudent.academicDetails.pg.percentage || "—"}%</td>
+                            <td className="px-3 py-2 text-sm font-semibold text-slate-800">PG Degree</td>
+                            <td className="px-3 py-2 text-sm text-slate-600">{detailStudent.academicDetails.pg.institution}</td>
+                            <td className="px-3 py-2 text-sm text-slate-600">{detailStudent.academicDetails.pg.degree || detailStudent.academicDetails.pg.board || "—"}</td>
+                            <td className="px-3 py-2 text-sm text-slate-600">{detailStudent.academicDetails.pg.year || "—"}</td>
+                            <td className="px-3 py-2 text-sm font-bold text-green-600 text-right">{detailStudent.academicDetails.pg.percentage || "—"}%</td>
                           </tr>
                         )}
                       </tbody>
@@ -1059,7 +1059,7 @@ export default function StudentsPage() {
               {/* ── Personal & Family (side by side) ── */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
                     <User className="w-3.5 h-3.5 text-red-500" />Personal Information
                   </h3>
                   <div className="bg-white rounded-lg border border-slate-200 p-3">
@@ -1072,14 +1072,14 @@ export default function StudentsPage() {
                       ].map(({ label, value }) => (
                         <div key={label}>
                           <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">{label}</p>
-                          <p className="text-[11px] font-bold text-slate-800">{value}</p>
+                          <p className="text-sm font-bold text-slate-800">{value}</p>
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
+                  <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
                     <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                     Family Details
                   </h3>
@@ -1094,9 +1094,9 @@ export default function StudentsPage() {
                         <div key={label}>
                           <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 mb-0.5">{label}</p>
                           {isPhone && value !== "—" ? (
-                            <a href={`tel:${value}`} className="text-[11px] font-bold text-red-600 hover:underline">{value}</a>
+                            <a href={`tel:${value}`} className="text-sm font-bold text-red-600 hover:underline">{value}</a>
                           ) : (
-                            <p className="text-[11px] font-bold text-slate-800 truncate">{value}</p>
+                            <p className="text-sm font-bold text-slate-800 truncate">{value}</p>
                           )}
                         </div>
                       ))}
@@ -1107,12 +1107,12 @@ export default function StudentsPage() {
 
               {/* ── Address ── */}
               <div>
-                <h3 className="text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
+                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-500 mb-2 flex items-center gap-2">
                   <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                   Address
                 </h3>
                 <div className="bg-white rounded-lg border border-slate-200 p-3">
-                  <p className="text-[11px] font-bold text-slate-800">
+                  <p className="text-sm font-bold text-slate-800">
                     {[detailStudent.personalDetails?.address, detailStudent.personalDetails?.city, detailStudent.personalDetails?.state, detailStudent.personalDetails?.pincode].filter(Boolean).join(", ") || "—"}
                   </p>
                 </div>
@@ -1122,7 +1122,7 @@ export default function StudentsPage() {
 
             {/* ── Footer ── */}
             <div className="px-4 sm:px-5 py-3 border-t border-slate-200 bg-white flex items-center justify-end">
-              <button onClick={() => setDetailStudent(null)} className="px-4 py-1.5 text-[11px] font-bold text-white gradient-bg rounded-md hover:shadow-md transition-all">Close</button>
+              <button onClick={() => setDetailStudent(null)} className="px-4 py-1.5 text-sm font-bold text-white gradient-bg rounded-md hover:shadow-md transition-all">Close</button>
             </div>
 
           </div>
@@ -1391,11 +1391,11 @@ export default function StudentsPage() {
                 />
                 {discountForm.amount && (
                   <div className="mt-1 flex items-center gap-3">
-                    <p className="text-[10px] text-green-600">
+                    <p className="text-xs text-green-600">
                       New Total Discount: ₹{((detailStudent.discountAmount || 0) + parseFloat(discountForm.amount || "0")).toLocaleString("en-IN")}
                     </p>
                     <span className="text-slate-300">|</span>
-                    <p className="text-[10px] text-blue-600">
+                    <p className="text-xs text-blue-600">
                       Effective Fee: ₹{((detailStudent.totalFee || 0) - (detailStudent.discountAmount || 0) - parseFloat(discountForm.amount || "0")).toLocaleString("en-IN")}
                     </p>
                   </div>
@@ -1484,7 +1484,7 @@ export default function StudentsPage() {
             <div className="flex items-center justify-between px-4 lg:px-6 py-3 lg:py-4 border-b border-slate-100 flex-shrink-0">
               <div>
                 <h2 className="text-sm lg:text-base font-bold text-slate-900">{paymentsModal.student.name}</h2>
-                <p className="text-[10px] lg:text-xs text-slate-500 mt-0.5">{paymentsModal.student.phone} &bull; {paymentsModal.student.course}</p>
+                <p className="text-xs lg:text-xs text-slate-500 mt-0.5">{paymentsModal.student.phone} &bull; {paymentsModal.student.course}</p>
               </div>
               <button onClick={() => setPaymentsModal(null)} className="text-slate-400 hover:text-slate-700 p-1">
                 <X className="w-5 h-5" />
@@ -1492,17 +1492,17 @@ export default function StudentsPage() {
             </div>
             <div className="px-4 lg:px-6 py-3 lg:py-4 bg-slate-50 border-b border-slate-100 grid grid-cols-3 gap-2 lg:gap-4 text-center flex-shrink-0">
               <div>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Total Fee</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Total Fee</p>
                 <p className="text-sm lg:text-base font-bold text-slate-800">₹{(paymentsModal.student.totalFee || 0).toLocaleString("en-IN")}</p>
               </div>
               <div>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Paid</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Paid</p>
                 <p className="text-sm lg:text-base font-bold text-blue-700">
                   ₹{(paidMap[paymentsModal.student.phone] || 0).toLocaleString("en-IN")}
                 </p>
               </div>
               <div>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wide mb-1">Balance</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Balance</p>
                 {(() => {
                   const due = (paymentsModal.student.totalFee || 0) - (paidMap[paymentsModal.student.phone] || 0);
                   return <p className={`text-sm lg:text-base font-bold ${due <= 0 ? "text-green-700" : "text-red-600"}`}>{due <= 0 ? "✓ Cleared" : `₹${due.toLocaleString("en-IN")}`}</p>;
@@ -1532,7 +1532,6 @@ export default function StudentsPage() {
                       <tr key={p.id} className="border-b border-slate-100 hover:bg-slate-50">
                         <td className="px-4 lg:px-6 py-2 lg:py-3">
                           <Link href={`/admin/payments/${p.id}`} className="text-xs font-mono text-blue-600 hover:underline" target="_blank">{p.receiptNumber}</Link>
-                          <p className="text-[10px] text-slate-400 mt-0.5">Installment {p.installmentNumber}</p>
                         </td>
                         <td className="px-4 lg:px-6 py-2 lg:py-3 text-xs text-slate-700">{p.paymentDate}</td>
                         <td className="px-4 lg:px-6 py-2 lg:py-3 text-xs text-slate-600">{p.paymentMode}</td>
@@ -1875,7 +1874,7 @@ export default function StudentsPage() {
                     />
                   </div>
                   {formData.discountAmount && parseFloat(formData.discountAmount) > 0 && (
-                    <p className="text-[10px] text-green-600 mt-1">Effective Fee: ₹{(parseFloat(formData.totalFee || "0") - parseFloat(formData.discountAmount || "0")).toLocaleString("en-IN")}</p>
+                    <p className="text-xs text-green-600 mt-1">Effective Fee: ₹{(parseFloat(formData.totalFee || "0") - parseFloat(formData.discountAmount || "0")).toLocaleString("en-IN")}</p>
                   )}
                 </div>
                 <div>

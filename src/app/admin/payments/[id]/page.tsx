@@ -366,14 +366,12 @@ export default function ReceiptPage() {
                 <thead>
                   <tr style={{ backgroundColor: '#8B0000' }}>
                     <th className="text-left py-3 px-4 text-white font-semibold uppercase text-xs tracking-wider">Description</th>
-                    <th className="text-right py-3 px-4 text-white font-semibold uppercase text-xs tracking-wider">Installment</th>
                     <th className="text-right py-3 px-4 text-white font-semibold uppercase text-xs tracking-wider">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr className="border-b border-gray-200">
                     <td className="py-3 px-4 text-gray-900">Course Fee Payment</td>
-                    <td className="py-3 px-4 text-gray-700 text-right">{payment.installmentNumber} of {payment.totalInstallments}</td>
                     <td className="py-3 px-4 text-gray-900 font-semibold text-right">₹{payment.amountPaid.toLocaleString("en-IN")}</td>
                   </tr>
                 </tbody>
@@ -424,7 +422,7 @@ export default function ReceiptPage() {
                   <div className="w-48">
                     <div className="border-b-2 border-gray-800 h-10 mb-2"></div>
                     <p className="text-xs text-center font-semibold tracking-wide">Authorized Signature</p>
-                    <p className="text-[10px] text-center text-gray-500 mt-1">AIOS EDU</p>
+                    <p className="text-xs text-center text-gray-500 mt-1">AIOS EDU</p>
                   </div>
                 </div>
               </div>
