@@ -7,6 +7,8 @@ import { useAuth } from "@/lib/auth-context";
 import {
   Receipt, AlertTriangle, CheckCircle, CreditCard, Loader2,
   Upload, Save, Camera, Lock, Pencil, Printer, Download,
+  GraduationCap, User, Building2, Mail, Phone, IdCard, Calendar,
+  Users, MapPin, Briefcase, BookOpen, Award, ShieldCheck, FileText, ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
 import jsPDF from "jspdf";
@@ -423,20 +425,36 @@ export default function StudentDashboard() {
               )}
             </div>
           </div>
-          {/* Print Button - Header */}
-          {(personal.aadhaarNumber || academic.sslc?.institution) && (
-            <div className="flex-shrink-0">
+          {/* Header Action Buttons */}
+          <div className="flex-shrink-0 flex items-center gap-2">
+            <Link
+              href="/student/pay"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-white/15 border border-white/30 rounded-lg hover:bg-white/25 transition-colors backdrop-blur-sm"
+              title="Make Payment"
+            >
+              <CreditCard className="w-4 h-4" />
+              <span className="hidden sm:inline">Pay</span>
+            </Link>
+            <Link
+              href="/student/payments"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-white/15 border border-white/30 rounded-lg hover:bg-white/25 transition-colors backdrop-blur-sm"
+              title="View Receipts"
+            >
+              <Receipt className="w-4 h-4" />
+              <span className="hidden sm:inline">Receipts</span>
+            </Link>
+            {(personal.aadhaarNumber || academic.sslc?.institution) && (
               <button
                 onClick={generatePDF}
                 disabled={generatingPDF}
-                className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-600 bg-white rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60 shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-600 bg-white rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60 shadow-sm"
                 title="Print Admission Form"
               >
                 {generatingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
                 <span className="hidden sm:inline">{generatingPDF ? "Generating..." : "Print Form"}</span>
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -452,201 +470,133 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      {/* ══ TWO-COLUMN PORTAL ══ */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      {/* ══ PROFILE SECTIONS ══ */}
+      <div className="w-full">
+        <div className="space-y-4 min-w-0">
 
-        {/* ── LEFT: Fee + Payments ── */}
-        <div className="lg:w-80 xl:w-96 flex-shrink-0 space-y-3">
-
-          {/* Fee Progress */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-slate-900">Fee Progress</p>
-              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
-                balance <= 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-700"
-              }`}>{balance <= 0 ? "✓ Fully Paid" : "Pending"}</span>
-            </div>
-            <div className="w-full bg-slate-100 rounded-full h-2 mb-1">
-              <div className="h-2 rounded-full gradient-bg transition-all duration-700" style={{ width: `${progressPercent}%` }} />
-            </div>
-            <p className="text-[11px] font-semibold text-slate-700 text-right mb-3">{Math.round(progressPercent)}% paid</p>
-            <div className="grid gap-2 grid-cols-3">
-              {[
-                { label: "Total Fee", value: `₹${totalFee.toLocaleString("en-IN")}`, color: "text-slate-900" },
-                { label: "Paid",      value: `₹${totalPaid.toLocaleString("en-IN")}`, color: "text-blue-700" },
-                { label: "Balance",   value: `₹${Math.max(0, balance).toLocaleString("en-IN")}`, color: balance > 0 ? "text-red-600" : "text-green-700" },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="bg-slate-50 rounded-lg p-2.5 text-center">
-                  <p className={`text-[11px] lg:text-xs font-extrabold ${color}`}>{value}</p>
-                  <p className="text-[11px] font-semibold text-slate-700 mt-0.5">{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Payment Summary */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-              <p className="text-xs font-bold text-slate-900">Payment Summary</p>
-              <Link href="/student/payments" className="text-[11px] font-bold text-red-600">View All</Link>
-            </div>
-            {loading ? (
-              <div className="flex items-center justify-center py-6"><Loader2 className="w-5 h-5 text-red-600 animate-spin" /></div>
-            ) : payments.length === 0 ? (
-              <div className="text-center py-6">
-                <AlertTriangle className="w-6 h-6 text-slate-300 mx-auto mb-1" />
-                <p className="text-xs font-semibold text-slate-700">No payments yet.</p>
+          {/* SECTION 1: Enrollment Details */}
+          <section className="bg-white border border-red-200 rounded-2xl shadow-sm overflow-hidden">
+            <header className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-200 bg-gradient-to-r from-red-50 via-rose-50 to-white">
+              <span className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm">
+                <GraduationCap className="w-5 h-5 text-white" />
+              </span>
+              <div className="flex-1">
+                <h2 className="text-sm font-bold text-slate-900">Enrollment Details</h2>
+                <p className="text-xs text-slate-500">Your academic enrollment information</p>
               </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-4 px-4 py-1.5 border-b border-slate-100 bg-slate-50">
-                  {["Date", "Receipt No", "Amount", "Status"].map(h => (
-                    <p key={h} className="text-[9px] font-extrabold uppercase tracking-wider text-slate-600">{h}</p>
-                  ))}
+              <span className="text-xs font-semibold bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5" /> Verified
+              </span>
+            </header>
+            <div className="p-5 grid grid-cols-1 md:grid-cols-[200px_1fr] gap-5">
+              {/* LEFT: Student Photo Card */}
+              <div className="flex flex-col items-center">
+                <div className="w-full aspect-[3/4] max-w-[200px] rounded-xl border-2 border-slate-200 overflow-hidden bg-gradient-to-b from-rose-50 to-white flex items-center justify-center shadow-sm">
+                  {personal.photo ? (
+                    <img src={personal.photo} alt={name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 p-4 text-center">
+                      <Camera className="w-10 h-10 text-slate-300" />
+                      <p className="text-xs font-medium text-slate-500">No photo uploaded</p>
+                    </div>
+                  )}
                 </div>
-                <div className="divide-y divide-slate-50">
-                  {payments.slice(0, 6).map(p => (
-                    <div key={p.id} className="grid grid-cols-4 px-4 py-2 items-center">
-                      <p className="text-[10px] text-slate-700">{p.paymentDate}</p>
-                      <Link href={`/student/payments/${p.receiptNumber}`} className="text-[10px] font-mono font-semibold text-blue-600 hover:text-blue-800 hover:underline truncate">
-                        {p.receiptNumber}
-                      </Link>
-                      <p className="text-[10px] font-bold text-green-700">₹{p.amountPaid.toLocaleString("en-IN")}</p>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-800 w-fit">Paid</span>
+                <div className="mt-3 w-full text-center">
+                  <p className="text-sm font-bold text-slate-900 truncate">{name}</p>
+                  {canEdit && (
+                    <button
+                      onClick={() => photoRef.current?.click()}
+                      disabled={uploadingPhoto}
+                      className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60"
+                    >
+                      {uploadingPhoto ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                      {uploadingPhoto ? "Uploading…" : personal.photo ? "Change Photo" : "Upload Photo"}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* RIGHT: Enrollment Fields + Notice */}
+              <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 content-start">
+                  {[
+                    { icon: User, label: "Full Name", value: (sd.name as string) || "", tint: "from-rose-50 to-white", iconColor: "text-rose-600", ring: "border-rose-100" },
+                    { icon: BookOpen, label: "Course Enrolled", value: (sd.course as string) || "", tint: "from-red-50 to-white", iconColor: "text-red-600", ring: "border-red-100" },
+                    { icon: Award, label: "Stream / Specialization", value: (sd.stream as string) || "", tint: "from-amber-50 to-white", iconColor: "text-amber-600", ring: "border-amber-100" },
+                    { icon: Building2, label: "Faculty / Department", value: (sd.faculty as string) || "", tint: "from-purple-50 to-white", iconColor: "text-purple-600", ring: "border-purple-100" },
+                    { icon: Building2, label: "University", value: (sd.university as string) || "", tint: "from-indigo-50 to-white", iconColor: "text-indigo-600", ring: "border-indigo-100" },
+                    { icon: Calendar, label: "Academic Year", value: `${sd.startYear || ""}${sd.endYear ? ` – ${sd.endYear}` : ""}`, tint: "from-sky-50 to-white", iconColor: "text-sky-600", ring: "border-sky-100" },
+                    { icon: Mail, label: "Contact Email", value: (sd.email as string) || "", tint: "from-teal-50 to-white", iconColor: "text-teal-600", ring: "border-teal-100" },
+                    { icon: Phone, label: "Contact Number", value: user?.phone || "", tint: "from-emerald-50 to-white", iconColor: "text-emerald-600", ring: "border-emerald-100" },
+                    { icon: IdCard, label: "Enrollment ID", value: (sd.studentId as string) || "—", tint: "from-slate-50 to-white", iconColor: "text-slate-700", ring: "border-slate-200" },
+                  ].map(({ icon: Icon, label, value, tint, iconColor, ring }) => (
+                    <div key={label} className={`flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br ${tint} border ${ring} hover:shadow-sm transition-all`} title="Managed by admin">
+                      <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <Icon className={`w-4 h-4 ${iconColor}`} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-red-700 mb-0.5">{label}</p>
+                        <p className="text-sm font-normal text-slate-800 truncate">{value || "—"}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </>
-            )}
-          </div>
 
-          {/* Action buttons */}
-          <div className="grid grid-cols-2 gap-2">
-            <Link href="/student/pay" className="gradient-bg rounded-xl p-3 flex flex-col items-center gap-1.5 hover:opacity-90 transition-all">
-              <CreditCard className="w-5 h-5 text-white" />
-              <p className="text-xs font-bold text-white">Make Payment</p>
-            </Link>
-            <Link href="/student/payments" className="bg-slate-800 rounded-xl p-3 flex flex-col items-center gap-1.5 hover:bg-slate-700 transition-all">
-              <Receipt className="w-5 h-5 text-white" />
-              <p className="text-xs font-bold text-white">View Receipts</p>
-            </Link>
-          </div>
-        </div>
-
-        {/* ── RIGHT: Profile Sections ── */}
-        <div className="flex-1 space-y-3 min-w-0">
-
-          {/* SECTION 1: Enrollment Details */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-slate-200 bg-slate-50">
-              <span className="w-5 h-5 rounded-full gradient-bg flex items-center justify-center flex-shrink-0">
-                <span className="text-[10px] font-extrabold text-white">1</span>
-              </span>
-              <p className="text-xs font-extrabold text-slate-900 uppercase tracking-wide">Enrollment Details</p>
-              <span className="ml-auto text-[10px] font-bold bg-green-100 text-green-800 border border-green-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" /> Verified by Admin
-              </span>
-            </div>
-            <div className="divide-y divide-slate-100">
-              <div className="grid grid-cols-3 divide-x divide-slate-100">
-                {[
-                  { label: "Full Name",           value: (sd.name as string) || "" },
-                  { label: "Course Enrolled",     value: (sd.course as string) || "" },
-                  { label: "Stream / Specialization", value: (sd.stream as string) || "" },
-                ].map(({ label, value }) => (
-                  <div key={label} className="px-4 py-2.5 cursor-not-allowed select-none" title="Managed by admin">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">{label}</p>
-                    <p className="text-xs font-semibold text-slate-900">{value || "—"}</p>
+                {/* Admin-Managed Notice */}
+                <div className="mt-auto flex items-start gap-3 p-3.5 rounded-xl bg-gradient-to-r from-red-50 to-rose-50 border border-red-200">
+                  <div className="w-8 h-8 rounded-lg bg-white border border-red-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <Lock className="w-4 h-4 text-red-600" />
                   </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-3 divide-x divide-slate-100">
-                {[
-                  { label: "Faculty / Department", value: (sd.faculty as string) || "" },
-                  { label: "University",           value: (sd.university as string) || "" },
-                  { label: "Academic Year",        value: `${sd.startYear || ""}${sd.endYear ? ` – ${sd.endYear}` : ""}` },
-                ].map(({ label, value }) => (
-                  <div key={label} className="px-4 py-2.5 cursor-not-allowed select-none" title="Managed by admin">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">{label}</p>
-                    <p className="text-xs font-semibold text-slate-900">{value || "—"}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-red-900 flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5" /> Read-only Information
+                    </p>
+                    <p className="text-xs text-red-800 mt-0.5 leading-relaxed">
+                      These enrollment details are managed by the administration office. If any of the information above is incorrect or needs to be updated, please <span className="font-semibold">contact the admin</span> for assistance.
+                    </p>
                   </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-3 divide-x divide-slate-100">
-                {[
-                  { label: "Contact Email",    value: (sd.email as string) || "" },
-                  { label: "Contact Number",   value: user?.phone || "" },
-                  { label: "Enrollment ID",  value: (sd.studentId as string) || "—" },
-                ].map(({ label, value }) => (
-                  <div key={label} className="px-4 py-2.5 cursor-not-allowed select-none" title="Managed by admin">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">{label}</p>
-                    <p className="text-xs font-semibold text-slate-900">{value || "—"}</p>
-                  </div>
-                ))}
+                </div>
               </div>
             </div>
-          </div>
+          </section>
 
           {/* SECTION 2: Personal Information */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-slate-200 bg-slate-50">
-              <span className="w-5 h-5 rounded-full gradient-bg flex items-center justify-center flex-shrink-0">
-                <span className="text-[10px] font-extrabold text-white">2</span>
+          <section className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <header className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-200 bg-gradient-to-r from-red-50 via-rose-50 to-white">
+              <span className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm">
+                <User className="w-5 h-5 text-white" />
               </span>
-              <p className="text-xs font-extrabold text-slate-900 uppercase tracking-wide">Personal Information</p>
-              {!canEdit && <Lock className="w-3.5 h-3.5 text-slate-600 ml-auto" />}
+              <div className="flex-1">
+                <h2 className="text-sm font-bold text-slate-900">Personal Information</h2>
+                <p className="text-xs text-slate-500">Personal, family, address & employment details</p>
+              </div>
+              {!canEdit && <Lock className="w-4 h-4 text-slate-500" />}
               {canEdit && (
                 editingKyc ? (
-                  <div className="ml-auto flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                     <button onClick={() => setEditingKyc(false)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
                       Cancel
                     </button>
                     <button onClick={savePersonal} disabled={savingPersonal}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white gradient-bg rounded-lg hover:shadow-md transition-all disabled:opacity-60">
-                      {savingPersonal ? <Loader2 className="w-3 h-3 animate-spin" /> : savedPersonal ? <CheckCircle className="w-3 h-3" /> : <Save className="w-3 h-3" />}
-                      {savingPersonal ? "Saving…" : savedPersonal ? "Saved!" : "Save"}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white gradient-bg rounded-lg hover:shadow-md transition-all disabled:opacity-60">
+                      {savingPersonal ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : savedPersonal ? <CheckCircle className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                      {savingPersonal ? "Saving…" : savedPersonal ? "Saved!" : "Save Changes"}
                     </button>
                   </div>
                 ) : (
                   <button onClick={() => setEditingKyc(true)}
-                    className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition-colors">
-                    <Pencil className="w-3 h-3" /> Edit Details
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-red-200 bg-white text-red-600 rounded-lg hover:bg-red-50 transition-colors">
+                    <Pencil className="w-3.5 h-3.5" /> Edit
                   </button>
                 )
               )}
-            </div>
+            </header>
             {/* VIEW MODE */}
             {!editingKyc ? (
               <div className="p-3 sm:p-4">
-                {/* Row 1: Photo + Basic Details */}
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  {/* Photo Card */}
-                  <div className="rounded-lg border border-slate-200 overflow-hidden flex">
-                    <div className="w-32 bg-gradient-to-b from-rose-50 to-white border-r border-slate-200 flex flex-col items-center justify-center p-3">
-                      <div className="w-20 h-24 rounded-lg border-2 border-dashed border-slate-300 overflow-hidden bg-white flex items-center justify-center mb-2">
-                        {personal.photo
-                          ? <img src={personal.photo} alt="Photo" className="w-full h-full object-cover" />
-                          : <Camera className="w-6 h-6 text-slate-400" />}
-                      </div>
-                      {canEdit && (
-                        <button onClick={() => photoRef.current?.click()} disabled={uploadingPhoto}
-                          className="text-[10px] font-bold text-rose-600 hover:underline disabled:opacity-50">
-                          {uploadingPhoto ? "Uploading…" : personal.photo ? "Change" : "Upload"}
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="px-3 py-1.5 bg-gradient-to-r from-rose-50 to-white border-b border-slate-200">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-rose-700">Student Photo</p>
-                      </div>
-                      <div className="p-3 text-center">
-                        <p className="text-xs font-semibold text-slate-900">{sd.name as string || "Student"}</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">{sd.studentId as string || "—"}</p>
-                        {personal.photo && <span className="inline-block mt-2 text-[10px] font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded">✓ Uploaded</span>}
-                      </div>
-                    </div>
-                  </div>
+                {/* Row 1: Basic Details (full width) */}
+                <div className="mb-3">
                   {/* Basic Details Card */}
                   <div className="rounded-lg border border-slate-200 overflow-hidden">
                     <div className="px-3 py-1.5 bg-gradient-to-r from-red-50 to-white border-b border-slate-200 border-l-[3px] border-l-red-500">
@@ -740,24 +690,6 @@ export default function StudentDashboard() {
                 <div className="grid grid-cols-2 gap-3">
                   {/* Column 1 */}
                   <div className="space-y-3">
-                    {/* Photo */}
-                    <div className="rounded-lg border border-slate-200 overflow-hidden">
-                      <div className="px-3 py-1.5 bg-gradient-to-r from-rose-50 to-white border-b border-slate-200 border-l-[3px] border-l-rose-500">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-rose-700">Student Photo</p>
-                      </div>
-                      <div className="p-3 flex flex-col items-center gap-3">
-                        <div className="w-24 h-32 rounded-lg border-2 border-dashed border-slate-300 overflow-hidden bg-white flex items-center justify-center">
-                          {personal.photo
-                            ? <img src={personal.photo} alt="Photo" className="w-full h-full object-cover" />
-                            : <Camera className="w-8 h-8 text-slate-400" />}
-                        </div>
-                        <button onClick={() => photoRef.current?.click()} disabled={uploadingPhoto || !canEdit}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-dashed border-slate-400 rounded-lg bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors">
-                          {uploadingPhoto ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                          {uploadingPhoto ? "Uploading…" : personal.photo ? "Change Photo" : "Upload Photo"}
-                        </button>
-                      </div>
-                    </div>
                     {/* Basic Details */}
                     <div className="rounded-lg border border-slate-200 overflow-hidden">
                       <div className="px-3 py-1.5 bg-gradient-to-r from-red-50 to-white border-b border-slate-200 border-l-[3px] border-l-red-500">
@@ -852,37 +784,40 @@ export default function StudentDashboard() {
                 </div>
               </div>
             )}
-          </div>
+          </section>
 
           {/* SECTION 3: Academic Background Form */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-slate-200 bg-slate-50">
-              <span className="w-5 h-5 rounded-full gradient-bg flex items-center justify-center flex-shrink-0">
-                <span className="text-[10px] font-extrabold text-white">3</span>
+          <section className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <header className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-200 bg-gradient-to-r from-red-50 via-rose-50 to-white">
+              <span className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm">
+                <BookOpen className="w-5 h-5 text-white" />
               </span>
-              <p className="text-xs font-extrabold text-slate-900 uppercase tracking-wide">Academic Background Form</p>
-              {!canEdit && <Lock className="w-3.5 h-3.5 text-slate-600 ml-auto" />}
+              <div className="flex-1">
+                <h2 className="text-sm font-bold text-slate-900">Academic Background</h2>
+                <p className="text-xs text-slate-500">Your qualifications and uploaded certificates</p>
+              </div>
+              {!canEdit && <Lock className="w-4 h-4 text-slate-500" />}
               {canEdit && (
                 editingAcademic ? (
-                  <div className="ml-auto flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                     <button onClick={() => setEditingAcademic(false)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
                       Cancel
                     </button>
                     <button onClick={saveAcademic} disabled={savingAcademic}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white gradient-bg rounded-lg hover:shadow-md transition-all disabled:opacity-60">
-                      {savingAcademic ? <Loader2 className="w-3 h-3 animate-spin" /> : savedAcademic ? <CheckCircle className="w-3 h-3" /> : <Save className="w-3 h-3" />}
-                      {savingAcademic ? "Saving…" : savedAcademic ? "Saved!" : "Save"}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white gradient-bg rounded-lg hover:shadow-md transition-all disabled:opacity-60">
+                      {savingAcademic ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : savedAcademic ? <CheckCircle className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                      {savingAcademic ? "Saving…" : savedAcademic ? "Saved!" : "Save Changes"}
                     </button>
                   </div>
                 ) : (
                   <button onClick={() => setEditingAcademic(true)}
-                    className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition-colors">
-                    <Pencil className="w-3 h-3" /> Edit Details
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-red-200 bg-white text-red-600 rounded-lg hover:bg-red-50 transition-colors">
+                    <Pencil className="w-3.5 h-3.5" /> Edit
                   </button>
                 )
               )}
-            </div>
+            </header>
             {/* Academic VIEW MODE */}
             {!editingAcademic ? (
               <div className="p-4 space-y-2">
@@ -1037,7 +972,7 @@ export default function StudentDashboard() {
                 </div>
               </>
             )}
-          </div>
+          </section>
 
         </div>
       </div>
