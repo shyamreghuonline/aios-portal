@@ -288,18 +288,29 @@ function PaymentReport({ stats, loading, periodTab, setPeriodTab }: {
   setPeriodTab: (t: PeriodTab) => void;
 }) {
   const today = new Date().toISOString().split("T")[0];
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-  const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  
+  // Get start of current week (Monday)
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - daysSinceMonday);
+  weekStart.setHours(0, 0, 0, 0);
+  const weekStartStr = weekStart.toISOString().split("T")[0];
+  
+  // Get start of current month
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthStartStr = monthStart.toISOString().split("T")[0];
 
   const filtered = useMemo(() => {
     return stats.allPayments.filter((p) => {
       const d = p.paymentDate;
       if (periodTab === "today") return d === today;
-      if (periodTab === "week") return d >= weekAgo && d <= today;
-      if (periodTab === "month") return d >= monthAgo && d <= today;
+      if (periodTab === "week") return d >= weekStartStr && d <= today;
+      if (periodTab === "month") return d >= monthStartStr && d <= today;
       return true;
     });
-  }, [stats.allPayments, periodTab, today, weekAgo, monthAgo]);
+  }, [stats.allPayments, periodTab, today, weekStartStr, monthStartStr]);
 
   const periodDiscount = filtered
     .filter((p) => p.isDiscount || p.paymentMode === "Discount")

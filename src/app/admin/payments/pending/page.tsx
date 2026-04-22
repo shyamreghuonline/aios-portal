@@ -22,7 +22,8 @@ import {
   Eye,
   FileText,
   Mail,
-  MessageSquare
+  MessageSquare,
+  Trash2
 } from "lucide-react";
 
 interface PendingPayment {
@@ -66,6 +67,7 @@ export default function PendingPaymentsPage() {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [approveModalOpen, setApproveModalOpen] = useState(false);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [processing, setProcessing] = useState(false);
   
@@ -340,15 +342,29 @@ Thank you!`,
         </div>
         <div className="bg-white rounded-lg border p-4">
           <div className="text-2xl font-bold text-green-600">
-            {pendingPayments.filter(p => p.status === "approved").length}
+            {pendingPayments.filter(p => {
+              if (p.status !== "approved") return false;
+              // Only count approved today
+              const approvedDate = p.reviewedAt?.toDate?.();
+              if (!approvedDate) return false;
+              const today = new Date();
+              return approvedDate.toDateString() === today.toDateString();
+            }).length}
           </div>
-          <div className="text-xs text-slate-500">Approved</div>
+          <div className="text-xs text-slate-500">Approved Today</div>
         </div>
         <div className="bg-white rounded-lg border p-4">
           <div className="text-2xl font-bold text-red-600">
-            {pendingPayments.filter(p => p.status === "rejected").length}
+            {pendingPayments.filter(p => {
+              if (p.status !== "rejected") return false;
+              // Only count rejected today
+              const rejectedDate = p.reviewedAt?.toDate?.();
+              if (!rejectedDate) return false;
+              const today = new Date();
+              return rejectedDate.toDateString() === today.toDateString();
+            }).length}
           </div>
-          <div className="text-xs text-slate-500">Rejected</div>
+          <div className="text-xs text-slate-500">Rejected Today</div>
         </div>
         <div className="bg-white rounded-lg border p-4">
           <div className="text-2xl font-bold text-slate-900">
@@ -493,6 +509,15 @@ Thank you!`,
                             <XCircle className="w-4 h-4" />
                           </button>
                         </>
+                      )}
+                      {(payment.status === "approved" || payment.status === "rejected") && (
+                        <button
+                          onClick={() => { setSelectedPayment(payment); setDeleteModalOpen(true); }}
+                          className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       )}
                     </div>
                   </td>
