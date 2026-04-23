@@ -7,6 +7,10 @@ import {
   Plus,
   Loader2,
   ArrowLeft,
+  Copy,
+  Check,
+  ExternalLink,
+  Send,
 } from "lucide-react";
 import Link from "next/link";
 import { getFaculties, getCourses, getStreams, getDuration } from "@/lib/courses-data";
@@ -96,6 +100,9 @@ export default function NewStudentPage() {
   const [customFaculty, setCustomFaculty] = useState(false);
   const [customCourse, setCustomCourse] = useState(false);
   const [customStream, setCustomStream] = useState(false);
+  const [passwordLink, setPasswordLink] = useState<string | null>(null);
+  const [createdStudentName, setCreatedStudentName] = useState<string>("");
+  const [copied, setCopied] = useState(false);
   const currentYear = new Date().getFullYear();
   
   const [formData, setFormData] = useState({
@@ -203,23 +210,45 @@ export default function NewStudentPage() {
         });
       }
 
-      // Send welcome SMS to student
+      // Generate password setup token and send SMS with link
+      let generatedLink: string | null = null;
       try {
-        await fetch("/api/send-sms", {
+        const tokenRes = await fetch("/api/auth/create-password-token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            phone: phoneKey,
-            studentName: name,
-            studentId: studentId,
-          }),
+          body: JSON.stringify({ phone: phoneKey, studentId }),
         });
-      } catch (smsErr) {
-        console.error("Error sending SMS:", smsErr);
-        // Don't block the flow if SMS fails
+        const tokenData = await tokenRes.json();
+
+        if (tokenRes.ok && tokenData.link) {
+          generatedLink = tokenData.link;
+
+          // Attempt to send SMS — non-blocking, keeps working when SMS is not configured
+          try {
+            await fetch("/api/send-sms", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                phone: phoneKey,
+                studentName: name,
+                studentId: studentId,
+                type: "password-link",
+                passwordLink: tokenData.link,
+              }),
+            });
+          } catch (smsErr) {
+            console.error("SMS auto-send failed (expected if provider not configured):", smsErr);
+          }
+        } else {
+          console.error("Failed to generate password token:", tokenData.error);
+        }
+      } catch (tokenErr) {
+        console.error("Error generating password token:", tokenErr);
       }
 
-      router.push("/admin/students");
+      // Show success UI with password link for admin to share manually
+      setPasswordLink(generatedLink);
+      setCreatedStudentName(name);
     } catch (err) {
       console.error("Error adding student:", err);
       alert("Failed to add student. Please try again.");
@@ -593,6 +622,95 @@ export default function NewStudentPage() {
           </button>
         </div>
       </form>
+
+      {/* Success UI — Password Link for Admin to Share */}
+      {passwordLink && (
+        <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-6 space-y-4">
+          <div className="flex items-center gap-2 text-green-800">
+            <Check className="w-5 h-5" />
+            <h3 className="font-bold text-lg">Student Added Successfully!</h3>
+          </div>
+          <p className="text-sm text-green-700">
+            <strong>{createdStudentName}</strong> has been enrolled. Share the password setup link below with the student via WhatsApp, SMS, or email.
+          </p>
+
+          <div className="bg-white border border-green-200 rounded-lg p-4 space-y-3">
+            <label className="block text-xs font-semibold text-green-800 uppercase tracking-wide">Password Setup Link</label>
+            <div className="flex gap-2">
+              <input
+                readOnly
+                value={passwordLink}
+                className="flex-1 px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-mono break-all"
+              />
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(passwordLink);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="px-4 py-2 text-sm font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 flex-shrink-0"
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+            <p className="text-xs text-slate-500">
+              Link valid for <strong>24 hours</strong> and can only be used once.
+            </p>
+          </div>
+
+          {/* WhatsApp share button */}
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(
+              `Welcome to AIOS EDU! Dear ${createdStudentName}, your enrollment is confirmed. Please set your portal password here: ${passwordLink} (valid 24h). -AIOS EDU Team`
+            )}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors"
+          >
+            <Send className="w-4 h-4" />
+            Share via WhatsApp
+          </a>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => {
+                setPasswordLink(null);
+                setCreatedStudentName("");
+                setCopied(false);
+                setFormData({
+                  name: "",
+                  email: "",
+                  phone: "",
+                  faculty: "",
+                  course: "",
+                  stream: "",
+                  duration: "",
+                  university: "",
+                  startYear: String(currentYear),
+                  endYear: "",
+                  totalFee: "",
+                  discountAmount: "",
+                  enrollmentDate: new Date().toISOString().split("T")[0],
+                });
+                setCustomUniversity(false);
+                setCustomFaculty(false);
+                setCustomCourse(false);
+                setCustomStream(false);
+              }}
+              className="flex-1 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+            >
+              Add Another Student
+            </button>
+            <Link
+              href="/admin/students"
+              className="flex-1 py-2.5 text-sm font-bold text-white gradient-bg rounded-lg hover:shadow-lg transition-all text-center"
+            >
+              Go to Students List
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

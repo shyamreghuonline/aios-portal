@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { User, onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "./firebase";
 
 interface AuthUser {
@@ -54,19 +54,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      // Student: logged in via phone OTP
-      if (fbUser.phoneNumber) {
-        const phone = fbUser.phoneNumber;
-        const studentSnap = await getDoc(doc(db, "students", phone));
-        if (studentSnap.exists()) {
+      // Student: logged in via email (studentId@aiosedu.local)
+      if (fbUser.email && fbUser.email.endsWith("@aiosedu.local")) {
+        const studentId = fbUser.email.replace("@aiosedu.local", "");
+        // Look up student by studentId field in Firestore
+        const studentsRef = collection(db, "students");
+        const q = query(studentsRef, where("studentId", "==", studentId));
+        const studentSnap = await getDocs(q);
+        if (!studentSnap.empty) {
+          const studentDoc = studentSnap.docs[0];
           setUser({
             uid: fbUser.uid,
-            phone,
+            email: fbUser.email,
             role: "student",
-            studentData: studentSnap.data(),
+            studentData: { id: studentDoc.id, ...studentDoc.data() },
           });
         } else {
-          setUser({ uid: fbUser.uid, phone, role: "student" });
+          setUser({ uid: fbUser.uid, email: fbUser.email, role: "student" });
         }
         setLoading(false);
         return;

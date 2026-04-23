@@ -66,8 +66,9 @@ export default function MakePaymentPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // QR Code data - In production, this would be your actual UPI QR
-  const upiId = "aiosedu@upi";
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay?pa=${upiId}&pn=AIOS%20EDU&am=${amount}&cu=INR`;
+  const upiId = "aiosedu@ptaxis";
+  const upiDeepLink = `upi://pay?pa=${upiId}&pn=AIOS EDU&am=${amount}&cu=INR`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiDeepLink)}`;
 
   useEffect(() => {
     async function fetchData() {
