@@ -156,9 +156,11 @@ export default function StudentProfilePage() {
   const photoRef = useRef<HTMLInputElement>(null);
   const aadhaarRef = useRef<HTMLInputElement>(null);
 
+  const studentPhone = user?.studentData ? (user.studentData.id as string) || (user.studentData.phone as string) : undefined;
+
   useEffect(() => {
-    if (!user?.phone) return;
-    getDoc(doc(db, "students", user.phone)).then(snap => {
+    if (!studentPhone) return;
+    getDoc(doc(db, "students", studentPhone)).then(snap => {
       if (!snap.exists()) return;
       const d = snap.data();
       if (d.personalDetails) setPersonal(d.personalDetails as PersonalDetails);
@@ -167,10 +169,10 @@ export default function StudentProfilePage() {
   }, [user]);
 
   async function handlePhotoUpload(file: File) {
-    if (!user?.phone) return;
+    if (!studentPhone) return;
     setUploadingPhoto(true);
     try {
-      const r = storageRef(storage, `students/${user.phone}/photo`);
+      const r = storageRef(storage, `students/${studentPhone}/photo`);
       await uploadBytes(r, file);
       const url = await getDownloadURL(r);
       setPersonal(p => ({ ...p, photo: url }));
@@ -178,31 +180,36 @@ export default function StudentProfilePage() {
   }
 
   async function handleAadhaarUpload(file: File) {
-    if (!user?.phone) return;
+    if (!studentPhone) return;
     setUploadingAadhaar(true);
     try {
-      const r = storageRef(storage, `students/${user.phone}/aadhaar`);
+      const r = storageRef(storage, `students/${studentPhone}/aadhaar`);
       await uploadBytes(r, file);
       const url = await getDownloadURL(r);
       setPersonal(p => ({ ...p, aadhaarUrl: url }));
     } finally { setUploadingAadhaar(false); }
   }
 
+  // Recursively strip undefined values so Firestore can serialize
+  function cleanObject<T>(obj: T): T {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
   async function savePersonal() {
-    if (!user?.phone) return;
+    if (!studentPhone) return;
     setSavingPersonal(true);
     try {
-      await setDoc(doc(db, "students", user.phone), { personalDetails: personal }, { merge: true });
+      await setDoc(doc(db, "students", studentPhone), { personalDetails: cleanObject(personal) }, { merge: true });
       setSavedPersonal(true);
       setTimeout(() => setSavedPersonal(false), 2500);
     } finally { setSavingPersonal(false); }
   }
 
   async function saveAcademic() {
-    if (!user?.phone) return;
+    if (!studentPhone) return;
     setSavingAcademic(true);
     try {
-      await setDoc(doc(db, "students", user.phone), { academicDetails: academic }, { merge: true });
+      await setDoc(doc(db, "students", studentPhone), { academicDetails: cleanObject(academic) }, { merge: true });
       setSavedAcademic(true);
       setTimeout(() => setSavedAcademic(false), 2500);
     } finally { setSavingAcademic(false); }

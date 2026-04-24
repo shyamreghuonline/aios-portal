@@ -56,20 +56,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Student: logged in via email (studentId@aiosedu.local)
       if (fbUser.email && fbUser.email.endsWith("@aiosedu.local")) {
-        const studentId = fbUser.email.replace("@aiosedu.local", "");
+        const studentId = fbUser.uid; // UID stores exact-case studentId (email is lowercased by Auth)
         // Look up student by studentId field in Firestore
-        const studentsRef = collection(db, "students");
-        const q = query(studentsRef, where("studentId", "==", studentId));
-        const studentSnap = await getDocs(q);
-        if (!studentSnap.empty) {
-          const studentDoc = studentSnap.docs[0];
-          setUser({
-            uid: fbUser.uid,
-            email: fbUser.email,
-            role: "student",
-            studentData: { id: studentDoc.id, ...studentDoc.data() },
-          });
-        } else {
+        try {
+          const studentsRef = collection(db, "students");
+          const q = query(studentsRef, where("studentId", "==", studentId));
+          const studentSnap = await getDocs(q);
+          if (!studentSnap.empty) {
+            const studentDoc = studentSnap.docs[0];
+            const docData = studentDoc.data();
+            setUser({
+              uid: fbUser.uid,
+              email: fbUser.email,
+              role: "student",
+              studentData: { id: studentDoc.id, ...docData },
+            });
+          } else {
+            console.warn("[auth-context] No student document found for:", studentId);
+            setUser({ uid: fbUser.uid, email: fbUser.email, role: "student" });
+          }
+        } catch (err) {
+          console.error("[auth-context] Error querying student data:", err);
           setUser({ uid: fbUser.uid, email: fbUser.email, role: "student" });
         }
         setLoading(false);

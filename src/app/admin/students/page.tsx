@@ -30,6 +30,9 @@ import {
   Bell,
   Printer,
   KeyRound,
+  Copy,
+  Check,
+  Send,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -144,6 +147,12 @@ export default function StudentsPage() {
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [togglingProfileId, setTogglingProfileId] = useState<string | null>(null);
   const [resettingPasswordId, setResettingPasswordId] = useState<string | null>(null);
+  const [resetLink, setResetLink] = useState<string | null>(null);
+  const [resetLinkStudentName, setResetLinkStudentName] = useState<string>("");
+  const [copied, setCopied] = useState(false);
+  const [newStudentLink, setNewStudentLink] = useState<string | null>(null);
+  const [newStudentName, setNewStudentName] = useState<string>("");
+  const [newStudentCopied, setNewStudentCopied] = useState(false);
   const [detailStudent, setDetailStudent] = useState<Student | null>(null);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [discountForm, setDiscountForm] = useState({ amount: "", remarks: "" });
@@ -263,24 +272,32 @@ export default function StudentsPage() {
       const tokenData = await tokenRes.json();
 
       if (tokenRes.ok && tokenData.link) {
-        await fetch("/api/send-sms", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            phone: student.phone,
-            studentName: student.name,
-            studentId: student.studentId || student.id,
-            type: "password-link",
-            passwordLink: tokenData.link,
-          }),
-        });
-        alert(`Password reset link sent to ${student.phone}`);
+        // Attempt SMS auto-send (non-blocking)
+        try {
+          await fetch("/api/send-sms", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              phone: student.phone,
+              studentName: student.name,
+              studentId: student.studentId || student.id,
+              type: "password-link",
+              passwordLink: tokenData.link,
+            }),
+          });
+        } catch (smsErr) {
+          console.error("SMS auto-send failed:", smsErr);
+        }
+
+        // Show the link in UI for admin to copy/share
+        setResetLink(tokenData.link);
+        setResetLinkStudentName(student.name);
       } else {
         alert("Failed to generate password reset link.");
       }
     } catch (err) {
       console.error("Reset password error:", err);
-      alert("Error sending password reset link.");
+      alert("Error generating password reset link.");
     } finally {
       setResettingPasswordId(null);
     }
@@ -472,22 +489,48 @@ export default function StudentsPage() {
         });
       }
 
-      // Send welcome SMS to student
+      // Generate password setup token and send SMS with link
+      let generatedLink: string | null = null;
       try {
-        await fetch("/api/send-sms", {
+        const tokenRes = await fetch("/api/auth/create-password-token", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            phone: phoneKey,
-            studentName: formData.name,
-            studentId: studentId,
-          }),
+          body: JSON.stringify({ phone: phoneKey, studentId }),
         });
-      } catch (smsErr) {
-        console.error("Error sending SMS:", smsErr);
-        // Don't block the flow if SMS fails
+        const tokenData = await tokenRes.json();
+
+        if (tokenRes.ok && tokenData.link) {
+          generatedLink = tokenData.link;
+
+          // Attempt SMS auto-send (non-blocking)
+          try {
+            await fetch("/api/send-sms", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                phone: phoneKey,
+                studentName: formData.name,
+                studentId: studentId,
+                type: "password-link",
+                passwordLink: tokenData.link,
+              }),
+            });
+          } catch (smsErr) {
+            console.error("SMS auto-send failed (expected if provider not configured):", smsErr);
+          }
+        } else {
+          console.error("Failed to generate password token:", tokenData.error);
+        }
+      } catch (tokenErr) {
+        console.error("Error generating password token:", tokenErr);
       }
 
+      // Show success UI with link inside the modal
+      setNewStudentLink(generatedLink);
+      setNewStudentName(formData.name);
+      setNewStudentCopied(false);
+
+      // Clear form for next time
       setFormData({
         name: "",
         email: "",
@@ -503,7 +546,6 @@ export default function StudentsPage() {
         discountAmount: "",
         enrollmentDate: new Date().toISOString().split("T")[0],
       });
-      setShowForm(false);
       setCustomUniversity(false);
       setCustomFaculty(false);
       setCustomCourse(false);
@@ -875,6 +917,53 @@ export default function StudentsPage() {
                 </button>
               </div>
             </div>
+
+            {/* Reset Link Banner */}
+            {resetLink && (
+              <div className="mx-4 sm:mx-5 mt-3 bg-green-50 border border-green-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2 text-green-800">
+                  <Check className="w-4 h-4" />
+                  <p className="text-sm font-bold">Password reset link generated for {resetLinkStudentName}</p>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    readOnly
+                    value={resetLink}
+                    className="flex-1 px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-700 font-mono break-all"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(resetLink);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className="px-3 py-2 text-xs font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1.5 flex-shrink-0"
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? "Copied!" : "Copy"}
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(
+                      `Hello ${resetLinkStudentName}, your AIOS EDU portal password reset link: ${resetLink} (valid 24h). -AIOS EDU Team`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    Share via WhatsApp
+                  </a>
+                  <button
+                    onClick={() => { setResetLink(null); setResetLinkStudentName(""); setCopied(false); }}
+                    className="text-xs text-slate-500 hover:text-slate-700 underline"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* ── Body ── */}
             <div className="p-4 sm:p-5 space-y-4">
@@ -1616,7 +1705,82 @@ export default function StudentsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-3">
+            {newStudentLink ? (
+              /* Success UI */
+              <div className="space-y-4">
+                <div className="bg-green-50 border border-green-200 rounded-xl p-5 space-y-4">
+                  <div className="flex items-center gap-2 text-green-800">
+                    <Check className="w-5 h-5" />
+                    <h3 className="font-bold text-lg">Student Added Successfully!</h3>
+                  </div>
+                  <p className="text-sm text-green-700">
+                    <strong>{newStudentName}</strong> has been enrolled. Share the password setup link below with the student via WhatsApp, SMS, or email.
+                  </p>
+
+                  <div className="bg-white border border-green-200 rounded-lg p-4 space-y-3">
+                    <label className="block text-xs font-semibold text-green-800 uppercase tracking-wide">Password Setup Link</label>
+                    <div className="flex gap-2">
+                      <input
+                        readOnly
+                        value={newStudentLink}
+                        className="flex-1 px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-mono break-all"
+                      />
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(newStudentLink);
+                          setNewStudentCopied(true);
+                          setTimeout(() => setNewStudentCopied(false), 2000);
+                        }}
+                        className="px-4 py-2 text-sm font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 flex-shrink-0"
+                      >
+                        {newStudentCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        {newStudentCopied ? "Copied!" : "Copy"}
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Link valid for <strong>24 hours</strong> and can only be used once.
+                    </p>
+                  </div>
+
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(
+                      `Welcome to AIOS EDU! Dear ${newStudentName}, your enrollment is confirmed. Please set your portal password here: ${newStudentLink} (valid 24h). -AIOS EDU Team`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors"
+                  >
+                    <Send className="w-4 h-4" />
+                    Share via WhatsApp
+                  </a>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setNewStudentLink(null);
+                      setNewStudentName("");
+                      setNewStudentCopied(false);
+                    }}
+                    className="flex-1 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                  >
+                    Add Another Student
+                  </button>
+                  <button
+                    onClick={() => {
+                      setNewStudentLink(null);
+                      setNewStudentName("");
+                      setNewStudentCopied(false);
+                      setShowForm(false);
+                    }}
+                    className="flex-1 py-2.5 text-sm font-bold text-white gradient-bg rounded-lg hover:shadow-lg transition-all"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-3">
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Full Name *</label>
@@ -1956,6 +2120,7 @@ export default function StudentsPage() {
                 )}
               </button>
             </form>
+          )}
           </div>
         </div>
       )}

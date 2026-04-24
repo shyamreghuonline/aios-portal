@@ -178,27 +178,36 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     async function fetchData() {
-      if (authLoading || !user?.phone) return;
-      
-      // First try to use studentData from auth context
+      if (authLoading) return;
+      if (!user?.studentData) {
+        setLoading(false);
+        return;
+      }
+
+      // Get phone from studentData.id (Firestore doc ID is the phone number)
       const studentData = user.studentData as Record<string, unknown> | undefined;
-      
+      const phone = (studentData?.id as string) || (studentData?.phone as string);
+      if (!phone) {
+        setLoading(false);
+        return;
+      }
+
       try {
         // Always fetch fresh data from Firestore
-        const snap = await getDoc(doc(db, "students", user.phone));
+        const snap = await getDoc(doc(db, "students", phone));
         if (snap.exists()) {
           const d = snap.data();
-          
+
           // Merge Firestore data with auth context data (Firestore takes precedence)
           const mergedData = { ...studentData, ...d };
-          
+
           // Set all student data fields
           if (mergedData.totalFee) setTotalFee(mergedData.totalFee as number);
           if (mergedData.discountAmount) setDiscountAmount(mergedData.discountAmount as number);
           if (mergedData.studentId) setStudentId(mergedData.studentId as string);
           if (d.personalDetails) setPersonal(d.personalDetails as PersonalDetails);
           if (d.academicDetails) setAcademic(d.academicDetails as AcademicDetails);
-          
+
           // Update auth context studentData with fresh data for other components
           if (user.studentData) {
             Object.assign(user.studentData, d);
@@ -218,7 +227,7 @@ export default function StudentDashboard() {
       }
 
       try {
-        const q = query(collection(db, "payments"), where("studentPhone", "==", user.phone), orderBy("createdAt", "desc"));
+        const q = query(collection(db, "payments"), where("studentPhone", "==", phone), orderBy("createdAt", "desc"));
         const pSnap = await getDocs(q);
         let paid = 0;
         const list: Payment[] = [];
@@ -270,7 +279,8 @@ export default function StudentDashboard() {
   }
 
   async function handlePhotoUpload(file: File) {
-    if (!user?.phone) return;
+    const phone = (user?.studentData?.id as string) || (user?.studentData?.phone as string);
+    if (!phone) return;
     setUploadingPhoto(true); setUploadError(null);
     try {
       const photoUrl = await uploadToBase64(file);
@@ -284,7 +294,8 @@ export default function StudentDashboard() {
   }
 
   async function handleAadhaarUpload(file: File) {
-    if (!user?.phone) return;
+    const phone = (user?.studentData?.id as string) || (user?.studentData?.phone as string);
+    if (!phone) return;
     setUploadingAadhaar(true); setUploadError(null);
     try {
       const aadhaarUrl = await uploadToBase64(file);
@@ -298,7 +309,8 @@ export default function StudentDashboard() {
   }
 
   async function handleCertUpload(level: string, file: File) {
-    if (!user?.phone) return;
+    const phone = (user?.studentData?.id as string) || (user?.studentData?.phone as string);
+    if (!phone) return;
     setUploadingCert(u => ({ ...u, [level]: true })); setUploadError(null);
     try {
       const url = await uploadToBase64(file);
@@ -317,7 +329,9 @@ export default function StudentDashboard() {
   }
 
   async function savePersonal() {
-    if (!user?.phone) return;
+    if (!user?.studentData) return;
+    const phone = (user.studentData.id as string) || (user.studentData.phone as string);
+    if (!phone) return;
     const required: { key: keyof PersonalDetails; label: string }[] = [
       { key: "dob", label: "Date of Birth" },
       { key: "gender", label: "Gender" },
@@ -342,18 +356,25 @@ export default function StudentDashboard() {
     }
     setSavingPersonal(true);
     try {
-      await setDoc(doc(db, "students", user.phone), { personalDetails: personal }, { merge: true });
+      const payload = { personalDetails: cleanObject(personal) };
+      console.log("[savePersonal] payload:", JSON.stringify(payload));
+      await setDoc(doc(db, "students", phone), payload, { merge: true });
       setSavedPersonal(true);
       setEditingKyc(false);
       setTimeout(() => setSavedPersonal(false), 2500);
+    } catch (err) {
+      console.error("[savePersonal] Firestore error:", err);
+      alert("Failed to save personal details. Check console for details.");
     } finally { setSavingPersonal(false); }
   }
 
   async function saveAcademic() {
-    if (!user?.phone) return;
+    if (!user?.studentData) return;
+    const phone = (user.studentData.id as string) || (user.studentData.phone as string);
+    if (!phone) return;
     setSavingAcademic(true);
     try {
-      await setDoc(doc(db, "students", user.phone), { academicDetails: academic }, { merge: true });
+      await setDoc(doc(db, "students", phone), { academicDetails: cleanObject(academic) }, { merge: true });
       setSavedAcademic(true);
       setEditingAcademic(false);
       setTimeout(() => setSavedAcademic(false), 2500);
@@ -390,6 +411,11 @@ export default function StudentDashboard() {
     } finally {
       setGeneratingPDF(false);
     }
+  }
+
+  // Recursively strip undefined and non-serializable values for Firestore
+  function cleanObject<T>(obj: T): T {
+    return JSON.parse(JSON.stringify(obj));
   }
 
   const up = (k: keyof PersonalDetails, v: string) => setPersonal(p => ({ ...p, [k]: v }));
@@ -543,7 +569,7 @@ export default function StudentDashboard() {
                     { icon: Building2, label: "University", value: (sd.university as string) || "", tint: "from-indigo-50 to-white", iconColor: "text-indigo-600", ring: "border-indigo-100" },
                     { icon: Calendar, label: "Academic Year", value: `${sd.startYear || ""}${sd.endYear ? ` – ${sd.endYear}` : ""}`, tint: "from-sky-50 to-white", iconColor: "text-sky-600", ring: "border-sky-100" },
                     { icon: Mail, label: "Contact Email", value: (sd.email as string) || "", tint: "from-teal-50 to-white", iconColor: "text-teal-600", ring: "border-teal-100" },
-                    { icon: Phone, label: "Contact Number", value: user?.phone || "", tint: "from-emerald-50 to-white", iconColor: "text-emerald-600", ring: "border-emerald-100" },
+                    { icon: Phone, label: "Contact Number", value: (sd.phone as string) || (sd.id as string) || "", tint: "from-emerald-50 to-white", iconColor: "text-emerald-600", ring: "border-emerald-100" },
                     { icon: IdCard, label: "Enrollment ID", value: (sd.studentId as string) || "—", tint: "from-slate-50 to-white", iconColor: "text-slate-700", ring: "border-slate-200" },
                   ].map(({ icon: Icon, label, value, tint, iconColor, ring }) => (
                     <div key={label} className={`flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br ${tint} border ${ring} hover:shadow-sm transition-all`} title="Managed by admin">
@@ -1245,7 +1271,7 @@ export default function StudentDashboard() {
                   </tr>
                   <tr>
                     <td style={{ padding: '4px 6px', backgroundColor: '#fee2e2', fontWeight: 700, color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '2px 0 0 2px' }}>Contact</td>
-                    <td style={{ padding: '4px 6px', backgroundColor: '#ffffff', fontWeight: 600, color: '#1a1a1a', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 2px 2px 0' }}>{user?.phone || "—"}</td>
+                    <td style={{ padding: '4px 6px', backgroundColor: '#ffffff', fontWeight: 600, color: '#1a1a1a', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 2px 2px 0' }}>{(sd.phone as string) || (sd.id as string) || "—"}</td>
                     <td style={{ padding: '4px 6px', backgroundColor: '#fee2e2', fontWeight: 700, color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '2px 0 0 2px' }}>Email</td>
                     <td style={{ padding: '4px 6px', backgroundColor: '#ffffff', fontWeight: 600, color: '#1a1a1a', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 2px 2px 0' }}>{(sd.email as string) || "—"}</td>
                   </tr>

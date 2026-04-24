@@ -70,14 +70,16 @@ export default function MakePaymentPage() {
   const upiDeepLink = `upi://pay?pa=${upiId}&pn=AIOS EDU&am=${amount}&cu=INR`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiDeepLink)}`;
 
+  const studentPhone = user?.studentData ? (user.studentData.id as string) || (user.studentData.phone as string) : undefined;
+
   useEffect(() => {
     async function fetchData() {
-      if (!user?.phone) return;
+      if (!studentPhone) return;
       try {
         // Fetch confirmed payments (simplified query to avoid index requirement)
         const paymentsQuery = query(
           collection(db, "payments"),
-          where("studentPhone", "==", user.phone)
+          where("studentPhone", "==", studentPhone)
         );
         const paymentsSnap = await getDocs(paymentsQuery);
         const paymentsData = paymentsSnap.docs
@@ -93,7 +95,7 @@ export default function MakePaymentPage() {
         // Fetch pending payments (simplified query to avoid index requirement)
         const pendingQuery = query(
           collection(db, "pendingPayments"),
-          where("studentPhone", "==", user.phone)
+          where("studentPhone", "==", studentPhone)
         );
         const pendingSnap = await getDocs(pendingQuery);
         const pendingData = pendingSnap.docs
@@ -107,7 +109,7 @@ export default function MakePaymentPage() {
         // Fetch student data
         const studentQuery = query(
           collection(db, "students"),
-          where("phone", "==", user.phone)
+          where("phone", "==", studentPhone)
         );
         const studentSnap = await getDocs(studentQuery);
         if (!studentSnap.empty) {
@@ -202,7 +204,7 @@ export default function MakePaymentPage() {
       // Create pending payment record
       await addDoc(collection(db, "pendingPayments"), {
         studentId: studentData?.id || "",
-        studentPhone: user.phone,
+        studentPhone: studentPhone,
         studentName: studentData?.name || "",
         amount: parseFloat(amount),
         paymentMethod,
