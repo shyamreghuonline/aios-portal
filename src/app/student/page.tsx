@@ -8,7 +8,7 @@ import {
   Receipt, AlertTriangle, CheckCircle, CreditCard, Loader2,
   Upload, Save, Camera, Lock, Pencil, Printer, Download,
   GraduationCap, User, Building2, Mail, Phone, IdCard, Calendar,
-  Users, MapPin, Briefcase, BookOpen, Award, ShieldCheck, FileText, ChevronRight, TrendingUp,
+  Users, MapPin, Briefcase, BookOpen, Award, ShieldCheck, FileText, ChevronRight, TrendingUp, X,
 } from "lucide-react";
 import Link from "next/link";
 import jsPDF from "jspdf";
@@ -89,12 +89,26 @@ function Input({
   );
 }
 
-function openBase64(dataUrl: string) {
-  const win = window.open();
-  if (win) {
-    win.document.write(`<img src="${dataUrl}" style="max-width:100%;height:auto;" />`);
-    win.document.title = "Document";
-  }
+function DocModal({ url, onClose }: { url: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50 rounded-t-2xl">
+          <p className="text-sm font-bold text-slate-800">View Document</p>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors">
+            <X className="w-5 h-5 text-slate-600" />
+          </button>
+        </div>
+        <div className="p-4 flex items-center justify-center min-h-[200px]">
+          {url.startsWith('data:application/pdf') ? (
+            <embed src={url} type="application/pdf" className="w-full h-[70vh] rounded-lg" />
+          ) : (
+            <img src={url} alt="Document" className="max-w-full max-h-[70vh] object-contain rounded-lg" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function CertUpload({ level, url, uploading, onUpload, disabled }: {
@@ -115,7 +129,7 @@ function CertUpload({ level, url, uploading, onUpload, disabled }: {
         {uploading ? "Uploading…" : url ? "Certificate Uploaded ✓ — Click to Replace" : `Upload ${level} Certificate / Marksheet (PDF or Image)`}
       </label>
       {url && (
-        <button onClick={() => openBase64(url)} className="text-[13px] font-medium text-green-700 underline mt-1 block hover:text-green-900">
+        <button onClick={() => setViewDocUrl(url)} className="text-[13px] font-medium text-green-700 underline mt-1 block hover:text-green-900">
           View uploaded certificate
         </button>
       )}
@@ -142,6 +156,7 @@ export default function StudentDashboard() {
   const [totalFee, setTotalFee] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [studentId, setStudentId] = useState<string>("");
+  const [viewDocUrl, setViewDocUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [personal, setPersonal] = useState<PersonalDetails>({});
   const [academic, setAcademic] = useState<AcademicDetails>({});
@@ -622,7 +637,7 @@ export default function StudentDashboard() {
                           <p className="text-sm font-normal text-slate-800 truncate">{value}</p>
                           {docUrl && (
                             <button 
-                              onClick={() => openBase64(docUrl)} 
+                              onClick={() => setViewDocUrl(docUrl)} 
                               className="text-xs font-medium text-red-600 hover:text-red-700 underline mt-1"
                             >
                               View Document
@@ -797,7 +812,7 @@ export default function StudentDashboard() {
                         </label>
                         {personal.aadhaarUrl && (
                           <button 
-                            onClick={() => openBase64(personal.aadhaarUrl!)} 
+                            onClick={() => setViewDocUrl(personal.aadhaarUrl!)} 
                             className="text-[13px] font-semibold text-red-600 hover:text-red-700 underline"
                           >
                             View Document
@@ -963,7 +978,7 @@ export default function StudentDashboard() {
                           <div className="min-w-0 flex-1">
                             <p className="text-xs font-semibold text-red-700 mb-0.5">Certificate</p>
                             {d.certificateUrl ? (
-                              <button onClick={() => openBase64(d.certificateUrl!)} className="text-sm font-normal text-blue-700 underline hover:text-blue-900">
+                              <button onClick={() => setViewDocUrl(d.certificateUrl!)} className="text-sm font-normal text-blue-700 underline hover:text-blue-900">
                                 View Certificate
                               </button>
                             ) : (
@@ -1009,7 +1024,7 @@ export default function StudentDashboard() {
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-semibold text-red-700 mb-0.5">Certificate</p>
                           {academic.phd.certificateUrl ? (
-                            <button onClick={() => openBase64(academic.phd!.certificateUrl!)} className="text-sm font-normal text-blue-700 underline hover:text-blue-900">
+                            <button onClick={() => setViewDocUrl(academic.phd!.certificateUrl!)} className="text-sm font-normal text-blue-700 underline hover:text-blue-900">
                               View Certificate
                             </button>
                           ) : (
@@ -1334,6 +1349,11 @@ export default function StudentDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Document Viewer Modal */}
+      {viewDocUrl && (
+        <DocModal url={viewDocUrl} onClose={() => setViewDocUrl(null)} />
+      )}
     </div>
   );
 }
