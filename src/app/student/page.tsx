@@ -111,9 +111,9 @@ function DocModal({ url, onClose }: { url: string; onClose: () => void }) {
   );
 }
 
-function CertUpload({ level, url, uploading, onUpload, disabled }: {
+function CertUpload({ level, url, uploading, onUpload, onView, disabled }: {
   level: string; url?: string; uploading: boolean;
-  onUpload: (f: File) => void; disabled?: boolean;
+  onUpload: (f: File) => void; onView?: (url: string) => void; disabled?: boolean;
 }) {
   const inputId = `cert-upload-${level.replace(/\s+/g, '-').toLowerCase()}`;
   return (
@@ -129,7 +129,7 @@ function CertUpload({ level, url, uploading, onUpload, disabled }: {
         {uploading ? "Uploading…" : url ? "Certificate Uploaded ✓ — Click to Replace" : `Upload ${level} Certificate / Marksheet (PDF or Image)`}
       </label>
       {url && (
-        <button onClick={() => setViewDocUrl(url)} className="text-[13px] font-medium text-green-700 underline mt-1 block hover:text-green-900">
+        <button onClick={() => onView?.(url)} className="text-[13px] font-medium text-green-700 underline mt-1 block hover:text-green-900">
           View uploaded certificate
         </button>
       )}
@@ -1093,7 +1093,7 @@ export default function StudentDashboard() {
                       <Input label="Year of Passing" type="select" value={academic.sslc?.year || ""} onChange={v => upAc("sslc", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
                       <Input label="Percentage / CGPA" value={academic.sslc?.percentage || ""} onChange={v => upAc("sslc", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
                       <CertUpload level="SSLC / 10th" url={academic.sslc?.certificateUrl}
-                        uploading={!!uploadingCert.sslc} onUpload={f => handleCertUpload("sslc", f)} disabled={!canEdit} />
+                        uploading={!!uploadingCert.sslc} onUpload={f => handleCertUpload("sslc", f)} onView={setViewDocUrl} disabled={!canEdit} />
                     </div>
                   )}
                   {activeStep === 1 && (
@@ -1105,7 +1105,7 @@ export default function StudentDashboard() {
                       <Input label="Year of Passing" type="select" value={academic.plustwo?.year || ""} onChange={v => upAc("plustwo", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
                       <Input label="Percentage / CGPA" value={academic.plustwo?.percentage || ""} onChange={v => upAc("plustwo", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
                       <CertUpload level="HSC / 12th" url={academic.plustwo?.certificateUrl}
-                        uploading={!!uploadingCert.plustwo} onUpload={f => handleCertUpload("plustwo", f)} disabled={!canEdit} />
+                        uploading={!!uploadingCert.plustwo} onUpload={f => handleCertUpload("plustwo", f)} onView={setViewDocUrl} disabled={!canEdit} />
                     </div>
                   )}
                   {activeStep === 2 && (
@@ -1116,7 +1116,7 @@ export default function StudentDashboard() {
                       <Input label="Year of Passing" type="select" value={academic.ug?.year || ""} onChange={v => upAc("ug", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
                       <Input label="Percentage / CGPA" value={academic.ug?.percentage || ""} onChange={v => upAc("ug", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
                       <CertUpload level="UG Degree" url={academic.ug?.certificateUrl}
-                        uploading={!!uploadingCert.ug} onUpload={f => handleCertUpload("ug", f)} disabled={!canEdit} />
+                        uploading={!!uploadingCert.ug} onUpload={f => handleCertUpload("ug", f)} onView={setViewDocUrl} disabled={!canEdit} />
                     </div>
                   )}
                   {activeStep === 3 && (
@@ -1127,7 +1127,7 @@ export default function StudentDashboard() {
                       <Input label="Year of Passing" type="select" value={academic.pg?.year || ""} onChange={v => upAc("pg", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
                       <Input label="Percentage / CGPA" value={academic.pg?.percentage || ""} onChange={v => upAc("pg", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
                       <CertUpload level="PG Degree" url={academic.pg?.certificateUrl}
-                        uploading={!!uploadingCert.pg} onUpload={f => handleCertUpload("pg", f)} disabled={!canEdit} />
+                        uploading={!!uploadingCert.pg} onUpload={f => handleCertUpload("pg", f)} onView={setViewDocUrl} disabled={!canEdit} />
                     </div>
                   )}
                   {activeStep === 4 && (
@@ -1138,7 +1138,7 @@ export default function StudentDashboard() {
                       <Input label="Current Status" type="select" value={academic.phd?.status || ""} onChange={v => upPhd("status", v)}
                         options={["Ongoing", "Submitted", "Awarded"]} disabled={!canEdit} />
                       <CertUpload level="PhD / Research" url={academic.phd?.certificateUrl}
-                        uploading={!!uploadingCert.phd} onUpload={f => handleCertUpload("phd", f)} disabled={!canEdit} />
+                        uploading={!!uploadingCert.phd} onUpload={f => handleCertUpload("phd", f)} onView={setViewDocUrl} disabled={!canEdit} />
                     </div>
                   )}
                   </div>
