@@ -7,6 +7,8 @@ import { useAuth } from "@/lib/auth-context";
 import {
   Receipt, AlertTriangle, CheckCircle, CreditCard, Loader2,
   Upload, Save, Camera, Lock, Pencil, Printer, Download,
+  GraduationCap, User, Building2, Mail, Phone, IdCard, Calendar,
+  Users, MapPin, Briefcase, BookOpen, Award, ShieldCheck, FileText, ChevronRight, TrendingUp, X,
 } from "lucide-react";
 import Link from "next/link";
 import jsPDF from "jspdf";
@@ -66,14 +68,14 @@ function Input({
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   placeholder?: string; disabled?: boolean;
 }) {
-  const cls = `w-full px-2.5 py-1.5 text-xs rounded border outline-none font-medium transition-all ${
+  const cls = `w-full px-3 py-2.5 text-[14px] rounded-lg border outline-none font-medium transition-all ${
     disabled
       ? "bg-slate-50 border-slate-200 text-slate-700 cursor-default"
-      : "border-slate-300 focus:border-red-500 focus:ring-1 focus:ring-red-100 bg-white text-slate-900"
+      : "border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-white text-slate-900"
   }`;
   return (
     <div>
-      <label className="block text-[10px] font-bold text-slate-700 mb-1">{label}</label>
+      <label className="block text-[13px] font-semibold text-slate-700 mb-2">{label}</label>
       {type === "select" ? (
         <select value={value} onChange={e => onChange(e.target.value)} disabled={disabled} className={cls}>
           <option value="">— Select —</option>
@@ -87,12 +89,26 @@ function Input({
   );
 }
 
-function openBase64(dataUrl: string) {
-  const win = window.open();
-  if (win) {
-    win.document.write(`<img src="${dataUrl}" style="max-width:100%;height:auto;" />`);
-    win.document.title = "Document";
-  }
+function DocModal({ url, onClose }: { url: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50 rounded-t-2xl">
+          <p className="text-sm font-bold text-slate-800">View Document</p>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors">
+            <X className="w-5 h-5 text-slate-600" />
+          </button>
+        </div>
+        <div className="p-4 flex items-center justify-center min-h-[200px]">
+          {url.startsWith('data:application/pdf') ? (
+            <embed src={url} type="application/pdf" className="w-full h-[70vh] rounded-lg" />
+          ) : (
+            <img src={url} alt="Document" className="max-w-full max-h-[70vh] object-contain rounded-lg" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function CertUpload({ level, url, uploading, onUpload, disabled }: {
@@ -102,18 +118,18 @@ function CertUpload({ level, url, uploading, onUpload, disabled }: {
   const inputId = `cert-upload-${level.replace(/\s+/g, '-').toLowerCase()}`;
   return (
     <div className="col-span-2">
-      <label className="block text-[10px] font-bold text-slate-700 mb-1">Upload Certificate / Marksheet</label>
+      <label className="block text-[13px] font-semibold text-slate-700 mb-2">Upload Certificate / Marksheet</label>
       <label htmlFor={inputId}
-        className={`w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg border-2 border-dashed transition-all cursor-pointer ${(uploading || disabled) ? 'opacity-50 pointer-events-none' : ''} ${
+        className={`w-full flex items-center justify-center gap-2 py-2.5 text-[13px] font-semibold rounded-lg border-2 border-dashed transition-all cursor-pointer ${(uploading || disabled) ? 'opacity-50 pointer-events-none' : ''} ${
           url
             ? "border-green-500 bg-green-50 text-green-800"
             : "border-slate-300 bg-slate-50 text-slate-700 hover:border-red-400 hover:bg-red-50/30 hover:text-red-700"
         }`}>
-        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : url ? <CheckCircle className="w-3.5 h-3.5" /> : <Upload className="w-3.5 h-3.5" />}
+        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : url ? <CheckCircle className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
         {uploading ? "Uploading…" : url ? "Certificate Uploaded ✓ — Click to Replace" : `Upload ${level} Certificate / Marksheet (PDF or Image)`}
       </label>
       {url && (
-        <button onClick={() => openBase64(url)} className="text-[10px] text-green-700 underline mt-0.5 block hover:text-green-900">
+        <button onClick={() => setViewDocUrl(url)} className="text-[13px] font-medium text-green-700 underline mt-1 block hover:text-green-900">
           View uploaded certificate
         </button>
       )}
@@ -131,6 +147,8 @@ const ACADEMIC_STEPS = [
   { key: "phd",     label: "PhD / Other" },
 ] as const;
 
+const YEAR_OPTIONS = Array.from({ length: 55 }, (_, i) => String(2035 - i));
+
 export default function StudentDashboard() {
   const { user, loading: authLoading } = useAuth();
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -138,6 +156,7 @@ export default function StudentDashboard() {
   const [totalFee, setTotalFee] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [studentId, setStudentId] = useState<string>("");
+  const [viewDocUrl, setViewDocUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [personal, setPersonal] = useState<PersonalDetails>({});
   const [academic, setAcademic] = useState<AcademicDetails>({});
@@ -306,7 +325,6 @@ export default function StudentDashboard() {
       { key: "aadhaarNumber", label: "Aadhaar Number" },
       { key: "fatherName", label: "Father's Name" },
       { key: "motherName", label: "Mother's Name" },
-      { key: "guardianName", label: "Guardian Name" },
       { key: "address", label: "Street / Locality" },
       { key: "city", label: "City / District" },
       { key: "state", label: "State" },
@@ -423,20 +441,36 @@ export default function StudentDashboard() {
               )}
             </div>
           </div>
-          {/* Print Button - Header */}
-          {(personal.aadhaarNumber || academic.sslc?.institution) && (
-            <div className="flex-shrink-0">
+          {/* Header Action Buttons */}
+          <div className="flex-shrink-0 flex items-center gap-2">
+            <Link
+              href="/student/pay"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-white/15 border border-white/30 rounded-lg hover:bg-white/25 transition-colors backdrop-blur-sm"
+              title="Make Payment"
+            >
+              <CreditCard className="w-4 h-4" />
+              <span className="hidden sm:inline">Pay</span>
+            </Link>
+            <Link
+              href="/student/payments"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-white/15 border border-white/30 rounded-lg hover:bg-white/25 transition-colors backdrop-blur-sm"
+              title="View Receipts"
+            >
+              <Receipt className="w-4 h-4" />
+              <span className="hidden sm:inline">Receipts</span>
+            </Link>
+            {(personal.aadhaarNumber || academic.sslc?.institution) && (
               <button
                 onClick={generatePDF}
                 disabled={generatingPDF}
-                className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-red-600 bg-white rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60 shadow-sm"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-600 bg-white rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60 shadow-sm"
                 title="Print Admission Form"
               >
                 {generatingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
                 <span className="hidden sm:inline">{generatingPDF ? "Generating..." : "Print Form"}</span>
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
@@ -452,504 +486,561 @@ export default function StudentDashboard() {
         </div>
       )}
 
-      {/* ══ TWO-COLUMN PORTAL ══ */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      {/* ══ PROFILE SECTIONS ══ */}
+      <div className="w-full">
+        <div className="space-y-4 min-w-0">
 
-        {/* ── LEFT: Fee + Payments ── */}
-        <div className="lg:w-80 xl:w-96 flex-shrink-0 space-y-3">
-
-          {/* Fee Progress */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-bold text-slate-900">Fee Progress</p>
-              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
-                balance <= 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-700"
-              }`}>{balance <= 0 ? "✓ Fully Paid" : "Pending"}</span>
-            </div>
-            <div className="w-full bg-slate-100 rounded-full h-2 mb-1">
-              <div className="h-2 rounded-full gradient-bg transition-all duration-700" style={{ width: `${progressPercent}%` }} />
-            </div>
-            <p className="text-[11px] font-semibold text-slate-700 text-right mb-3">{Math.round(progressPercent)}% paid</p>
-            <div className="grid gap-2 grid-cols-3">
-              {[
-                { label: "Total Fee", value: `₹${totalFee.toLocaleString("en-IN")}`, color: "text-slate-900" },
-                { label: "Paid",      value: `₹${totalPaid.toLocaleString("en-IN")}`, color: "text-blue-700" },
-                { label: "Balance",   value: `₹${Math.max(0, balance).toLocaleString("en-IN")}`, color: balance > 0 ? "text-red-600" : "text-green-700" },
-              ].map(({ label, value, color }) => (
-                <div key={label} className="bg-slate-50 rounded-lg p-2.5 text-center">
-                  <p className={`text-[11px] lg:text-xs font-extrabold ${color}`}>{value}</p>
-                  <p className="text-[11px] font-semibold text-slate-700 mt-0.5">{label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Payment Summary */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-              <p className="text-xs font-bold text-slate-900">Payment Summary</p>
-              <Link href="/student/payments" className="text-[11px] font-bold text-red-600">View All</Link>
-            </div>
-            {loading ? (
-              <div className="flex items-center justify-center py-6"><Loader2 className="w-5 h-5 text-red-600 animate-spin" /></div>
-            ) : payments.length === 0 ? (
-              <div className="text-center py-6">
-                <AlertTriangle className="w-6 h-6 text-slate-300 mx-auto mb-1" />
-                <p className="text-xs font-semibold text-slate-700">No payments yet.</p>
+          {/* SECTION 1: Enrollment Details */}
+          <section className="bg-white border border-red-200 rounded-2xl shadow-sm overflow-hidden">
+            <header className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-200 bg-gradient-to-r from-red-50 via-rose-50 to-white">
+              <span className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm">
+                <GraduationCap className="w-5 h-5 text-white" />
+              </span>
+              <div className="flex-1">
+                <h2 className="text-sm font-bold text-slate-900">Enrollment Details</h2>
+                <p className="text-xs text-slate-500">Your academic enrollment information</p>
               </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-4 px-4 py-1.5 border-b border-slate-100 bg-slate-50">
-                  {["Date", "Receipt No", "Amount", "Status"].map(h => (
-                    <p key={h} className="text-[9px] font-extrabold uppercase tracking-wider text-slate-600">{h}</p>
-                  ))}
+              <span className="text-xs font-semibold bg-green-50 text-green-700 border border-green-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5" /> Verified
+              </span>
+            </header>
+            <div className="p-5 grid grid-cols-1 md:grid-cols-[200px_1fr] gap-5">
+              {/* LEFT: Student Photo Card */}
+              <div className="flex flex-col items-center">
+                <div className="w-full aspect-[3/4] max-w-[200px] rounded-xl border-2 border-slate-200 overflow-hidden bg-gradient-to-b from-rose-50 to-white flex items-center justify-center shadow-sm">
+                  {personal.photo ? (
+                    <img src={personal.photo} alt={name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 p-4 text-center">
+                      <Camera className="w-10 h-10 text-slate-300" />
+                      <p className="text-xs font-medium text-slate-500">No photo uploaded</p>
+                    </div>
+                  )}
                 </div>
-                <div className="divide-y divide-slate-50">
-                  {payments.slice(0, 6).map(p => (
-                    <div key={p.id} className="grid grid-cols-4 px-4 py-2 items-center">
-                      <p className="text-[10px] text-slate-700">{p.paymentDate}</p>
-                      <Link href={`/student/payments/${p.receiptNumber}`} className="text-[10px] font-mono font-semibold text-blue-600 hover:text-blue-800 hover:underline truncate">
-                        {p.receiptNumber}
-                      </Link>
-                      <p className="text-[10px] font-bold text-green-700">₹{p.amountPaid.toLocaleString("en-IN")}</p>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-800 w-fit">Paid</span>
+                <div className="mt-3 w-full text-center">
+                  <p className="text-sm font-bold text-slate-900 truncate">{name}</p>
+                  {canEdit && (
+                    <button
+                      onClick={() => photoRef.current?.click()}
+                      disabled={uploadingPhoto}
+                      className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60"
+                    >
+                      {uploadingPhoto ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                      {uploadingPhoto ? "Uploading…" : personal.photo ? "Change Photo" : "Upload Photo"}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* RIGHT: Enrollment Fields + Notice */}
+              <div className="flex flex-col gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 content-start">
+                  {[
+                    { icon: User, label: "Full Name", value: (sd.name as string) || "", tint: "from-rose-50 to-white", iconColor: "text-rose-600", ring: "border-rose-100" },
+                    { icon: BookOpen, label: "Course Enrolled", value: (sd.course as string) || "", tint: "from-red-50 to-white", iconColor: "text-red-600", ring: "border-red-100" },
+                    { icon: Award, label: "Stream / Specialization", value: (sd.stream as string) || "", tint: "from-amber-50 to-white", iconColor: "text-amber-600", ring: "border-amber-100" },
+                    { icon: Building2, label: "Faculty / Department", value: (sd.faculty as string) || "", tint: "from-purple-50 to-white", iconColor: "text-purple-600", ring: "border-purple-100" },
+                    { icon: Building2, label: "University", value: (sd.university as string) || "", tint: "from-indigo-50 to-white", iconColor: "text-indigo-600", ring: "border-indigo-100" },
+                    { icon: Calendar, label: "Academic Year", value: `${sd.startYear || ""}${sd.endYear ? ` – ${sd.endYear}` : ""}`, tint: "from-sky-50 to-white", iconColor: "text-sky-600", ring: "border-sky-100" },
+                    { icon: Mail, label: "Contact Email", value: (sd.email as string) || "", tint: "from-teal-50 to-white", iconColor: "text-teal-600", ring: "border-teal-100" },
+                    { icon: Phone, label: "Contact Number", value: user?.phone || "", tint: "from-emerald-50 to-white", iconColor: "text-emerald-600", ring: "border-emerald-100" },
+                    { icon: IdCard, label: "Enrollment ID", value: (sd.studentId as string) || "—", tint: "from-slate-50 to-white", iconColor: "text-slate-700", ring: "border-slate-200" },
+                  ].map(({ icon: Icon, label, value, tint, iconColor, ring }) => (
+                    <div key={label} className={`flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br ${tint} border ${ring} hover:shadow-sm transition-all`} title="Managed by admin">
+                      <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <Icon className={`w-4 h-4 ${iconColor}`} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-red-700 mb-0.5">{label}</p>
+                        <p className="text-sm font-normal text-slate-800 truncate">{value || "—"}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </>
-            )}
-          </div>
 
-          {/* Action buttons */}
-          <div className="grid grid-cols-2 gap-2">
-            <Link href="/student/pay" className="gradient-bg rounded-xl p-3 flex flex-col items-center gap-1.5 hover:opacity-90 transition-all">
-              <CreditCard className="w-5 h-5 text-white" />
-              <p className="text-xs font-bold text-white">Make Payment</p>
-            </Link>
-            <Link href="/student/payments" className="bg-slate-800 rounded-xl p-3 flex flex-col items-center gap-1.5 hover:bg-slate-700 transition-all">
-              <Receipt className="w-5 h-5 text-white" />
-              <p className="text-xs font-bold text-white">View Receipts</p>
-            </Link>
-          </div>
-        </div>
-
-        {/* ── RIGHT: Profile Sections ── */}
-        <div className="flex-1 space-y-3 min-w-0">
-
-          {/* SECTION 1: Enrollment Details */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-slate-200 bg-slate-50">
-              <span className="w-5 h-5 rounded-full gradient-bg flex items-center justify-center flex-shrink-0">
-                <span className="text-[10px] font-extrabold text-white">1</span>
-              </span>
-              <p className="text-xs font-extrabold text-slate-900 uppercase tracking-wide">Enrollment Details</p>
-              <span className="ml-auto text-[10px] font-bold bg-green-100 text-green-800 border border-green-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                <CheckCircle className="w-3 h-3" /> Verified by Admin
-              </span>
-            </div>
-            <div className="divide-y divide-slate-100">
-              <div className="grid grid-cols-3 divide-x divide-slate-100">
-                {[
-                  { label: "Full Name",           value: (sd.name as string) || "" },
-                  { label: "Course Enrolled",     value: (sd.course as string) || "" },
-                  { label: "Stream / Specialization", value: (sd.stream as string) || "" },
-                ].map(({ label, value }) => (
-                  <div key={label} className="px-4 py-2.5 cursor-not-allowed select-none" title="Managed by admin">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">{label}</p>
-                    <p className="text-xs font-semibold text-slate-900">{value || "—"}</p>
+                {/* Admin-Managed Notice */}
+                <div className="mt-auto flex items-start gap-3 p-3.5 rounded-xl bg-white border border-blue-200 shadow-sm">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center flex-shrink-0">
+                    <Lock className="w-4 h-4 text-blue-600" />
                   </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-3 divide-x divide-slate-100">
-                {[
-                  { label: "Faculty / Department", value: (sd.faculty as string) || "" },
-                  { label: "University",           value: (sd.university as string) || "" },
-                  { label: "Academic Year",        value: `${sd.startYear || ""}${sd.endYear ? ` – ${sd.endYear}` : ""}` },
-                ].map(({ label, value }) => (
-                  <div key={label} className="px-4 py-2.5 cursor-not-allowed select-none" title="Managed by admin">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">{label}</p>
-                    <p className="text-xs font-semibold text-slate-900">{value || "—"}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> Read-only Information
+                    </p>
+                    <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                      These enrollment details are managed by the administration office. If any of the information above is incorrect or needs to be updated, please <a href={`https://wa.me/917411133333?text=${encodeURIComponent(`Hello, I am ${name || "a student"} (Enrollment ID: ${(sd.studentId as string) || "N/A"}). I need to request a correction/update in my enrollment details on the AIOS portal. Please assist.`)}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-blue-700 underline hover:text-blue-900">contact the admin</a> for assistance.
+                    </p>
                   </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-3 divide-x divide-slate-100">
-                {[
-                  { label: "Contact Email",    value: (sd.email as string) || "" },
-                  { label: "Contact Number",   value: user?.phone || "" },
-                  { label: "Enrollment ID",  value: (sd.studentId as string) || "—" },
-                ].map(({ label, value }) => (
-                  <div key={label} className="px-4 py-2.5 cursor-not-allowed select-none" title="Managed by admin">
-                    <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">{label}</p>
-                    <p className="text-xs font-semibold text-slate-900">{value || "—"}</p>
-                  </div>
-                ))}
+                </div>
               </div>
             </div>
-          </div>
+          </section>
 
           {/* SECTION 2: Personal Information */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-slate-200 bg-slate-50">
-              <span className="w-5 h-5 rounded-full gradient-bg flex items-center justify-center flex-shrink-0">
-                <span className="text-[10px] font-extrabold text-white">2</span>
+          <section className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <header className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-200 bg-gradient-to-r from-red-50 via-rose-50 to-white">
+              <span className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm">
+                <User className="w-5 h-5 text-white" />
               </span>
-              <p className="text-xs font-extrabold text-slate-900 uppercase tracking-wide">Personal Information</p>
-              {!canEdit && <Lock className="w-3.5 h-3.5 text-slate-600 ml-auto" />}
+              <div className="flex-1">
+                <h2 className="text-sm font-bold text-slate-900">Personal Information</h2>
+                <p className="text-xs text-slate-500">Personal, family, address & employment details</p>
+              </div>
+              {!canEdit && <Lock className="w-4 h-4 text-slate-500" />}
               {canEdit && (
                 editingKyc ? (
-                  <div className="ml-auto flex items-center gap-2">
+                  <div className="flex items-center gap-2">
                     <button onClick={() => setEditingKyc(false)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
                       Cancel
                     </button>
                     <button onClick={savePersonal} disabled={savingPersonal}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white gradient-bg rounded-lg hover:shadow-md transition-all disabled:opacity-60">
-                      {savingPersonal ? <Loader2 className="w-3 h-3 animate-spin" /> : savedPersonal ? <CheckCircle className="w-3 h-3" /> : <Save className="w-3 h-3" />}
-                      {savingPersonal ? "Saving…" : savedPersonal ? "Saved!" : "Save"}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white gradient-bg rounded-lg hover:shadow-md transition-all disabled:opacity-60">
+                      {savingPersonal ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : savedPersonal ? <CheckCircle className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                      {savingPersonal ? "Saving…" : savedPersonal ? "Saved!" : "Save Changes"}
                     </button>
                   </div>
                 ) : (
                   <button onClick={() => setEditingKyc(true)}
-                    className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition-colors">
-                    <Pencil className="w-3 h-3" /> Edit Details
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-red-200 bg-white text-red-600 rounded-lg hover:bg-red-50 transition-colors">
+                    <Pencil className="w-3.5 h-3.5" /> Edit
                   </button>
                 )
               )}
-            </div>
+            </header>
             {/* VIEW MODE */}
             {!editingKyc ? (
-              <div className="p-3 sm:p-4">
-                {/* Row 1: Photo + Basic Details */}
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  {/* Photo Card */}
-                  <div className="rounded-lg border border-slate-200 overflow-hidden flex">
-                    <div className="w-32 bg-gradient-to-b from-rose-50 to-white border-r border-slate-200 flex flex-col items-center justify-center p-3">
-                      <div className="w-20 h-24 rounded-lg border-2 border-dashed border-slate-300 overflow-hidden bg-white flex items-center justify-center mb-2">
-                        {personal.photo
-                          ? <img src={personal.photo} alt="Photo" className="w-full h-full object-cover" />
-                          : <Camera className="w-6 h-6 text-slate-400" />}
-                      </div>
-                      {canEdit && (
-                        <button onClick={() => photoRef.current?.click()} disabled={uploadingPhoto}
-                          className="text-[10px] font-bold text-rose-600 hover:underline disabled:opacity-50">
-                          {uploadingPhoto ? "Uploading…" : personal.photo ? "Change" : "Upload"}
-                        </button>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="px-3 py-1.5 bg-gradient-to-r from-rose-50 to-white border-b border-slate-200">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-rose-700">Student Photo</p>
-                      </div>
-                      <div className="p-3 text-center">
-                        <p className="text-xs font-semibold text-slate-900">{sd.name as string || "Student"}</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">{sd.studentId as string || "—"}</p>
-                        {personal.photo && <span className="inline-block mt-2 text-[10px] font-semibold text-green-700 bg-green-50 px-2 py-0.5 rounded">✓ Uploaded</span>}
-                      </div>
-                    </div>
+              <div className="p-5">
+                {/* Table 1: Basic Details - Matching Enrollment Details Style */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-5 bg-blue-500 rounded-full" />
+                    <User className="w-4 h-4 text-blue-600" />
+                    <h3 className="text-sm font-bold text-slate-800">Basic Details</h3>
                   </div>
-                  {/* Basic Details Card */}
-                  <div className="rounded-lg border border-slate-200 overflow-hidden">
-                    <div className="px-3 py-1.5 bg-gradient-to-r from-red-50 to-white border-b border-slate-200 border-l-[3px] border-l-red-500">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-red-700">Basic Details</p>
-                    </div>
-                    <div className="divide-y divide-slate-100">
-                      {[
-                        { label: "Date of Birth", value: personal.dob },
-                        { label: "Gender", value: personal.gender },
-                        { label: "Blood Group", value: personal.bloodGroup },
-                        { label: "Aadhaar Number", value: personal.aadhaarNumber },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="flex items-center">
-                          <span className="w-[50%] px-3 py-1 text-[10px] font-semibold text-slate-600 bg-slate-50/80">{label}</span>
-                          <span className="flex-1 px-3 py-1 text-[11px] font-semibold text-slate-900">{value || "\u2014"}</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                    {[
+                      { icon: Calendar, label: "Date of Birth", value: personal.dob || "—", tint: "from-rose-50 to-white", iconColor: "text-rose-600", ring: "border-rose-100" },
+                      { icon: User, label: "Gender", value: personal.gender || "—", tint: "from-red-50 to-white", iconColor: "text-red-600", ring: "border-red-100" },
+                      { icon: Award, label: "Blood Group", value: personal.bloodGroup || "—", tint: "from-amber-50 to-white", iconColor: "text-amber-600", ring: "border-amber-100" },
+                      { icon: Users, label: "Father's Name", value: personal.fatherName || "—", tint: "from-blue-50 to-white", iconColor: "text-blue-600", ring: "border-blue-100" },
+                      { icon: Users, label: "Mother's Name", value: personal.motherName || "—", tint: "from-indigo-50 to-white", iconColor: "text-indigo-600", ring: "border-indigo-100" },
+                      { icon: Briefcase, label: "Employment", value: personal.employmentType ? `${personal.employmentType}${personal.yearsOfExperience && personal.employmentType !== "Not Employed" ? ` (${personal.yearsOfExperience} yrs)` : ""}` : "—", tint: "from-amber-50 to-white", iconColor: "text-amber-600", ring: "border-amber-100" },
+                      { icon: IdCard, label: "Aadhaar", value: personal.aadhaarNumber || "—", tint: "from-slate-50 to-white", iconColor: "text-slate-700", ring: "border-slate-200", docUrl: personal.aadhaarUrl },
+                    ].map(({ icon: Icon, label, value, tint, iconColor, ring, docUrl }) => (
+                      <div key={label} className={`flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br ${tint} border ${ring} hover:shadow-sm transition-all`}>
+                        <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <Icon className={`w-4 h-4 ${iconColor}`} />
                         </div>
-                      ))}
-                      <div className="flex items-center">
-                        <span className="w-[50%] px-3 py-1 text-[10px] font-semibold text-slate-600 bg-slate-50/80">Aadhaar Document</span>
-                        <span className="flex-1 px-3 py-1">
-                          {personal.aadhaarUrl
-                            ? <button onClick={() => openBase64(personal.aadhaarUrl!)} className="text-[11px] font-semibold text-red-600 underline hover:text-red-800">View ↗</button>
-                            : <span className="text-[11px] font-semibold text-slate-900">\u2014</span>}
-                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-red-700 mb-0.5">{label}</p>
+                          <p className="text-sm font-normal text-slate-800 truncate">{value}</p>
+                          {docUrl && (
+                            <button 
+                              onClick={() => setViewDocUrl(docUrl)} 
+                              className="text-xs font-medium text-red-600 hover:text-red-700 underline mt-1"
+                            >
+                              View Document
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
-                {/* Row 2: Family + Address + Employment */}
-                <div className="grid grid-cols-3 gap-3">
-                  {/* Family & Guardian */}
-                  <div className="rounded-lg border border-slate-200 overflow-hidden">
-                    <div className="px-3 py-1.5 bg-gradient-to-r from-blue-50 to-white border-b border-slate-200 border-l-[3px] border-l-blue-500">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-blue-700">Family &amp; Guardian</p>
-                    </div>
-                    <div className="divide-y divide-slate-100">
-                      {[
-                        { label: "Father's Name", value: personal.fatherName },
-                        { label: "Mother's Name", value: personal.motherName },
-                        { label: "Guardian Name", value: personal.guardianName },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="flex items-center">
-                          <span className="w-[40%] px-3 py-1.5 text-[10px] font-semibold text-slate-600 bg-slate-50/80">{label}</span>
-                          <span className="flex-1 px-3 py-1.5 text-[11px] font-semibold text-slate-900 truncate">{value || "\u2014"}</span>
-                        </div>
-                      ))}
-                    </div>
+
+                {/* Table 2: Address */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-5 bg-emerald-500 rounded-full" />
+                    <MapPin className="w-4 h-4 text-emerald-600" />
+                    <h3 className="text-sm font-bold text-slate-800">Address</h3>
                   </div>
-                  {/* Address */}
-                  <div className="rounded-lg border border-slate-200 overflow-hidden">
-                    <div className="px-3 py-1.5 bg-gradient-to-r from-emerald-50 to-white border-b border-slate-200 border-l-[3px] border-l-emerald-500">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Address</p>
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 hover:shadow-sm transition-all">
+                    <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+                      <MapPin className="w-4 h-4 text-emerald-600" />
                     </div>
-                    <div className="divide-y divide-slate-100">
-                      {[
-                        { label: "Street", value: personal.address },
-                        { label: "City", value: personal.city },
-                        { label: "State", value: personal.state },
-                        { label: "Pincode", value: personal.pincode },
-                      ].map(({ label, value }) => (
-                        <div key={label} className="flex items-center">
-                          <span className="w-[35%] px-3 py-1.5 text-[10px] font-semibold text-slate-600 bg-slate-50/80">{label}</span>
-                          <span className="flex-1 px-3 py-1.5 text-[11px] font-semibold text-slate-900 truncate">{value || "\u2014"}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  {/* Employment */}
-                  <div className="rounded-lg border border-slate-200 overflow-hidden">
-                    <div className="px-3 py-1.5 bg-gradient-to-r from-amber-50 to-white border-b border-slate-200 border-l-[3px] border-l-amber-500">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Employment</p>
-                    </div>
-                    <div className="divide-y divide-slate-100">
-                      <div className="flex items-center">
-                        <span className="w-[40%] px-3 py-1.5 text-[10px] font-semibold text-slate-600 bg-slate-50/80">Type</span>
-                        <span className="flex-1 px-3 py-1.5 text-[11px] font-semibold text-slate-900">{personal.employmentType || "\u2014"}</span>
-                      </div>
-                      {personal.employmentType && personal.employmentType !== "Not Employed" && (
-                        <div className="flex items-center">
-                          <span className="w-[40%] px-3 py-1.5 text-[10px] font-semibold text-slate-600 bg-slate-50/80">Experience</span>
-                          <span className="flex-1 px-3 py-1.5 text-[11px] font-semibold text-slate-900">{personal.yearsOfExperience || "\u2014"} yrs</span>
-                        </div>
-                      )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-semibold text-emerald-700 mb-0.5">Full Address</p>
+                      <p className="text-sm font-normal text-slate-800">
+                        {personal.address || "—"}
+                        {personal.city && `, ${personal.city}`}
+                        {personal.state && `, ${personal.state}`}
+                        {personal.pincode && ` — ${personal.pincode}`}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
             ) : (
               /* EDIT MODE */
-              <div className="p-3 sm:p-4">
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Column 1 */}
-                  <div className="space-y-3">
-                    {/* Photo */}
-                    <div className="rounded-lg border border-slate-200 overflow-hidden">
-                      <div className="px-3 py-1.5 bg-gradient-to-r from-rose-50 to-white border-b border-slate-200 border-l-[3px] border-l-rose-500">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-rose-700">Student Photo</p>
+              <div className="p-5 sm:p-6 bg-slate-50/50 space-y-6">
+                {/* Section 1: Basic Details - All merged */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-5 bg-blue-500 rounded-full" />
+                    <User className="w-4 h-4 text-blue-600" />
+                    <h3 className="text-sm font-bold text-slate-800">Basic Details</h3>
+                  </div>
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Date of Birth <span className="text-red-500">*</span></label>
+                        <input 
+                          type="date" 
+                          value={personal.dob || ""} 
+                          onChange={e => up("dob", e.target.value)}
+                          disabled={!canEdit}
+                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all bg-white"
+                        />
                       </div>
-                      <div className="p-3 flex flex-col items-center gap-3">
-                        <div className="w-24 h-32 rounded-lg border-2 border-dashed border-slate-300 overflow-hidden bg-white flex items-center justify-center">
-                          {personal.photo
-                            ? <img src={personal.photo} alt="Photo" className="w-full h-full object-cover" />
-                            : <Camera className="w-8 h-8 text-slate-400" />}
-                        </div>
-                        <button onClick={() => photoRef.current?.click()} disabled={uploadingPhoto || !canEdit}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-dashed border-slate-400 rounded-lg bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors">
-                          {uploadingPhoto ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                          {uploadingPhoto ? "Uploading…" : personal.photo ? "Change Photo" : "Upload Photo"}
-                        </button>
+                      <div>
+                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Gender <span className="text-red-500">*</span></label>
+                        <select 
+                          value={personal.gender || ""} 
+                          onChange={e => up("gender", e.target.value)}
+                          disabled={!canEdit}
+                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all bg-white"
+                        >
+                          <option value="">— Select —</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Blood Group <span className="text-red-500">*</span></label>
+                        <select 
+                          value={personal.bloodGroup || ""} 
+                          onChange={e => up("bloodGroup", e.target.value)}
+                          disabled={!canEdit}
+                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all bg-white"
+                        >
+                          <option value="">— Select —</option>
+                          <option value="A+">A+</option>
+                          <option value="A-">A-</option>
+                          <option value="B+">B+</option>
+                          <option value="B-">B-</option>
+                          <option value="O+">O+</option>
+                          <option value="O-">O-</option>
+                          <option value="AB+">AB+</option>
+                          <option value="AB-">AB-</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Aadhaar Number <span className="text-red-500">*</span></label>
+                        <input 
+                          type="text"
+                          value={personal.aadhaarNumber || ""}
+                          onChange={e => up("aadhaarNumber", e.target.value.replace(/\D/g, "").slice(0, 12))}
+                          placeholder="XXXX XXXX XXXX"
+                          inputMode="numeric"
+                          disabled={!canEdit}
+                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all bg-white font-mono"
+                        />
                       </div>
                     </div>
-                    {/* Basic Details */}
-                    <div className="rounded-lg border border-slate-200 overflow-hidden">
-                      <div className="px-3 py-1.5 bg-gradient-to-r from-red-50 to-white border-b border-slate-200 border-l-[3px] border-l-red-500">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-red-700">Basic Details</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Father&apos;s Name <span className="text-red-500">*</span></label>
+                        <input 
+                          type="text"
+                          value={personal.fatherName || ""}
+                          onChange={e => up("fatherName", e.target.value)}
+                          disabled={!canEdit}
+                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all bg-white"
+                        />
                       </div>
-                      <div className="p-3 space-y-2.5">
-                        <div className="grid grid-cols-3 gap-2.5">
-                          <Input label="Date of Birth *" type="date" value={personal.dob || ""} onChange={v => up("dob", v)} disabled={!canEdit} />
-                          <Input label="Gender *" type="select" options={["Male", "Female", "Other"]} value={personal.gender || ""} onChange={v => up("gender", v)} disabled={!canEdit} />
-                          <Input label="Blood Group *" type="select" options={["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"]} value={personal.bloodGroup || ""} onChange={v => up("bloodGroup", v)} disabled={!canEdit} />
+                      <div>
+                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Mother&apos;s Name <span className="text-red-500">*</span></label>
+                        <input 
+                          type="text"
+                          value={personal.motherName || ""}
+                          onChange={e => up("motherName", e.target.value)}
+                          disabled={!canEdit}
+                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all bg-white"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Employment Type <span className="text-red-500">*</span></label>
+                        <select 
+                          value={personal.employmentType || ""} 
+                          onChange={e => { up("employmentType", e.target.value); if (e.target.value === "Not Employed") up("yearsOfExperience", ""); }}
+                          disabled={!canEdit}
+                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all bg-white"
+                        >
+                          <option value="">— Select —</option>
+                          <option value="Not Employed">Not Employed</option>
+                          <option value="Government">Government</option>
+                          <option value="Private">Private</option>
+                          <option value="Self Employed">Self Employed</option>
+                          <option value="Others">Others</option>
+                        </select>
+                      </div>
+                      {personal.employmentType && personal.employmentType !== "Not Employed" && (
+                        <div>
+                          <label className="block text-[13px] font-semibold text-slate-700 mb-2">Years of Experience <span className="text-red-500">*</span></label>
+                          <input 
+                            type="text"
+                            value={personal.yearsOfExperience || ""}
+                            onChange={e => up("yearsOfExperience", e.target.value.replace(/\D/g, "").slice(0, 2))}
+                            inputMode="numeric"
+                            placeholder="e.g., 5"
+                            disabled={!canEdit}
+                            className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all bg-white"
+                          />
                         </div>
-                        <div className="grid grid-cols-2 gap-2.5">
-                          <Input label="Aadhaar Number (12 digits) *"
-                            value={personal.aadhaarNumber || ""}
-                            onChange={v => up("aadhaarNumber", v.replace(/\D/g, "").slice(0, 12))}
-                            placeholder="XXXX-XXXX-XXXX" inputMode="numeric" disabled={!canEdit} />
-                          <div>
-                            <label className="block text-[10px] font-bold text-slate-700 mb-1">Aadhaar Card *</label>
-                            <label htmlFor="student-aadhaar-upload"
-                              className={`w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded border transition-all cursor-pointer ${(uploadingAadhaar || !canEdit) ? 'opacity-50 pointer-events-none' : ''} ${
-                                personal.aadhaarUrl ? "border-green-500 bg-green-50 text-green-800" : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                              }`}>
-                              {uploadingAadhaar ? <Loader2 className="w-3 h-3 animate-spin" /> : personal.aadhaarUrl ? <CheckCircle className="w-3 h-3" /> : <Upload className="w-3 h-3" />}
-                              {uploadingAadhaar ? "Uploading…" : personal.aadhaarUrl ? "Uploaded ✓" : "Upload"}
-                            </label>
-                            {personal.aadhaarUrl && (
-                              <button onClick={() => openBase64(personal.aadhaarUrl!)} className="text-[10px] text-green-700 underline mt-0.5 block hover:text-green-900">View</button>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-[13px] font-semibold text-slate-700 mb-2">Aadhaar Card <span className="text-red-500">*</span></label>
+                      <div className="flex items-center gap-3">
+                        <label 
+                          htmlFor="student-aadhaar-upload"
+                          className={`inline-flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold rounded-lg border-2 transition-all cursor-pointer ${
+                            (uploadingAadhaar || !canEdit) ? 'opacity-50 pointer-events-none' : ''
+                          } ${
+                            personal.aadhaarUrl 
+                              ? "border-green-500 bg-green-50 text-green-700 hover:bg-green-100" 
+                              : "border-slate-300 bg-white text-slate-700 hover:border-slate-400"
+                          }`}
+                        >
+                          {uploadingAadhaar ? <Loader2 className="w-4 h-4 animate-spin" /> : personal.aadhaarUrl ? <CheckCircle className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
+                          {uploadingAadhaar ? "Uploading…" : personal.aadhaarUrl ? "Document Uploaded" : "Upload Aadhaar"}
+                        </label>
+                        {personal.aadhaarUrl && (
+                          <button 
+                            onClick={() => setViewDocUrl(personal.aadhaarUrl!)} 
+                            className="text-[13px] font-semibold text-red-600 hover:text-red-700 underline"
+                          >
+                            View Document
+                          </button>
+                        )}
+                      </div>
+                      <input id="student-aadhaar-upload" ref={aadhaarRef} type="file" accept="image/*,application/pdf" className="hidden"
+                        onChange={e => e.target.files?.[0] && handleAadhaarUpload(e.target.files[0])} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Address */}
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-5 bg-emerald-500 rounded-full" />
+                    <MapPin className="w-4 h-4 text-emerald-600" />
+                    <h3 className="text-sm font-bold text-slate-800">Address</h3>
+                  </div>
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                    <div>
+                      <label className="block text-[13px] font-semibold text-slate-700 mb-2">Street / Locality <span className="text-red-500">*</span></label>
+                      <input 
+                        type="text"
+                        value={personal.address || ""}
+                        onChange={e => up("address", e.target.value)}
+                        placeholder="Enter full address"
+                        disabled={!canEdit}
+                        className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all bg-white"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">City <span className="text-red-500">*</span></label>
+                        <input 
+                          type="text"
+                          value={personal.city || ""}
+                          onChange={e => up("city", e.target.value)}
+                          disabled={!canEdit}
+                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">State <span className="text-red-500">*</span></label>
+                        <input 
+                          type="text"
+                          value={personal.state || ""}
+                          onChange={e => up("state", e.target.value)}
+                          disabled={!canEdit}
+                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Pincode <span className="text-red-500">*</span></label>
+                        <input 
+                          type="text"
+                          value={personal.pincode || ""}
+                          onChange={e => up("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
+                          inputMode="numeric"
+                          placeholder="6-digit code"
+                          disabled={!canEdit}
+                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all bg-white font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Save/Cancel buttons */}
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200">
+                  <button 
+                    onClick={() => setEditingKyc(false)}
+                    className="px-6 py-2.5 text-[14px] font-semibold border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={savePersonal} 
+                    disabled={savingPersonal}
+                    className="px-8 py-2.5 text-[14px] font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 rounded-lg hover:shadow-lg hover:from-red-700 hover:to-red-800 transition-all disabled:opacity-60 flex items-center gap-2"
+                  >
+                    {savingPersonal ? <Loader2 className="w-4 h-4 animate-spin" /> : savedPersonal ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                    {savingPersonal ? "Saving…" : savedPersonal ? "Saved!" : "Save Changes"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* SECTION 3: Academic Background Form */}
+          <section className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+            <header className="flex items-center gap-3 px-5 py-3.5 border-b border-slate-200 bg-gradient-to-r from-red-50 via-rose-50 to-white">
+              <span className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm">
+                <BookOpen className="w-5 h-5 text-white" />
+              </span>
+              <div className="flex-1">
+                <h2 className="text-sm font-bold text-slate-900">Academic Background</h2>
+                <p className="text-xs text-slate-500">Your qualifications and uploaded certificates</p>
+              </div>
+              {!canEdit && <Lock className="w-4 h-4 text-slate-500" />}
+              {canEdit && (
+                editingAcademic ? (
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setEditingAcademic(false)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+                      Cancel
+                    </button>
+                    <button onClick={saveAcademic} disabled={savingAcademic}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white gradient-bg rounded-lg hover:shadow-md transition-all disabled:opacity-60">
+                      {savingAcademic ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : savedAcademic ? <CheckCircle className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                      {savingAcademic ? "Saving…" : savedAcademic ? "Saved!" : "Save Changes"}
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => setEditingAcademic(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border border-red-200 bg-white text-red-600 rounded-lg hover:bg-red-50 transition-colors">
+                    <Pencil className="w-3.5 h-3.5" /> Edit
+                  </button>
+                )
+              )}
+            </header>
+            {/* Academic VIEW MODE */}
+            {!editingAcademic ? (
+              <div className="p-5 space-y-6">
+                {([
+                  { key: "sslc" as const, label: "SSLC / 10th", color: "rose", iconColor: "text-rose-600", ring: "border-rose-100", tint: "from-rose-50 to-white", bar: "bg-rose-500" },
+                  { key: "plustwo" as const, label: "HSC / 12th", color: "amber", iconColor: "text-amber-600", ring: "border-amber-100", tint: "from-amber-50 to-white", bar: "bg-amber-500" },
+                  { key: "ug" as const, label: "Under Graduate (UG)", color: "blue", iconColor: "text-blue-600", ring: "border-blue-100", tint: "from-blue-50 to-white", bar: "bg-blue-500" },
+                  { key: "pg" as const, label: "Post Graduate (PG)", color: "indigo", iconColor: "text-indigo-600", ring: "border-indigo-100", tint: "from-indigo-50 to-white", bar: "bg-indigo-500" },
+                ]).map(({ key: lvl, label, iconColor, ring, tint, bar }) => {
+                  const d = academic[lvl];
+                  if (!d?.institution) return null;
+                  return (
+                    <div key={lvl}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className={`w-1 h-5 ${bar} rounded-full`} />
+                        <GraduationCap className={`w-4 h-4 ${iconColor}`} />
+                        <h3 className="text-sm font-bold text-slate-800">{label}</h3>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                        {[
+                          { icon: Building2, label: "Institution", value: d.institution || "—", tint, iconColor, ring },
+                          { icon: Award, label: "Board / University", value: d.board || "—", tint, iconColor, ring },
+                          { icon: BookOpen, label: d.stream ? "Stream" : "Degree", value: d.stream || d.degree || "—", tint, iconColor, ring },
+                          { icon: Calendar, label: "Year of Passing", value: d.year || "—", tint, iconColor, ring },
+                          { icon: TrendingUp, label: "Percentage / CGPA", value: d.percentage || "—", tint, iconColor, ring },
+                        ].map(({ icon: Icon, label: fLabel, value: fValue, tint: fTint, iconColor: fIconColor, ring: fRing }) => (
+                          <div key={fLabel} className={`flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br ${fTint} border ${fRing} hover:shadow-sm transition-all`}>
+                            <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+                              <Icon className={`w-4 h-4 ${fIconColor}`} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-semibold text-red-700 mb-0.5">{fLabel}</p>
+                              <p className="text-sm font-normal text-slate-800 truncate">{fValue}</p>
+                            </div>
+                          </div>
+                        ))}
+                        {/* Certificate Status */}
+                        <div className={`flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br ${tint} border ${ring} hover:shadow-sm transition-all`}>
+                          <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+                            {d.certificateUrl ? <CheckCircle className={`w-4 h-4 ${iconColor}`} /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-red-700 mb-0.5">Certificate</p>
+                            {d.certificateUrl ? (
+                              <button onClick={() => setViewDocUrl(d.certificateUrl!)} className="text-sm font-normal text-blue-700 underline hover:text-blue-900">
+                                View Certificate
+                              </button>
+                            ) : (
+                              <p className="text-sm font-normal text-slate-400">Not Uploaded</p>
                             )}
-                            <input id="student-aadhaar-upload" ref={aadhaarRef} type="file" accept="image/*,application/pdf" className="hidden"
-                              onChange={e => e.target.files?.[0] && handleAadhaarUpload(e.target.files[0])} />
                           </div>
                         </div>
                       </div>
                     </div>
-                    {/* Family & Guardian */}
-                    <div className="rounded-lg border border-slate-200 overflow-hidden">
-                      <div className="px-3 py-1.5 bg-gradient-to-r from-blue-50 to-white border-b border-slate-200 border-l-[3px] border-l-blue-500">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-blue-700">Family &amp; Guardian</p>
-                      </div>
-                      <div className="p-3 space-y-2.5">
-                        <div className="grid grid-cols-2 gap-2.5">
-                          <Input label="Father's Name *" value={personal.fatherName || ""} onChange={v => up("fatherName", v)} disabled={!canEdit} />
-                          <Input label="Mother's Name *" value={personal.motherName || ""} onChange={v => up("motherName", v)} disabled={!canEdit} />
-                        </div>
-                        <Input label="Guardian Name *" value={personal.guardianName || ""} onChange={v => up("guardianName", v)} disabled={!canEdit} />
-                      </div>
+                  );
+                })}
+
+                {/* PhD / Research */}
+                {academic.phd?.institution && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1 h-5 bg-purple-500 rounded-full" />
+                      <GraduationCap className="w-4 h-4 text-purple-600" />
+                      <h3 className="text-sm font-bold text-slate-800">PhD / Research / Other</h3>
                     </div>
-                  </div>
-                  {/* Column 2 */}
-                  <div className="space-y-3">
-                    {/* Address */}
-                    <div className="rounded-lg border border-slate-200 overflow-hidden">
-                      <div className="px-3 py-1.5 bg-gradient-to-r from-emerald-50 to-white border-b border-slate-200 border-l-[3px] border-l-emerald-500">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Address</p>
-                      </div>
-                      <div className="p-3 space-y-2.5">
-                        <Input label="Street / Locality *" value={personal.address || ""} onChange={v => up("address", v)} placeholder="Enter full address" disabled={!canEdit} />
-                        <div className="grid grid-cols-3 gap-2.5">
-                          <Input label="City / District *" value={personal.city || ""} onChange={v => up("city", v)} disabled={!canEdit} />
-                          <Input label="State *" value={personal.state || ""} onChange={v => up("state", v)} disabled={!canEdit} />
-                          <Input label="Pincode *" value={personal.pincode || ""} onChange={v => up("pincode", v.replace(/\D/g, "").slice(0, 6))} inputMode="numeric" placeholder="6-digit" disabled={!canEdit} />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+                      {[
+                        { icon: Building2, label: "Institution", value: academic.phd.institution || "—", tint: "from-purple-50 to-white", iconColor: "text-purple-600", ring: "border-purple-100" },
+                        { icon: BookOpen, label: "Research Topic", value: academic.phd.topic || "—", tint: "from-purple-50 to-white", iconColor: "text-purple-600", ring: "border-purple-100" },
+                        { icon: Calendar, label: "Year", value: academic.phd.year || "—", tint: "from-purple-50 to-white", iconColor: "text-purple-600", ring: "border-purple-100" },
+                        { icon: ShieldCheck, label: "Status", value: academic.phd.status || "—", tint: "from-purple-50 to-white", iconColor: "text-purple-600", ring: "border-purple-100" },
+                      ].map(({ icon: Icon, label, value, tint: fTint, iconColor: fIconColor, ring: fRing }) => (
+                        <div key={label} className={`flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br ${fTint} border ${fRing} hover:shadow-sm transition-all`}>
+                          <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <Icon className={`w-4 h-4 ${fIconColor}`} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-red-700 mb-0.5">{label}</p>
+                            <p className="text-sm font-normal text-slate-800 truncate">{value}</p>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    {/* Employment */}
-                    <div className="rounded-lg border border-slate-200 overflow-hidden">
-                      <div className="px-3 py-1.5 bg-gradient-to-r from-amber-50 to-white border-b border-slate-200 border-l-[3px] border-l-amber-500">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Employment</p>
-                      </div>
-                      <div className="p-3">
-                        <div className="grid grid-cols-2 gap-2.5">
-                          <Input label="Employment Type *" type="select" options={["Not Employed", "Government", "Private", "Self Employed", "Others"]} value={personal.employmentType || ""} onChange={v => { up("employmentType", v); if (v === "Not Employed") up("yearsOfExperience", ""); }} disabled={!canEdit} />
-                          {personal.employmentType && personal.employmentType !== "Not Employed" && (
-                            <Input label="Years of Experience *" value={personal.yearsOfExperience || ""} onChange={v => up("yearsOfExperience", v.replace(/\D/g, "").slice(0, 2))} inputMode="numeric" placeholder="e.g., 5" disabled={!canEdit} />
+                      ))}
+                      {/* Certificate */}
+                      <div className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-white border border-purple-100 hover:shadow-sm transition-all">
+                        <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+                          {academic.phd.certificateUrl ? <CheckCircle className="w-4 h-4 text-purple-600" /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-red-700 mb-0.5">Certificate</p>
+                          {academic.phd.certificateUrl ? (
+                            <button onClick={() => setViewDocUrl(academic.phd!.certificateUrl!)} className="text-sm font-normal text-blue-700 underline hover:text-blue-900">
+                              View Certificate
+                            </button>
+                          ) : (
+                            <p className="text-sm font-normal text-slate-400">Not Uploaded</p>
                           )}
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                {/* Bottom Save/Cancel buttons */}
-                <div className="flex items-center gap-2 mt-4">
-                  <button onClick={() => setEditingKyc(false)}
-                    className="px-4 py-2 text-xs font-bold border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
-                    Cancel
-                  </button>
-                  <button onClick={savePersonal} disabled={savingPersonal}
-                    className="flex-1 py-2 text-xs font-bold text-white gradient-bg rounded-lg hover:shadow-md transition-all disabled:opacity-60 flex items-center justify-center gap-2">
-                    {savingPersonal ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : savedPersonal ? <CheckCircle className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
-                    {savingPersonal ? "Saving…" : savedPersonal ? "Saved!" : "Save Personal Details"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* SECTION 3: Academic Background Form */}
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-slate-200 bg-slate-50">
-              <span className="w-5 h-5 rounded-full gradient-bg flex items-center justify-center flex-shrink-0">
-                <span className="text-[10px] font-extrabold text-white">3</span>
-              </span>
-              <p className="text-xs font-extrabold text-slate-900 uppercase tracking-wide">Academic Background Form</p>
-              {!canEdit && <Lock className="w-3.5 h-3.5 text-slate-600 ml-auto" />}
-              {canEdit && (
-                editingAcademic ? (
-                  <div className="ml-auto flex items-center gap-2">
-                    <button onClick={() => setEditingAcademic(false)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 transition-colors">
-                      Cancel
-                    </button>
-                    <button onClick={saveAcademic} disabled={savingAcademic}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white gradient-bg rounded-lg hover:shadow-md transition-all disabled:opacity-60">
-                      {savingAcademic ? <Loader2 className="w-3 h-3 animate-spin" /> : savedAcademic ? <CheckCircle className="w-3 h-3" /> : <Save className="w-3 h-3" />}
-                      {savingAcademic ? "Saving…" : savedAcademic ? "Saved!" : "Save"}
-                    </button>
-                  </div>
-                ) : (
-                  <button onClick={() => setEditingAcademic(true)}
-                    className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition-colors">
-                    <Pencil className="w-3 h-3" /> Edit Details
-                  </button>
-                )
-              )}
-            </div>
-            {/* Academic VIEW MODE */}
-            {!editingAcademic ? (
-              <div className="p-4 space-y-2">
-                {(["sslc", "plustwo", "ug", "pg"] as const).map((lvl, i) => {
-                  const d = academic[lvl];
-                  if (!d || !Object.values(d).some(v => v)) return null;
-                  const stepLabels = ["SSLC / 10th", "HSC / 12th", "Under Graduate (UG)", "Post Graduate (PG)"];
-                  return (
-                    <div key={lvl} className="border border-slate-300 rounded-lg overflow-hidden">
-                      <div className="flex items-center justify-between px-3 py-2 bg-red-50 border-b border-slate-200">
-                        <p className="text-sm font-medium text-red-700">{stepLabels[i]}</p>
-                        {d.certificateUrl
-                          ? <button onClick={() => openBase64(d.certificateUrl!)} className="text-[10px] text-green-700 font-bold flex items-center gap-0.5 hover:text-green-900 underline">
-                              <CheckCircle className="w-3 h-3" /> View Certificate
-                            </button>
-                          : <span className="text-[10px] text-red-500 font-bold flex items-center gap-0.5">
-                              <AlertTriangle className="w-3 h-3" /> Not Uploaded
-                            </span>
-                        }
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 p-3">
-                        {[
-                          { label: "Institution", value: d.institution },
-                          { label: "Board", value: d.board },
-                          { label: "Stream / Degree", value: d.stream || d.degree },
-                          { label: "Year", value: d.year },
-                          { label: "Percentage / CGPA", value: d.percentage },
-                        ].filter(f => f.value).map(({ label, value }) => (
-                          <div key={label}>
-                            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-600 mb-0.5">{label}</p>
-                            <p className="text-xs font-bold text-slate-900">{value}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-                {academic.phd && Object.values(academic.phd).some(v => v) && (
-                  <div className="border border-slate-300 rounded-lg overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-2 bg-red-50 border-b border-slate-200">
-                      <p className="text-sm font-medium text-red-700">PhD / Research / Other</p>
-                      {academic.phd.certificateUrl
-                        ? <button onClick={() => openBase64(academic.phd!.certificateUrl!)} className="text-[10px] text-green-700 font-bold flex items-center gap-0.5 hover:text-green-900 underline">
-                            <CheckCircle className="w-3 h-3" /> View Certificate
-                          </button>
-                        : <span className="text-[10px] text-red-500 font-bold flex items-center gap-0.5">
-                            <AlertTriangle className="w-3 h-3" /> Not Uploaded
-                          </span>
-                      }
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 p-3">
-                      {[
-                        { label: "Institution", value: academic.phd.institution },
-                        { label: "Research Topic", value: academic.phd.topic },
-                        { label: "Year", value: academic.phd.year },
-                        { label: "Status", value: academic.phd.status },
-                      ].filter(f => f.value).map(({ label, value }) => (
-                        <div key={label}>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-600 mb-0.5">{label}</p>
-                          <p className="text-xs font-bold text-slate-900">{value}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 )}
+
                 {!academic.sslc?.institution && !academic.plustwo?.institution && !academic.ug?.institution && !academic.pg?.institution && !academic.phd?.institution && (
-                  <p className="text-xs font-semibold text-slate-700 text-center py-4">No academic details added yet.</p>
+                  <div className="flex flex-col items-center gap-3 py-8">
+                    <GraduationCap className="w-10 h-10 text-slate-300" />
+                    <p className="text-sm font-semibold text-slate-500">No academic details added yet.</p>
+                  </div>
                 )}
               </div>
             ) : (
@@ -967,77 +1058,79 @@ export default function StudentDashboard() {
                     </button>
                   ))}
                 </div>
-                <div className="p-4">
+                <div className="p-5 sm:p-6 bg-slate-50/50 space-y-4">
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
                   {activeStep === 0 && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="col-span-2"><Input label="Institution Name" value={academic.sslc?.institution || ""} onChange={v => upAc("sslc", "institution", v)} disabled={!canEdit} /></div>
                       <Input label="Board / University" value={academic.sslc?.board || ""} onChange={v => upAc("sslc", "board", v)} disabled={!canEdit} />
-                      <Input label="Year of Passing" value={academic.sslc?.year || ""} onChange={v => upAc("sslc", "year", v)} inputMode="numeric" disabled={!canEdit} />
+                      <Input label="Year of Passing" type="select" value={academic.sslc?.year || ""} onChange={v => upAc("sslc", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
                       <Input label="Percentage / CGPA" value={academic.sslc?.percentage || ""} onChange={v => upAc("sslc", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
                       <CertUpload level="SSLC / 10th" url={academic.sslc?.certificateUrl}
                         uploading={!!uploadingCert.sslc} onUpload={f => handleCertUpload("sslc", f)} disabled={!canEdit} />
                     </div>
                   )}
                   {activeStep === 1 && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="col-span-2"><Input label="Institution Name" value={academic.plustwo?.institution || ""} onChange={v => upAc("plustwo", "institution", v)} disabled={!canEdit} /></div>
                       <Input label="Board / University" value={academic.plustwo?.board || ""} onChange={v => upAc("plustwo", "board", v)} disabled={!canEdit} />
                       <Input label="Stream" type="select" value={academic.plustwo?.stream || ""} onChange={v => upAc("plustwo", "stream", v)}
                         options={["Science (Bio)", "Science (Maths)", "Commerce", "Arts / Humanities", "Vocational", "Other"]} disabled={!canEdit} />
-                      <Input label="Year of Passing" value={academic.plustwo?.year || ""} onChange={v => upAc("plustwo", "year", v)} inputMode="numeric" disabled={!canEdit} />
+                      <Input label="Year of Passing" type="select" value={academic.plustwo?.year || ""} onChange={v => upAc("plustwo", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
                       <Input label="Percentage / CGPA" value={academic.plustwo?.percentage || ""} onChange={v => upAc("plustwo", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
                       <CertUpload level="HSC / 12th" url={academic.plustwo?.certificateUrl}
                         uploading={!!uploadingCert.plustwo} onUpload={f => handleCertUpload("plustwo", f)} disabled={!canEdit} />
                     </div>
                   )}
                   {activeStep === 2 && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="col-span-2"><Input label="Institution Name" value={academic.ug?.institution || ""} onChange={v => upAc("ug", "institution", v)} disabled={!canEdit} /></div>
                       <Input label="Board / University" value={academic.ug?.board || ""} onChange={v => upAc("ug", "board", v)} disabled={!canEdit} />
                       <Input label="Degree (e.g. B.Com, B.Sc)" value={academic.ug?.degree || ""} onChange={v => upAc("ug", "degree", v)} disabled={!canEdit} />
-                      <Input label="Year of Passing" value={academic.ug?.year || ""} onChange={v => upAc("ug", "year", v)} inputMode="numeric" disabled={!canEdit} />
+                      <Input label="Year of Passing" type="select" value={academic.ug?.year || ""} onChange={v => upAc("ug", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
                       <Input label="Percentage / CGPA" value={academic.ug?.percentage || ""} onChange={v => upAc("ug", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
                       <CertUpload level="UG Degree" url={academic.ug?.certificateUrl}
                         uploading={!!uploadingCert.ug} onUpload={f => handleCertUpload("ug", f)} disabled={!canEdit} />
                     </div>
                   )}
                   {activeStep === 3 && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="col-span-2"><Input label="Institution Name" value={academic.pg?.institution || ""} onChange={v => upAc("pg", "institution", v)} disabled={!canEdit} /></div>
                       <Input label="Board / University" value={academic.pg?.board || ""} onChange={v => upAc("pg", "board", v)} disabled={!canEdit} />
                       <Input label="Degree (e.g. M.Com, MBA)" value={academic.pg?.degree || ""} onChange={v => upAc("pg", "degree", v)} disabled={!canEdit} />
-                      <Input label="Year of Passing" value={academic.pg?.year || ""} onChange={v => upAc("pg", "year", v)} inputMode="numeric" disabled={!canEdit} />
+                      <Input label="Year of Passing" type="select" value={academic.pg?.year || ""} onChange={v => upAc("pg", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
                       <Input label="Percentage / CGPA" value={academic.pg?.percentage || ""} onChange={v => upAc("pg", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
                       <CertUpload level="PG Degree" url={academic.pg?.certificateUrl}
                         uploading={!!uploadingCert.pg} onUpload={f => handleCertUpload("pg", f)} disabled={!canEdit} />
                     </div>
                   )}
                   {activeStep === 4 && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="col-span-2"><Input label="Institution / University" value={academic.phd?.institution || ""} onChange={v => upPhd("institution", v)} disabled={!canEdit} /></div>
                       <div className="col-span-2"><Input label="Research Topic / Thesis Title" value={academic.phd?.topic || ""} onChange={v => upPhd("topic", v)} disabled={!canEdit} /></div>
-                      <Input label="Year of Registration" value={academic.phd?.year || ""} onChange={v => upPhd("year", v)} inputMode="numeric" disabled={!canEdit} />
+                      <Input label="Year of Registration" type="select" value={academic.phd?.year || ""} onChange={v => upPhd("year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
                       <Input label="Current Status" type="select" value={academic.phd?.status || ""} onChange={v => upPhd("status", v)}
                         options={["Ongoing", "Submitted", "Awarded"]} disabled={!canEdit} />
                       <CertUpload level="PhD / Research" url={academic.phd?.certificateUrl}
                         uploading={!!uploadingCert.phd} onUpload={f => handleCertUpload("phd", f)} disabled={!canEdit} />
                     </div>
                   )}
-                  <div className="flex gap-2 mt-3">
+                  </div>
+                  <div className="flex gap-3 pt-2">
                     <button onClick={() => setEditingAcademic(false)}
-                      className="px-3 py-2 text-xs font-bold border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+                      className="px-4 py-2.5 text-[13px] font-semibold border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
                       Cancel
                     </button>
                     <button onClick={saveAcademic} disabled={savingAcademic}
-                      className="flex-1 py-2 text-xs font-bold text-white rounded-lg gradient-bg flex items-center justify-center gap-2 disabled:opacity-60">
-                      {savingAcademic ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : savedAcademic ? <CheckCircle className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                      className="flex-1 py-2.5 text-[13px] font-semibold text-white rounded-lg gradient-bg flex items-center justify-center gap-2 disabled:opacity-60">
+                      {savingAcademic ? <Loader2 className="w-4 h-4 animate-spin" /> : savedAcademic ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                       {savingAcademic ? "Saving\u2026" : savedAcademic ? "Saved Successfully" : "Save Academic Details"}
                     </button>
                   </div>
                 </div>
               </>
             )}
-          </div>
+          </section>
 
         </div>
       </div>
@@ -1145,10 +1238,10 @@ export default function StudentDashboard() {
                     <td style={{ padding: '4px 6px', backgroundColor: '#ffffff', fontWeight: 600, color: '#1a1a1a', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 2px 2px 0' }}>{personal.motherName || "—"}</td>
                   </tr>
                   <tr>
-                    <td style={{ padding: '4px 6px', backgroundColor: '#fee2e2', fontWeight: 700, color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '2px 0 0 2px' }}>Guardian</td>
-                    <td style={{ padding: '4px 6px', backgroundColor: '#ffffff', fontWeight: 600, color: '#1a1a1a', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 2px 2px 0' }}>{personal.guardianName || "—"}</td>
                     <td style={{ padding: '4px 6px', backgroundColor: '#fee2e2', fontWeight: 700, color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '2px 0 0 2px' }}>Aadhaar No</td>
                     <td style={{ padding: '4px 6px', backgroundColor: '#ffffff', fontWeight: 600, color: '#1a1a1a', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 2px 2px 0', fontFamily: 'monospace' }}>{personal.aadhaarNumber || "—"}</td>
+                    <td style={{ padding: '4px 6px', backgroundColor: '#fee2e2', fontWeight: 700, color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '2px 0 0 2px' }}>Employment</td>
+                    <td style={{ padding: '4px 6px', backgroundColor: '#ffffff', fontWeight: 600, color: '#1a1a1a', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 2px 2px 0' }}>{personal.employmentType ? `${personal.employmentType}${personal.yearsOfExperience && personal.employmentType !== "Not Employed" ? ` (${personal.yearsOfExperience} yrs)` : ""}` : "—"}</td>
                   </tr>
                   <tr>
                     <td style={{ padding: '4px 6px', backgroundColor: '#fee2e2', fontWeight: 700, color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '2px 0 0 2px' }}>Contact</td>
@@ -1256,6 +1349,11 @@ export default function StudentDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Document Viewer Modal */}
+      {viewDocUrl && (
+        <DocModal url={viewDocUrl} onClose={() => setViewDocUrl(null)} />
+      )}
     </div>
   );
 }

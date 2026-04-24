@@ -278,16 +278,6 @@ export default function NewPaymentPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Installment No.</label>
-            <input
-              type="number"
-              value={formData.installmentNumber}
-              onChange={(e) => setFormData({ ...formData, installmentNumber: e.target.value })}
-              min="1"
-              className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
-            />
-          </div>
-          <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Payment Mode *</label>
             <div className="relative">
               <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

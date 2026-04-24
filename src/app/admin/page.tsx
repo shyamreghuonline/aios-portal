@@ -288,18 +288,29 @@ function PaymentReport({ stats, loading, periodTab, setPeriodTab }: {
   setPeriodTab: (t: PeriodTab) => void;
 }) {
   const today = new Date().toISOString().split("T")[0];
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-  const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  
+  // Get start of current week (Monday)
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - daysSinceMonday);
+  weekStart.setHours(0, 0, 0, 0);
+  const weekStartStr = weekStart.toISOString().split("T")[0];
+  
+  // Get start of current month
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthStartStr = monthStart.toISOString().split("T")[0];
 
   const filtered = useMemo(() => {
     return stats.allPayments.filter((p) => {
       const d = p.paymentDate;
       if (periodTab === "today") return d === today;
-      if (periodTab === "week") return d >= weekAgo && d <= today;
-      if (periodTab === "month") return d >= monthAgo && d <= today;
+      if (periodTab === "week") return d >= weekStartStr && d <= today;
+      if (periodTab === "month") return d >= monthStartStr && d <= today;
       return true;
     });
-  }, [stats.allPayments, periodTab, today, weekAgo, monthAgo]);
+  }, [stats.allPayments, periodTab, today, weekStartStr, monthStartStr]);
 
   const periodDiscount = filtered
     .filter((p) => p.isDiscount || p.paymentMode === "Discount")
@@ -342,15 +353,15 @@ function PaymentReport({ stats, loading, periodTab, setPeriodTab }: {
         ))}
         <div className="ml-auto flex items-center gap-4">
           <div className="text-right">
-            <p className="text-[10px] text-slate-700 uppercase tracking-wide">Discount</p>
+            <p className="text-xs text-slate-700 uppercase tracking-wide">Discount</p>
             <p className="text-sm font-bold text-amber-600">₹{periodDiscount.toLocaleString("en-IN")}</p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] text-slate-700 uppercase tracking-wide">Collected</p>
+            <p className="text-xs text-slate-700 uppercase tracking-wide">Collected</p>
             <p className="text-sm font-bold text-green-700">₹{periodCollected.toLocaleString("en-IN")}</p>
           </div>
           <div className="text-right border-l border-slate-200 pl-4">
-            <p className="text-[10px] text-slate-700 uppercase tracking-wide">Total</p>
+            <p className="text-xs text-slate-700 uppercase tracking-wide">Total</p>
             <p className="text-sm font-bold text-blue-700">₹{periodTotal.toLocaleString("en-IN")}</p>
           </div>
         </div>
@@ -548,19 +559,19 @@ function FollowUpList({ loading, students, payments, onViewStudent }: { loading:
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left py-2 px-2 text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                  <th className="text-left py-2 px-2 text-sm font-bold text-slate-700 uppercase tracking-wide">
                     Student Name
                   </th>
-                  <th className="text-left py-2 px-2 text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                  <th className="text-left py-2 px-2 text-sm font-bold text-slate-700 uppercase tracking-wide">
                     ID
                   </th>
-                  <th className="text-left py-2 px-2 text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                  <th className="text-left py-2 px-2 text-sm font-bold text-slate-700 uppercase tracking-wide">
                     Contact
                   </th>
-                  <th className="text-left py-2 px-2 text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                  <th className="text-left py-2 px-2 text-sm font-bold text-slate-700 uppercase tracking-wide">
                     Due Amount
                   </th>
-                  <th className="text-left py-2 px-2 text-[11px] font-bold text-slate-700 uppercase tracking-wide">
+                  <th className="text-left py-2 px-2 text-sm font-bold text-slate-700 uppercase tracking-wide">
                     Days Overdue
                   </th>
                 </tr>
@@ -570,7 +581,7 @@ function FollowUpList({ loading, students, payments, onViewStudent }: { loading:
                   <tr key={student.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                     <td className="py-3 px-2">
                       <p className="text-sm font-medium text-slate-900">{student.studentName}</p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">
+                      <p className="text-xs text-slate-500 mt-0.5">
                         Last payment done {student.lastPaymentDays} days ago
                       </p>
                     </td>
