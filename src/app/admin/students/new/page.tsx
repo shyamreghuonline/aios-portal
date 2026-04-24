@@ -129,12 +129,27 @@ export default function NewStudentPage() {
 
   // Calculate end year from duration
   function calcEndYear(duration: string, startYear: string): string {
-    const match = duration.match(/(\d+)\s*Year/i);
-    if (match && startYear) {
-      return String(parseInt(startYear) + parseInt(match[1]));
+    const yearMatch = duration.match(/(\d+)\s*Year/i);
+    if (yearMatch && startYear) {
+      return String(parseInt(startYear) + parseInt(yearMatch[1]));
+    }
+    // For 6 Months, end year is same as start year
+    if (duration.toLowerCase().includes("month") && startYear) {
+      return startYear;
     }
     return "";
   }
+
+  // Update end year when custom duration changes
+  useEffect(() => {
+    if (customCourse && formData.duration && formData.startYear) {
+      const endYear = calcEndYear(formData.duration, formData.startYear);
+      setFormData(prev => ({
+        ...prev,
+        endYear: endYear
+      }));
+    }
+  }, [customCourse, formData.duration, formData.startYear]);
 
   // Update duration and end year when course changes
   useEffect(() => {
@@ -149,6 +164,19 @@ export default function NewStudentPage() {
   }, [autoDuration, formData.startYear]);
 
   const yearOptions = Array.from({ length: currentYear - 2008 + 10 }, (_, i) => 2008 + i);
+
+  // Duration options for custom courses
+  const DURATION_OPTIONS = [
+    "6 Months",
+    "1 Year",
+    "2 Years",
+    "3 Years",
+    "4 Years",
+    "5 Years",
+    "6 Years",
+    "7 Years",
+    "8 Years"
+  ];
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -471,14 +499,21 @@ export default function NewStudentPage() {
             <div>
               <label className={labelClass}>Duration{customCourse ? " *" : ""}</label>
               {customCourse ? (
-                <input
-                  type="text"
+                <select
                   value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                  onChange={(e) => {
+                    const dur = e.target.value;
+                    const end = dur ? calcEndYear(dur, formData.startYear) : "";
+                    setFormData({ ...formData, duration: dur, endYear: end });
+                  }}
                   required
-                  placeholder="e.g., 3 Years"
                   className={inputClass}
-                />
+                >
+                  <option value="">Select duration</option>
+                  {DURATION_OPTIONS.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
               ) : (
                 <input
                   type="text"

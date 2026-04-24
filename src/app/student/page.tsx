@@ -5,7 +5,7 @@ import { collection, doc, getDoc, getDocs, query, setDoc, where, orderBy } from 
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import {
-  Receipt, AlertTriangle, CheckCircle, CreditCard, Loader2,
+  Receipt, AlertTriangle, CheckCircle, CreditCard, Loader2, QrCode,
   Upload, Save, Camera, Lock, Pencil, Printer, Download,
   GraduationCap, User, Building2, Mail, Phone, IdCard, Calendar,
   Users, MapPin, Briefcase, BookOpen, Award, ShieldCheck, FileText, ChevronRight, TrendingUp, X,
@@ -470,11 +470,11 @@ export default function StudentDashboard() {
           {/* Header Action Buttons */}
           <div className="flex-shrink-0 flex items-center gap-2">
             <Link
-              href="/student/pay"
+              href="/student/payments"
               className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-white/15 border border-white/30 rounded-lg hover:bg-white/25 transition-colors backdrop-blur-sm"
               title="Make Payment"
             >
-              <CreditCard className="w-4 h-4" />
+              <QrCode className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Pay</span>
             </Link>
             <Link
