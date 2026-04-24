@@ -1,24 +1,15 @@
-"use client";
+﻿"use client";
 
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import {
-  LayoutDashboard,
-  CreditCard,
-  QrCode,
-  UserCircle,
-  LogOut,
-  Loader2,
-} from "lucide-react";
+import { LayoutDashboard, CreditCard, LogOut, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navItems = [
   { href: "/student", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/student/payments", label: "My Payments", icon: CreditCard },
-  { href: "/student/pay", label: "Make Payment", icon: QrCode },
-  // { href: "/student/profile", label: "My Profile", icon: UserCircle },
+  { href: "/student/payments", label: "Payments", icon: CreditCard },
 ];
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
@@ -65,20 +56,20 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
               <span className="hidden sm:inline">Logout</span>
             </button>
           </div>
-          
+
           {/* Navigation Row - Dark Theme */}
           <nav className="flex items-center gap-1 py-1 overflow-x-auto">
             {navItems.map((item) => {
-              const isActive = item.exact 
-                ? pathname === item.href 
+              const isActive = item.exact
+                ? pathname === item.href
                 : pathname === item.href || pathname?.startsWith(item.href + "/");
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold whitespace-nowrap rounded-lg transition-all ${
-                    isActive 
-                      ? "gradient-bg text-white shadow-sm" 
+                    isActive
+                      ? "gradient-bg text-white shadow-sm"
                       : "text-slate-400 hover:text-white hover:bg-slate-800"
                   }`}
                 >
@@ -91,7 +82,6 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
         </div>
       </header>
 
-      {/* Content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
         {children}
       </main>

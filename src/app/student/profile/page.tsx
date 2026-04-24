@@ -8,8 +8,30 @@ import { useAuth } from "@/lib/auth-context";
 import {
   Phone, Mail, BookOpen, IndianRupee, Building2,
   MapPin, Upload, Save, CheckCircle, XCircle, Loader2, Camera, Shield,
-  ChevronDown, ChevronUp, Lock,
+  ChevronDown, ChevronUp, Lock, X,
 } from "lucide-react";
+
+function DocModal({ url, onClose }: { url: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50 rounded-t-2xl">
+          <p className="text-sm font-bold text-slate-800">View Document</p>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors">
+            <X className="w-5 h-5 text-slate-600" />
+          </button>
+        </div>
+        <div className="p-4 flex items-center justify-center min-h-[200px]">
+          {url.startsWith('data:application/pdf') || url.endsWith('.pdf') ? (
+            <embed src={url} type="application/pdf" className="w-full h-[70vh] rounded-lg" />
+          ) : (
+            <img src={url} alt="Document" className="max-w-full max-h-[70vh] object-contain rounded-lg" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface PersonalDetails {
@@ -152,6 +174,7 @@ export default function StudentProfilePage() {
   const [savedAcademic, setSavedAcademic] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingAadhaar, setUploadingAadhaar] = useState(false);
+  const [viewDocUrl, setViewDocUrl] = useState<string | null>(null);
 
   const photoRef = useRef<HTMLInputElement>(null);
   const aadhaarRef = useRef<HTMLInputElement>(null);
@@ -389,7 +412,7 @@ export default function StudentProfilePage() {
           </div>
           <div className="grid grid-cols-3 divide-x divide-slate-100">
             {[
-              { label: "Registered Mobile", value: user?.phone || "", span: "" },
+              { label: "Registered Mobile", value: studentPhone || "", span: "" },
               { label: "Email Address", value: (sd.email as string) || "", span: "col-span-2" },
             ].map(({ label, value, span }) => (
               <div key={label} className={`${span} px-4 py-2.5 cursor-not-allowed select-none`} title="Managed by admin">
@@ -466,8 +489,8 @@ export default function StudentProfilePage() {
                   {uploadingAadhaar ? "Uploading…" : personal.aadhaarUrl ? "Uploaded ✓" : "Upload PDF / Image"}
                 </label>
                 {personal.aadhaarUrl && (
-                  <a href={personal.aadhaarUrl} target="_blank" rel="noreferrer"
-                    className="block text-center text-[10px] font-semibold text-green-800 underline mt-1">View Document</a>
+                  <button onClick={() => setViewDocUrl(personal.aadhaarUrl!)}
+                    className="block text-center text-[10px] font-semibold text-green-800 underline mt-1 w-full">View Document</button>
                 )}
                 <input id="aadhaar-upload" ref={aadhaarRef} type="file" accept="image/*,application/pdf" className="hidden"
                   onChange={e => e.target.files?.[0] && handleAadhaarUpload(e.target.files[0])} />
@@ -609,6 +632,11 @@ export default function StudentProfilePage() {
           )}
         </div>
       </div>
+
+      {/* Document Viewer Modal */}
+      {viewDocUrl && (
+        <DocModal url={viewDocUrl} onClose={() => setViewDocUrl(null)} />
+      )}
     </div>
   );
 }

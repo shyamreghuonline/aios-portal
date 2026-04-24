@@ -1,44 +1,80 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { useEffect, useRef, useState } from "react";
+import { collection, getDocs, query, where, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import Link from "next/link";
-import { 
-  Receipt, 
-  Download, 
-  Loader2, 
-  Wallet, 
-  CheckCircle2, 
-  AlertCircle,
-  TrendingUp,
-  Landmark,
-  Clock,
-  Hourglass,
+import {
+  Loader2, X, CheckCircle, Clock, QrCode, CreditCard,
+  ImageIcon, Receipt, Hourglass, IndianRupee, FileUp,
 } from "lucide-react";
 
-interface Payment {
+// ─── Doc Modal ───────────────────────────────────────────────────────────────
+function DocModal({ url, onClose }: { url: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50 rounded-t-2xl">
+          <p className="text-sm font-bold text-slate-800">Payment Screenshot</p>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-200 transition-colors">
+            <X className="w-5 h-5 text-slate-600" />
+          </button>
+        </div>
+        <div className="p-4 flex items-center justify-center min-h-[200px]">
+          <img src={url} alt="Screenshot" className="max-w-full max-h-[70vh] object-contain rounded-lg" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Arc Progress Gauge ───────────────────────────────────────────────────────
+function ProgressArc({ percent }: { percent: number }) {
+  const r = 48;
+  const circ = 2 * Math.PI * r;
+  const arcLen = circ * 0.75;
+  const gap = circ - arcLen;
+  const filled = arcLen * Math.min(percent, 100) / 100;
+  return (
+    <div className="relative inline-flex items-center justify-center w-28 h-28 flex-shrink-0">
+      <svg width="112" height="112" viewBox="0 0 112 112">
+        <defs>
+          <linearGradient id="pgArcGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fbbf24" />
+            <stop offset="100%" stopColor="#34d399" />
+          </linearGradient>
+        </defs>
+        {/* Track */}
+        <circle cx="56" cy="56" r={r} fill="none" stroke="rgba(255,255,255,0.15)"
+          strokeWidth="9" strokeDasharray={`${arcLen} ${gap}`} strokeLinecap="round"
+          transform="rotate(135 56 56)" />
+        {/* Progress */}
+        <circle cx="56" cy="56" r={r} fill="none" stroke="url(#pgArcGrad)"
+          strokeWidth="9" strokeDasharray={`${filled} ${circ}`} strokeLinecap="round"
+          transform="rotate(135 56 56)" style={{ transition: "stroke-dasharray 0.8s ease" }} />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl font-extrabold text-white leading-none">{percent}%</span>
+        <span className="text-[9px] text-white/60 uppercase tracking-widest">Paid</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface ConfirmedPayment {
   id: string;
   receiptNumber: string;
   amountPaid: number;
   paymentDate: string;
   paymentMode: string;
-  installmentNumber: number;
-  totalInstallments: number;
-  balanceAmount: number;
-  totalFee: number;
-  transactionRef?: string;
-  status?: "confirmed" | "pending" | "rejected";
-  isPending?: boolean;
-  screenshotUrl?: string;
+  totalFee?: number;
+  balanceAmount?: number;
 }
 
 interface PendingPayment {
   id: string;
-  studentId: string;
-  studentPhone: string;
-  studentName: string;
   amount: number;
   paymentMethod: "qr" | "card";
   status: "pending" | "approved" | "rejected";
@@ -47,286 +83,601 @@ interface PendingPayment {
   createdAt: any;
 }
 
-export default function StudentPaymentsPage() {
+type PayStep = "amount" | "method" | "qr" | "upload" | "success";
+type Action = "none" | "upi" | "card" | "upload";
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+export default function PaymentsHub() {
   const { user } = useAuth();
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const studentPhone = user?.studentData
+    ? (user.studentData.id as string) || (user.studentData.phone as string)
+    : undefined;
+
+  const [confirmedPayments, setConfirmedPayments] = useState<ConfirmedPayment[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
+  const [studentMeta, setStudentMeta] = useState<{
+    totalFee: number; discountAmount: number; name: string; studentId?: string; course?: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [studentData, setStudentData] = useState<{ totalFee: number; discountAmount: number } | null>(null);
-  const studentPhone = user?.studentData ? (user.studentData.id as string) || (user.studentData.phone as string) : undefined;
+
+  const [activeAction, setActiveAction] = useState<Action>("none");
+  const [viewDocUrl, setViewDocUrl] = useState<string | null>(null);
+
+  // Payment flow
+  const [step, setStep] = useState<PayStep>("amount");
+  const [amount, setAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"qr" | "card" | null>(null);
+  const [screenshot, setScreenshot] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [transactionId, setTransactionId] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const upiId = "aiosedu@ptaxis";
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(
+    `upi://pay?pa=${upiId}&pn=AIOS EDU&am=${amount}&cu=INR`
+  )}`;
 
   useEffect(() => {
-    async function fetchPayments() {
-      if (!studentPhone) return;
+    async function fetchAll() {
+      if (!studentPhone) { setLoading(false); return; }
       try {
-        // Fetch confirmed payments
-        const q = query(
-          collection(db, "payments"),
-          where("studentPhone", "==", studentPhone)
+        const [pSnap, pendSnap, sDoc] = await Promise.all([
+          getDocs(query(collection(db, "payments"), where("studentPhone", "==", studentPhone))),
+          getDocs(query(collection(db, "pendingPayments"), where("studentPhone", "==", studentPhone))),
+          getDoc(doc(db, "students", studentPhone)),
+        ]);
+        setConfirmedPayments(pSnap.docs.map(d => ({ id: d.id, ...d.data() } as ConfirmedPayment)));
+        setPendingPayments(
+          pendSnap.docs
+            .map(d => ({ id: d.id, ...d.data() } as PendingPayment))
+            .filter(p => p.status === "pending")
         );
-        const snap = await getDocs(q);
-        const data = snap.docs.map((d) => ({ 
-          id: d.id, 
-          ...d.data(),
-          status: "confirmed"
-        })) as unknown as Payment[];
-        
-        // Fetch pending payments
-        const pendingQuery = query(
-          collection(db, "pendingPayments"),
-          where("studentPhone", "==", studentPhone)
-        );
-        const pendingSnap = await getDocs(pendingQuery);
-        const pendingData = pendingSnap.docs.map((d) => {
-          const p = d.data() as PendingPayment;
-          return {
-            id: d.id,
-            receiptNumber: "-", // No receipt for pending
-            amountPaid: p.amount,
-            paymentDate: p.createdAt?.toDate?.().toISOString().split('T')[0] || new Date().toISOString().split('T')[0],
-            paymentMode: p.paymentMethod === "qr" ? "UPI/QR" : "Card",
-            installmentNumber: 0,
-            totalInstallments: 0,
-            balanceAmount: 0,
-            totalFee: 0,
-            transactionRef: p.transactionId || "",
-            status: "pending" as const,
-            isPending: true,
-            screenshotUrl: p.screenshotUrl,
-          };
-        });
-        
-        // Combine and sort by date (newest first)
-        const allPayments = [...data, ...pendingData].sort((a, b) => 
-          new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime()
-        );
-        
-        setPayments(allPayments);
-        setPendingPayments(pendingSnap.docs.map((d) => ({ id: d.id, ...d.data() })) as unknown as PendingPayment[]);
+        if (sDoc.exists()) {
+          const d = sDoc.data();
+          setStudentMeta({
+            totalFee: d.totalFee || 0,
+            discountAmount: d.discountAmount || 0,
+            name: d.name || "",
+            studentId: d.studentId || "",
+            course: d.course || "",
+          });
+        }
       } catch (err) {
-        console.error("Error:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
     }
-    fetchPayments();
-  }, [user]);
+    fetchAll();
+  }, [studentPhone]);
 
-  // Calculate totals
-  const totalPaid = payments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
-  const totalFee = studentData?.totalFee || payments[0]?.totalFee || 0;
-  const discountAmount = studentData?.discountAmount || 0;
-  const effectiveFee = totalFee - discountAmount;
+  // Totals
+  const totalPaid = confirmedPayments.reduce((s, p) => s + (p.amountPaid || 0), 0);
+  const totalPending = pendingPayments.reduce((s, p) => s + (p.amount || 0), 0);
+  const totalFee = studentMeta?.totalFee || confirmedPayments[0]?.totalFee || 0;
+  const discount = studentMeta?.discountAmount || 0;
+  const effectiveFee = totalFee - discount;
   const balanceDue = Math.max(0, effectiveFee - totalPaid);
-  const paymentProgress = effectiveFee > 0 ? Math.round((totalPaid / effectiveFee) * 100) : 0;
+  const payPercent = effectiveFee > 0 ? Math.round((totalPaid / effectiveFee) * 100) : 0;
+
+  const sd = user?.studentData as Record<string, unknown> | undefined;
+  const studentName = (sd?.name as string) || studentMeta?.name || "Student";
+  const studentIdStr = (sd?.studentId as string) || studentMeta?.studentId || "";
+  const courseStr = (sd?.course as string) || studentMeta?.course || "";
+
+  // ── Upload helpers ──────────────────────────────────────────────────────────
+  async function toBase64(file: File): Promise<string> {
+    if (file.size > 4 * 1024 * 1024) throw new Error("FILE_TOO_LARGE");
+    if (file.type.startsWith("image/")) {
+      return new Promise<string>((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          const MAX = 900;
+          let { width, height } = img;
+          if (width > MAX || height > MAX) {
+            if (width > height) { height = Math.round((height * MAX) / width); width = MAX; }
+            else { width = Math.round((width * MAX) / height); height = MAX; }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width; canvas.height = height;
+          canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+          URL.revokeObjectURL(url);
+          resolve(canvas.toDataURL("image/jpeg", 0.75));
+        };
+        img.onerror = reject;
+        img.src = url;
+      });
+    }
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) { alert("File must be under 4MB"); return; }
+    setScreenshot(file);
+    try { setScreenshotPreview(await toBase64(file)); }
+    catch (err: any) { alert(`Could not process image: ${err.message}`); }
+  }
+
+  async function handleSubmitPayment() {
+    if (!amount || !paymentMethod || !studentPhone) return;
+    setSubmitting(true);
+    try {
+      const screenshotUrl = screenshotPreview || "";
+      await addDoc(collection(db, "pendingPayments"), {
+        studentId: studentMeta?.studentId || studentPhone,
+        studentPhone,
+        studentName: studentMeta?.name || "",
+        amount: parseFloat(amount),
+        paymentMethod,
+        status: "pending",
+        screenshotUrl,
+        transactionId: transactionId || null,
+        createdAt: serverTimestamp(),
+      });
+      setStep("success");
+      setPendingPayments(prev => [
+        ...prev,
+        { id: `tmp-${Date.now()}`, amount: parseFloat(amount), paymentMethod, status: "pending", createdAt: null },
+      ]);
+    } catch (err: any) {
+      alert(`Failed to submit: ${err.message}`);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function resetFlow() {
+    setStep("amount"); setAmount(""); setPaymentMethod(null);
+    setScreenshot(null); setScreenshotPreview(null); setTransactionId("");
+    setActiveAction("none");
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
+      </div>
+    );
+  }
+
+  const STEP_LABELS: Record<string, string> = { amount: "Amount", method: "Method", qr: "QR Code", upload: "Proof" };
 
   return (
-    <div className="pb-20 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900 mb-1">My Payments</h1>
-        <p className="text-sm text-gray-500">Track your fee payments and download receipts</p>
-      </div>
+    <div className="pb-24 max-w-2xl mx-auto">
 
-      {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
-        </div>
-      ) : (
-        <>
-          {/* Summary Cards - Professional Design */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            {/* Total Course Fee */}
-            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center relative overflow-hidden">
-              <div className="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-3">
-                <Landmark className="w-6 h-6 text-amber-700" />
-              </div>
-              <p className="text-[11px] font-semibold text-slate-600 mb-1">Total Course Fee</p>
-              <p className="text-xl font-extrabold text-slate-900">₹{totalFee.toLocaleString("en-IN")}</p>
-              {discountAmount > 0 && (
-                <p className="text-[10px] text-green-600 mt-1 font-medium">-₹{discountAmount.toLocaleString("en-IN")} discount applied</p>
-              )}
-            </div>
+      {/* ── HERO CARD ──────────────────────────────────────────────────────── */}
+      <div className="gradient-bg rounded-2xl p-5 mb-4 relative overflow-hidden shadow-lg">
+        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-white/5 pointer-events-none" />
+        <div className="absolute -bottom-8 -left-8 w-28 h-28 rounded-full bg-white/5 pointer-events-none" />
 
-            {/* Your Payments */}
-            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center relative overflow-hidden">
-              <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3">
-                <CheckCircle2 className="w-6 h-6 text-green-700" />
-              </div>
-              <p className="text-[11px] font-semibold text-slate-600 mb-1">Your Payments</p>
-              <p className="text-xl font-extrabold text-green-700">₹{totalPaid.toLocaleString("en-IN")}</p>
-              <p className="text-[10px] text-slate-500 mt-1">
-                {payments.filter(p => !p.isPending).length} confirmed
-                {pendingPayments.length > 0 && (
-                  <span className="text-amber-600"> • {pendingPayments.length} pending</span>
-                )}
-              </p>
-            </div>
-
-            {/* Remaining Balance */}
-            <div className="bg-white border border-slate-200 rounded-xl p-4 text-center relative overflow-hidden">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 ${balanceDue > 0 ? "bg-red-50" : "bg-green-50"}`}>
-                {balanceDue > 0 ? (
-                  <Clock className="w-6 h-6 text-red-700" />
-                ) : (
-                  <CheckCircle2 className="w-6 h-6 text-green-700" />
-                )}
-              </div>
-              <p className="text-[11px] font-semibold text-slate-600 mb-1">Remaining Balance</p>
-              <p className={`text-xl font-extrabold ${balanceDue > 0 ? "text-red-700" : "text-green-700"}`}>
-                ₹{balanceDue.toLocaleString("en-IN")}
-              </p>
-              <p className="text-[10px] text-slate-500 mt-1">
-                {balanceDue > 0 ? "Payment pending" : "Course fee cleared"}
-              </p>
-            </div>
+        <div className="relative flex items-center gap-4 mb-4">
+          <ProgressArc percent={payPercent} />
+          <div className="flex-1 min-w-0">
+            <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest mb-1">Fee Status</p>
+            <p className="text-white font-extrabold text-lg leading-tight truncate">{studentName}</p>
+            {studentIdStr && <p className="text-white/50 text-xs mt-0.5 font-mono">{studentIdStr}</p>}
+            {courseStr && <p className="text-white/40 text-[10px] mt-0.5 truncate">{courseStr}</p>}
           </div>
+        </div>
 
-          {/* Payments Table */}
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-              <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Payment Summary</h2>
-              <span className="text-[10px] font-semibold text-slate-700">{payments.length} records</span>
-            </div>
-
-            {payments.length === 0 ? (
-              <div className="text-center py-12">
-                <Receipt className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-sm text-slate-600">No payments recorded yet.</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  {/* Table Header */}
-                  <thead className="gradient-bg">
-                    <tr>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider w-12">S.No</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Receipt #</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Paid On</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Amount</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Status</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Due After</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  
-                  {/* Table Body */}
-                  <tbody className="divide-y divide-slate-100">
-                    {payments.map((payment, index) => {
-                      // Calculate running balance (due amount after this payment)
-                      const effectiveFee = totalFee - discountAmount;
-                      const paymentsUpToThis = payments
-                        .slice(0, index + 1)
-                        .reduce((sum, p) => sum + (p.amountPaid || 0), 0);
-                      const dueAfter = Math.max(0, effectiveFee - paymentsUpToThis);
-                      
-                      return (
-                        <tr key={payment.id} className="hover:bg-slate-50 transition-colors">
-                          <td className="px-4 py-3 text-center">
-                            <span className="text-[11px] lg:text-xs font-bold text-slate-700">{index + 1}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            {payment.isPending ? (
-                              <span className="font-mono text-[11px] lg:text-xs text-slate-400">-</span>
-                            ) : (
-                              <Link 
-                                href={`/student/payments/${payment.id}`}
-                                className="font-mono text-[11px] lg:text-xs text-blue-700 font-medium hover:text-blue-900 hover:underline transition-colors"
-                              >
-                                {payment.receiptNumber}
-                              </Link>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-[11px] lg:text-xs text-slate-700">{payment.paymentDate}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="font-bold text-[11px] lg:text-xs text-slate-900">₹{payment.amountPaid.toLocaleString("en-IN")}</span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            {payment.isPending ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 text-amber-800 text-[11px] lg:text-xs font-bold">
-                                <Hourglass className="w-3 h-3" />
-                                Pending
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 text-green-800 text-[11px] lg:text-xs font-bold">
-                                <span className="w-1.5 h-1.5 rounded-full bg-green-600"></span>
-                                Paid
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`font-bold text-[11px] lg:text-xs ${dueAfter > 0 ? "text-red-700" : "text-green-700"}`}>
-                              ₹{dueAfter.toLocaleString("en-IN")}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                              {!payment.isPending && (
-                                <>
-                                  <Link
-                                    href={`/student/payments/${payment.id}`}
-                                    className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-red-700 transition-colors"
-                                    title="View Receipt"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                    </svg>
-                                  </Link>
-                                  <button
-                                    className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-red-700 transition-colors"
-                                    title="Download"
-                                  >
-                                    <Download className="w-4 h-4" />
-                                  </button>
-                                </>
-                              )}
-                              {payment.isPending && payment.screenshotUrl && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const url = payment.screenshotUrl!;
-                                    if (url.startsWith("data:")) {
-                                      try {
-                                        const [meta, base64] = url.split(",");
-                                        const mime = meta.match(/data:([^;]+)/)?.[1] || "image/png";
-                                        const binary = atob(base64);
-                                        const bytes = new Uint8Array(binary.length);
-                                        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-                                        const blob = new Blob([bytes], { type: mime });
-                                        const blobUrl = URL.createObjectURL(blob);
-                                        window.open(blobUrl, "_blank");
-                                        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-                                      } catch (err) {
-                                        alert("Could not open screenshot.");
-                                      }
-                                    } else {
-                                      window.open(url, "_blank", "noopener,noreferrer");
-                                    }
-                                  }}
-                                  className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-blue-700 transition-colors"
-                                  title="View Screenshot"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                  </svg>
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+        {/* 3 Stat pills */}
+        <div className="relative grid grid-cols-3 gap-2">
+          <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
+            <p className="text-white/50 text-[9px] uppercase tracking-widest font-bold mb-1">Total Fee</p>
+            <p className="text-white font-extrabold text-sm leading-none">₹{effectiveFee.toLocaleString("en-IN")}</p>
+            {discount > 0 && (
+              <p className="text-white/40 text-[9px] mt-1">-₹{discount.toLocaleString("en-IN")} disc.</p>
             )}
           </div>
+          <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
+            <p className="text-white/50 text-[9px] uppercase tracking-widest font-bold mb-1">Paid</p>
+            <p className="text-emerald-300 font-extrabold text-sm leading-none">₹{totalPaid.toLocaleString("en-IN")}</p>
+            {totalPending > 0 && (
+              <p className="text-amber-300/70 text-[9px] mt-1">+₹{totalPending.toLocaleString("en-IN")} pend.</p>
+            )}
+          </div>
+          <div className="bg-white/10 rounded-xl p-3 text-center backdrop-blur-sm">
+            <p className="text-white/50 text-[9px] uppercase tracking-widest font-bold mb-1">Balance</p>
+            <p className={`font-extrabold text-sm leading-none ${balanceDue > 0 ? "text-red-300" : "text-emerald-300"}`}>
+              ₹{balanceDue.toLocaleString("en-IN")}
+            </p>
+            <p className="text-white/40 text-[9px] mt-1">{balanceDue > 0 ? "Due" : "Cleared ✓"}</p>
+          </div>
+        </div>
+      </div>
 
-        </>
+      {/* ── PENDING ALERT ─────────────────────────────────────────────────── */}
+      {pendingPayments.length > 0 && (
+        <div className="mb-3 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 animate-pulse" />
+          <p className="text-xs text-amber-800 font-medium">
+            <strong>{pendingPayments.length}</strong> payment{pendingPayments.length > 1 ? "s" : ""} awaiting admin confirmation
+            {totalPending > 0 && ` · ₹${totalPending.toLocaleString("en-IN")}`}
+          </p>
+        </div>
       )}
+
+      {/* ── ACTIONS ───────────────────────────────────────────────────────── */}
+      <div className="flex gap-3 mb-5">
+        <button
+          onClick={() => { setActiveAction("upi"); setStep("amount"); resetFlow(); }}
+          className="flex-1 flex items-center justify-center gap-2 py-3 bg-white border-2 border-slate-200 hover:border-red-400 rounded-xl text-sm font-bold text-slate-800 transition-all shadow-sm"
+        >
+          <QrCode className="w-4 h-4 text-red-600" />
+          Pay Now
+        </button>
+        <button
+          onClick={() => { setActiveAction("upload"); resetFlow(); }}
+          className="flex-1 flex items-center justify-center gap-2 py-3 bg-white border-2 border-slate-200 hover:border-blue-400 rounded-xl text-sm font-bold text-slate-800 transition-all shadow-sm"
+        >
+          <FileUp className="w-4 h-4 text-blue-600" />
+          Upload Receipt
+        </button>
+      </div>
+
+      {/* ── TRANSACTION STATEMENT (Table) ─────────────────────────────────── */}
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+          <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wide">Transaction Statement</h2>
+          <span className="text-[10px] font-semibold text-slate-700">{confirmedPayments.length + pendingPayments.length} records</span>
+        </div>
+
+        {confirmedPayments.length === 0 && pendingPayments.length === 0 ? (
+          <div className="text-center py-12">
+            <Receipt className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+            <p className="text-sm text-slate-600">No transactions yet.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="gradient-bg">
+                <tr>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider w-12">S.No</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Receipt #</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Date</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Mode</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Amount</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Balance</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {pendingPayments.map((p, i) => (
+                  <tr key={p.id} className="bg-amber-50/50 hover:bg-amber-50 transition-colors">
+                    <td className="px-4 py-3 text-center"><span className="text-[11px] font-bold text-amber-700">{i + 1}</span></td>
+                    <td className="px-4 py-3"><span className="font-mono text-[11px] text-slate-400">-</span></td>
+                    <td className="px-4 py-3"><span className="text-[11px] text-slate-600">{p.createdAt?.toDate?.().toISOString().split('T')[0] || "-"}</span></td>
+                    <td className="px-4 py-3"><span className="text-[11px] text-slate-600">{p.paymentMethod === "qr" ? "UPI" : "Card"}</span></td>
+                    <td className="px-4 py-3"><span className="font-bold text-[11px] text-amber-800">₹{p.amount.toLocaleString("en-IN")}</span></td>
+                    <td className="px-4 py-3 text-center">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold">
+                        <Hourglass className="w-3 h-3" /> Pending
+                      </span>
+                    </td>
+                    <td className="px-4 py-3"><span className="text-[11px] text-slate-500">-</span></td>
+                    <td className="px-4 py-3 text-center">
+                      {p.screenshotUrl && (
+                        <button onClick={() => setViewDocUrl(p.screenshotUrl!)}
+                          className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-blue-700 transition-colors" title="View Proof">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {confirmedPayments.map((p, i) => {
+                  const cumPaid = confirmedPayments.slice(0, i + 1).reduce((s, x) => s + (x.amountPaid || 0), 0);
+                  const dueAfter = Math.max(0, effectiveFee - cumPaid);
+                  const rowNum = pendingPayments.length + i + 1;
+                  return (
+                    <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-3 text-center"><span className="text-[11px] font-bold text-slate-700">{rowNum}</span></td>
+                      <td className="px-4 py-3">
+                        <Link href={`/student/payments/${p.id}`} className="font-mono text-[11px] text-blue-700 font-medium hover:underline">
+                          {p.receiptNumber}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3"><span className="text-[11px] text-slate-700">{p.paymentDate}</span></td>
+                      <td className="px-4 py-3"><span className="text-[11px] text-slate-600">{p.paymentMode}</span></td>
+                      <td className="px-4 py-3"><span className="font-bold text-[11px] text-slate-900">₹{p.amountPaid.toLocaleString("en-IN")}</span></td>
+                      <td className="px-4 py-3 text-center">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold">
+                          <CheckCircle className="w-3 h-3" /> Paid
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`font-bold text-[11px] ${dueAfter > 0 ? "text-red-700" : "text-emerald-700"}`}>
+                          ₹{dueAfter.toLocaleString("en-IN")}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <Link href={`/student/payments/${p.id}`}
+                          className="p-1.5 rounded hover:bg-slate-100 text-slate-500 hover:text-red-700 transition-colors" title="View Receipt">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ── PAYMENT FLOW PANEL ────────────────────────────────────────────── */}
+      {(activeAction === "upi" || activeAction === "card") && (
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+
+          {/* Step breadcrumb (not on success) */}
+          {step !== "success" && (
+            <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center gap-1.5">
+              {(["amount", "method", "qr", "upload"] as PayStep[])
+                .filter(s => !(s === "qr" && paymentMethod !== "qr"))
+                .map((s, i, arr) => {
+                  const allSteps = ["amount", "method", "qr", "upload"];
+                  const curIdx = allSteps.indexOf(step);
+                  const sIdx = allSteps.indexOf(s);
+                  const isDone = sIdx < curIdx;
+                  const isActive = s === step;
+                  return (
+                    <span key={s} className="flex items-center gap-1">
+                      {i > 0 && <span className="text-slate-300 text-xs">›</span>}
+                      <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                        isActive ? "text-red-600" : isDone ? "text-emerald-600" : "text-slate-400"
+                      }`}>
+                        {isDone && "✓ "}{STEP_LABELS[s]}
+                      </span>
+                    </span>
+                  );
+                })}
+            </div>
+          )}
+
+          <div className="p-5">
+            {/* Success */}
+            {step === "success" && (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+                  <Clock className="w-8 h-8 text-amber-600" />
+                </div>
+                <h3 className="text-base font-extrabold text-slate-900 mb-2">Payment Submitted!</h3>
+                <p className="text-sm text-slate-600 mb-1">
+                  ₹{parseInt(amount).toLocaleString("en-IN")} is awaiting admin approval.
+                </p>
+                <p className="text-xs text-slate-400 mb-6">You'll be notified once confirmed.</p>
+                <div className="flex gap-2 justify-center">
+                  <button onClick={() => setActiveAction("none")}
+                    className="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200">
+                    View History
+                  </button>
+                  <button onClick={resetFlow}
+                    className="px-4 py-2 text-xs font-bold text-white gradient-bg rounded-lg">
+                    Pay Again
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step: Amount */}
+            {step === "amount" && (
+              <>
+                {balanceDue > 0 && (
+                  <p className="text-xs text-slate-500 mb-4">
+                    Balance due: <strong className="text-red-700">₹{balanceDue.toLocaleString("en-IN")}</strong>
+                  </p>
+                )}
+                <label className="text-xs font-bold text-slate-700 mb-2 block">Enter Amount (₹)</label>
+                <div className="relative mb-3">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-300">₹</span>
+                  <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
+                    placeholder="0" min={1}
+                    className="w-full pl-11 pr-4 py-4 border-2 border-slate-200 focus:border-red-400 rounded-xl text-2xl font-extrabold text-slate-900 outline-none transition-colors" />
+                </div>
+                {/* Quick amounts */}
+                <div className="flex flex-wrap gap-2 mb-5">
+                  {[5000, 10000, 15000, ...(balanceDue > 0 && ![5000, 10000, 15000].includes(balanceDue) ? [balanceDue] : [])]
+                    .filter(v => v > 0)
+                    .map(v => (
+                      <button key={v} onClick={() => setAmount(String(v))}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${
+                          amount === String(v)
+                            ? "gradient-bg text-white border-transparent"
+                            : "bg-slate-50 text-slate-700 border-slate-200 hover:border-red-300"
+                        }`}>
+                        ₹{v.toLocaleString("en-IN")}{v === balanceDue ? " (Full)" : ""}
+                      </button>
+                    ))}
+                </div>
+                <button onClick={() => amount && parseFloat(amount) > 0 && setStep("method")}
+                  disabled={!amount || parseFloat(amount) <= 0}
+                  className="w-full py-3.5 text-sm font-extrabold text-white gradient-bg rounded-xl disabled:opacity-40 transition-opacity">
+                  Continue →
+                </button>
+              </>
+            )}
+
+            {/* Step: Method */}
+            {step === "method" && (
+              <>
+                <p className="text-xs text-slate-500 mb-4">
+                  Paying: <strong className="text-slate-900 text-sm">₹{parseInt(amount).toLocaleString("en-IN")}</strong>
+                </p>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <button onClick={() => { setPaymentMethod("qr"); setStep("qr"); }}
+                    className="p-5 border-2 border-slate-200 hover:border-red-400 rounded-xl flex flex-col items-center gap-2 transition-all group">
+                    <div className="w-12 h-12 rounded-full bg-slate-100 group-hover:bg-red-50 flex items-center justify-center transition-colors">
+                      <QrCode className="w-6 h-6 text-red-600" />
+                    </div>
+                    <span className="text-sm font-bold text-slate-800">UPI / QR</span>
+                    <span className="text-[10px] text-slate-400">Scan & Pay</span>
+                  </button>
+                  <button onClick={() => { setPaymentMethod("card"); setStep("upload"); }}
+                    className="p-5 border-2 border-slate-200 hover:border-red-400 rounded-xl flex flex-col items-center gap-2 transition-all group">
+                    <div className="w-12 h-12 rounded-full bg-slate-100 group-hover:bg-red-50 flex items-center justify-center transition-colors">
+                      <CreditCard className="w-6 h-6 text-red-600" />
+                    </div>
+                    <span className="text-sm font-bold text-slate-800">Card / Net</span>
+                    <span className="text-[10px] text-slate-400">Razorpay</span>
+                  </button>
+                </div>
+                <button onClick={() => setStep("amount")}
+                  className="w-full py-2.5 text-xs text-slate-400 hover:text-slate-700 transition-colors">
+                  ← Back
+                </button>
+              </>
+            )}
+
+            {/* Step: QR */}
+            {step === "qr" && (
+              <>
+                <p className="text-xs text-slate-500 mb-4 text-center">Scan with any UPI app</p>
+                <div className="flex flex-col items-center mb-4">
+                  <div className="p-4 bg-white border-2 border-slate-200 rounded-2xl inline-block mb-3">
+                    <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48 block" />
+                  </div>
+                  <div className="bg-slate-50 rounded-xl px-5 py-3 text-center w-full">
+                    <p className="text-xs text-slate-600">UPI: <strong>{upiId}</strong></p>
+                    <p className="text-xs text-slate-600 mt-1">
+                      Amount: <strong className="text-emerald-700">₹{parseInt(amount).toLocaleString("en-IN")}</strong>
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setStep("method")}
+                    className="flex-1 py-3 text-xs font-bold text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50">Back</button>
+                  <button onClick={() => setStep("upload")}
+                    className="flex-1 py-3 text-xs font-bold text-white gradient-bg rounded-xl">I've Paid →</button>
+                </div>
+              </>
+            )}
+
+            {/* Step: Upload */}
+            {step === "upload" && (
+              <>
+                {paymentMethod === "qr" ? (
+                  <div className="mb-4">
+                    <label className="text-xs font-bold text-slate-700 mb-2 block">
+                      Upload Screenshot <span className="text-red-500">*</span>
+                    </label>
+                    <div onClick={() => fileInputRef.current?.click()}
+                      className="border-2 border-dashed border-slate-300 hover:border-red-400 rounded-xl p-6 text-center cursor-pointer transition-colors">
+                      {screenshotPreview ? (
+                        <div className="relative">
+                          <img src={screenshotPreview} alt="Preview" className="max-h-48 mx-auto rounded-lg" />
+                          <button onClick={e => { e.stopPropagation(); setScreenshot(null); setScreenshotPreview(null); }}
+                            className="absolute top-2 right-2 w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center shadow">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <ImageIcon className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                          <p className="text-sm text-slate-500">Tap to upload screenshot</p>
+                          <p className="text-[10px] text-slate-400 mt-1">JPG, PNG up to 4MB</p>
+                        </>
+                      )}
+                    </div>
+                    <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+                  </div>
+                ) : (
+                  <div className="mb-4">
+                    <label className="text-xs font-bold text-slate-700 mb-2 block">
+                      Transaction Reference <span className="text-slate-400">(optional)</span>
+                    </label>
+                    <input type="text" value={transactionId} onChange={e => setTransactionId(e.target.value)}
+                      placeholder="e.g. RZP1234567"
+                      className="w-full px-4 py-3 border-2 border-slate-200 focus:border-red-400 rounded-xl text-sm outline-none" />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button onClick={() => setStep(paymentMethod === "qr" ? "qr" : "method")}
+                    className="flex-1 py-3 text-xs font-bold text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50">Back</button>
+                  <button onClick={handleSubmitPayment}
+                    disabled={submitting || (paymentMethod === "qr" && !screenshot)}
+                    className="flex-1 py-3 text-xs font-bold text-white gradient-bg rounded-xl disabled:opacity-40 flex items-center justify-center gap-2">
+                    {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : "Submit Payment"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── UPLOAD RECEIPT PANEL ──────────────────────────────────────────── */}
+      {activeAction === "upload" && (
+        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm p-5">
+          <h3 className="text-sm font-bold text-slate-900 mb-4">Upload External Payment Receipt</h3>
+          <div className="space-y-4 max-w-lg">
+            <div>
+              <label className="text-xs font-bold text-slate-700 mb-1.5 block">Amount Paid (₹)</label>
+              <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
+                placeholder="Enter amount" min={1}
+                className="w-full px-4 py-3 border-2 border-slate-200 focus:border-red-400 rounded-xl text-sm font-bold text-slate-900 outline-none transition-colors" />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-slate-700 mb-1.5 block">Payment Method</label>
+              <div className="flex gap-2">
+                {(["UPI", "Card", "Bank Transfer", "Cash"] as const).map(m => (
+                  <button key={m} onClick={() => setPaymentMethod(m.toLowerCase() as any)}
+                    className={`px-3 py-2 text-xs font-bold rounded-lg border transition-all ${
+                      paymentMethod === m.toLowerCase()
+                        ? "gradient-bg text-white border-transparent"
+                        : "bg-slate-50 text-slate-700 border-slate-200 hover:border-red-300"
+                    }`}>
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-bold text-slate-700 mb-1.5 block">Transaction / Reference ID</label>
+              <input type="text" value={transactionId} onChange={e => setTransactionId(e.target.value)}
+                placeholder="e.g. TXN12345678" className="w-full px-4 py-3 border-2 border-slate-200 focus:border-red-400 rounded-xl text-sm outline-none" />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-slate-700 mb-1.5 block">Upload Screenshot / Receipt <span className="text-red-500">*</span></label>
+              <div onClick={() => fileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
+                  screenshotPreview ? "border-emerald-300 bg-emerald-50" : "border-slate-300 hover:border-red-300 hover:bg-red-50"
+                }`}>
+                {screenshotPreview ? (
+                  <img src={screenshotPreview} alt="Preview" className="mx-auto max-h-40 rounded-lg shadow-sm" />
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <ImageIcon className="w-8 h-8 text-slate-400" />
+                    <p className="text-xs font-bold text-slate-700">Click to upload receipt</p>
+                    <p className="text-[10px] text-slate-400">JPEG, PNG (max 4MB)</p>
+                  </div>
+                )}
+              </div>
+              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setActiveAction("none")}
+                className="flex-1 py-3 text-xs font-bold text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50">Cancel</button>
+              <button onClick={handleSubmitPayment}
+                disabled={submitting || !amount || parseFloat(amount) <= 0 || !screenshot}
+                className="flex-1 py-3 text-xs font-bold text-white gradient-bg rounded-xl disabled:opacity-40 flex items-center justify-center gap-2">
+                {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : "Submit Receipt"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewDocUrl && <DocModal url={viewDocUrl} onClose={() => setViewDocUrl(null)} />}
     </div>
   );
 }
