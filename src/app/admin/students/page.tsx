@@ -29,6 +29,7 @@ import {
   GraduationCap,
   Bell,
   Printer,
+  KeyRound,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -142,6 +143,7 @@ export default function StudentsPage() {
   const [paymentsModal, setPaymentsModal] = useState<{ student: Student; payments: Payment[] } | null>(null);
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [togglingProfileId, setTogglingProfileId] = useState<string | null>(null);
+  const [resettingPasswordId, setResettingPasswordId] = useState<string | null>(null);
   const [detailStudent, setDetailStudent] = useState<Student | null>(null);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const [discountForm, setDiscountForm] = useState({ amount: "", remarks: "" });
@@ -249,6 +251,40 @@ export default function StudentsPage() {
     fetchStudents();
     fetchPayments();
   }, []);
+
+  async function handleResetPassword(student: Student) {
+    setResettingPasswordId(student.id);
+    try {
+      const tokenRes = await fetch("/api/auth/create-password-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: student.phone, studentId: student.studentId || student.id }),
+      });
+      const tokenData = await tokenRes.json();
+
+      if (tokenRes.ok && tokenData.link) {
+        await fetch("/api/send-sms", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phone: student.phone,
+            studentName: student.name,
+            studentId: student.studentId || student.id,
+            type: "password-link",
+            passwordLink: tokenData.link,
+          }),
+        });
+        alert(`Password reset link sent to ${student.phone}`);
+      } else {
+        alert("Failed to generate password reset link.");
+      }
+    } catch (err) {
+      console.error("Reset password error:", err);
+      alert("Error sending password reset link.");
+    } finally {
+      setResettingPasswordId(null);
+    }
+  }
 
   function downloadDocument(url: string, filename: string) {
     if (!url) return;
@@ -743,6 +779,18 @@ export default function StudentsPage() {
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
+                            onClick={() => handleResetPassword(student)}
+                            disabled={resettingPasswordId === student.id}
+                            className="p-1.5 text-slate-600 hover:text-amber-600 transition-colors disabled:opacity-50"
+                            title="Reset Password"
+                          >
+                            {resettingPasswordId === student.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <KeyRound className="w-4 h-4" />
+                            )}
+                          </button>
+                          <button
                             onClick={() => toggleStudentProfileEdit(student)}
                             disabled={togglingProfileId === student.id}
                             title={student.profileEditEnabled ? "Disable profile editing" : "Enable profile editing"}
@@ -797,6 +845,10 @@ export default function StudentsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  <button onClick={() => { if (detailStudent) handleResetPassword(detailStudent); }} disabled={resettingPasswordId === detailStudent?.id} className="px-3 py-1.5 text-xs sm:text-sm font-bold text-amber-700 bg-white rounded-lg hover:bg-amber-50 transition-colors shadow-sm hidden sm:flex items-center gap-1.5 disabled:opacity-60">
+                    {resettingPasswordId === detailStudent?.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
+                    Reset Password
+                  </button>
                   <button onClick={() => setShowDiscountModal(true)} className="px-3 py-1.5 text-xs sm:text-sm font-bold text-green-700 bg-white rounded-lg hover:bg-green-50 transition-colors shadow-sm hidden sm:block">
                     Add Discount
                   </button>
@@ -811,6 +863,10 @@ export default function StudentsPage() {
               </div>
               {/* Mobile action buttons */}
               <div className="sm:hidden flex gap-2 mt-3 pt-3 border-t border-white/15">
+                <button onClick={() => { if (detailStudent) handleResetPassword(detailStudent); }} disabled={resettingPasswordId === detailStudent?.id} className="flex-1 py-1.5 text-xs font-bold text-white bg-white/15 rounded-lg border border-white/20 flex items-center justify-center gap-1 disabled:opacity-60">
+                  {resettingPasswordId === detailStudent?.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <KeyRound className="w-3 h-3" />}
+                  Reset Password
+                </button>
                 <button onClick={() => setShowDiscountModal(true)} className="flex-1 py-1.5 text-xs font-bold text-white bg-white/15 rounded-lg border border-white/20">
                   Add Discount
                 </button>
