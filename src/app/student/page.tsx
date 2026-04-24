@@ -8,7 +8,7 @@ import {
   Receipt, AlertTriangle, CheckCircle, CreditCard, Loader2,
   Upload, Save, Camera, Lock, Pencil, Printer, Download,
   GraduationCap, User, Building2, Mail, Phone, IdCard, Calendar,
-  Users, MapPin, Briefcase, BookOpen, Award, ShieldCheck, FileText, ChevronRight,
+  Users, MapPin, Briefcase, BookOpen, Award, ShieldCheck, FileText, ChevronRight, TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
 import jsPDF from "jspdf";
@@ -68,14 +68,14 @@ function Input({
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   placeholder?: string; disabled?: boolean;
 }) {
-  const cls = `w-full px-2.5 py-1.5 text-xs rounded border outline-none font-medium transition-all ${
+  const cls = `w-full px-3 py-2.5 text-[14px] rounded-lg border outline-none font-medium transition-all ${
     disabled
       ? "bg-slate-50 border-slate-200 text-slate-700 cursor-default"
-      : "border-slate-300 focus:border-red-500 focus:ring-1 focus:ring-red-100 bg-white text-slate-900"
+      : "border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-white text-slate-900"
   }`;
   return (
     <div>
-      <label className="block text-[10px] font-bold text-slate-700 mb-1">{label}</label>
+      <label className="block text-[13px] font-semibold text-slate-700 mb-2">{label}</label>
       {type === "select" ? (
         <select value={value} onChange={e => onChange(e.target.value)} disabled={disabled} className={cls}>
           <option value="">— Select —</option>
@@ -104,18 +104,18 @@ function CertUpload({ level, url, uploading, onUpload, disabled }: {
   const inputId = `cert-upload-${level.replace(/\s+/g, '-').toLowerCase()}`;
   return (
     <div className="col-span-2">
-      <label className="block text-[10px] font-bold text-slate-700 mb-1">Upload Certificate / Marksheet</label>
+      <label className="block text-[13px] font-semibold text-slate-700 mb-2">Upload Certificate / Marksheet</label>
       <label htmlFor={inputId}
-        className={`w-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg border-2 border-dashed transition-all cursor-pointer ${(uploading || disabled) ? 'opacity-50 pointer-events-none' : ''} ${
+        className={`w-full flex items-center justify-center gap-2 py-2.5 text-[13px] font-semibold rounded-lg border-2 border-dashed transition-all cursor-pointer ${(uploading || disabled) ? 'opacity-50 pointer-events-none' : ''} ${
           url
             ? "border-green-500 bg-green-50 text-green-800"
             : "border-slate-300 bg-slate-50 text-slate-700 hover:border-red-400 hover:bg-red-50/30 hover:text-red-700"
         }`}>
-        {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : url ? <CheckCircle className="w-3.5 h-3.5" /> : <Upload className="w-3.5 h-3.5" />}
+        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : url ? <CheckCircle className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
         {uploading ? "Uploading…" : url ? "Certificate Uploaded ✓ — Click to Replace" : `Upload ${level} Certificate / Marksheet (PDF or Image)`}
       </label>
       {url && (
-        <button onClick={() => openBase64(url)} className="text-[10px] text-green-700 underline mt-0.5 block hover:text-green-900">
+        <button onClick={() => openBase64(url)} className="text-[13px] font-medium text-green-700 underline mt-1 block hover:text-green-900">
           View uploaded certificate
         </button>
       )}
@@ -132,6 +132,8 @@ const ACADEMIC_STEPS = [
   { key: "pg",      label: "Post Graduate (PG)" },
   { key: "phd",     label: "PhD / Other" },
 ] as const;
+
+const YEAR_OPTIONS = Array.from({ length: 55 }, (_, i) => String(2035 - i));
 
 export default function StudentDashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -596,7 +598,11 @@ export default function StudentDashboard() {
               <div className="p-5">
                 {/* Table 1: Basic Details - Matching Enrollment Details Style */}
                 <div className="mb-6">
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Basic Details</h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-5 bg-blue-500 rounded-full" />
+                    <User className="w-4 h-4 text-blue-600" />
+                    <h3 className="text-sm font-bold text-slate-800">Basic Details</h3>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                     {[
                       { icon: Calendar, label: "Date of Birth", value: personal.dob || "—", tint: "from-rose-50 to-white", iconColor: "text-rose-600", ring: "border-rose-100" },
@@ -630,7 +636,11 @@ export default function StudentDashboard() {
 
                 {/* Table 2: Address */}
                 <div>
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Address</h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-5 bg-emerald-500 rounded-full" />
+                    <MapPin className="w-4 h-4 text-emerald-600" />
+                    <h3 className="text-sm font-bold text-slate-800">Address</h3>
+                  </div>
                   <div className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br from-emerald-50 to-white border border-emerald-100 hover:shadow-sm transition-all">
                     <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm">
                       <MapPin className="w-4 h-4 text-emerald-600" />
@@ -652,7 +662,11 @@ export default function StudentDashboard() {
               <div className="p-5 sm:p-6 bg-slate-50/50 space-y-6">
                 {/* Section 1: Basic Details - All merged */}
                 <div>
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Basic Details</h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-5 bg-blue-500 rounded-full" />
+                    <User className="w-4 h-4 text-blue-600" />
+                    <h3 className="text-sm font-bold text-slate-800">Basic Details</h3>
+                  </div>
                   <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div>
@@ -798,7 +812,11 @@ export default function StudentDashboard() {
 
                 {/* Section 2: Address */}
                 <div>
-                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Address</h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-5 bg-emerald-500 rounded-full" />
+                    <MapPin className="w-4 h-4 text-emerald-600" />
+                    <h3 className="text-sm font-bold text-slate-800">Address</h3>
+                  </div>
                   <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
                     <div>
                       <label className="block text-[13px] font-semibold text-slate-700 mb-2">Street / Locality <span className="text-red-500">*</span></label>
@@ -903,71 +921,111 @@ export default function StudentDashboard() {
             </header>
             {/* Academic VIEW MODE */}
             {!editingAcademic ? (
-              <div className="p-4 space-y-2">
-                {(["sslc", "plustwo", "ug", "pg"] as const).map((lvl, i) => {
+              <div className="p-5 space-y-6">
+                {([
+                  { key: "sslc" as const, label: "SSLC / 10th", color: "rose", iconColor: "text-rose-600", ring: "border-rose-100", tint: "from-rose-50 to-white", bar: "bg-rose-500" },
+                  { key: "plustwo" as const, label: "HSC / 12th", color: "amber", iconColor: "text-amber-600", ring: "border-amber-100", tint: "from-amber-50 to-white", bar: "bg-amber-500" },
+                  { key: "ug" as const, label: "Under Graduate (UG)", color: "blue", iconColor: "text-blue-600", ring: "border-blue-100", tint: "from-blue-50 to-white", bar: "bg-blue-500" },
+                  { key: "pg" as const, label: "Post Graduate (PG)", color: "indigo", iconColor: "text-indigo-600", ring: "border-indigo-100", tint: "from-indigo-50 to-white", bar: "bg-indigo-500" },
+                ]).map(({ key: lvl, label, iconColor, ring, tint, bar }) => {
                   const d = academic[lvl];
-                  if (!d || !Object.values(d).some(v => v)) return null;
-                  const stepLabels = ["SSLC / 10th", "HSC / 12th", "Under Graduate (UG)", "Post Graduate (PG)"];
+                  if (!d?.institution) return null;
                   return (
-                    <div key={lvl} className="border border-slate-300 rounded-lg overflow-hidden">
-                      <div className="flex items-center justify-between px-3 py-2 bg-red-50 border-b border-slate-200">
-                        <p className="text-sm font-medium text-red-700">{stepLabels[i]}</p>
-                        {d.certificateUrl
-                          ? <button onClick={() => openBase64(d.certificateUrl!)} className="text-[10px] text-green-700 font-bold flex items-center gap-0.5 hover:text-green-900 underline">
-                              <CheckCircle className="w-3 h-3" /> View Certificate
-                            </button>
-                          : <span className="text-[10px] text-red-500 font-bold flex items-center gap-0.5">
-                              <AlertTriangle className="w-3 h-3" /> Not Uploaded
-                            </span>
-                        }
+                    <div key={lvl}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className={`w-1 h-5 ${bar} rounded-full`} />
+                        <GraduationCap className={`w-4 h-4 ${iconColor}`} />
+                        <h3 className="text-sm font-bold text-slate-800">{label}</h3>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 p-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                         {[
-                          { label: "Institution", value: d.institution },
-                          { label: "Board", value: d.board },
-                          { label: "Stream / Degree", value: d.stream || d.degree },
-                          { label: "Year", value: d.year },
-                          { label: "Percentage / CGPA", value: d.percentage },
-                        ].filter(f => f.value).map(({ label, value }) => (
-                          <div key={label}>
-                            <p className="text-[9px] font-bold uppercase tracking-wider text-slate-600 mb-0.5">{label}</p>
-                            <p className="text-xs font-bold text-slate-900">{value}</p>
+                          { icon: Building2, label: "Institution", value: d.institution || "—", tint, iconColor, ring },
+                          { icon: Award, label: "Board / University", value: d.board || "—", tint, iconColor, ring },
+                          { icon: BookOpen, label: d.stream ? "Stream" : "Degree", value: d.stream || d.degree || "—", tint, iconColor, ring },
+                          { icon: Calendar, label: "Year of Passing", value: d.year || "—", tint, iconColor, ring },
+                          { icon: TrendingUp, label: "Percentage / CGPA", value: d.percentage || "—", tint, iconColor, ring },
+                        ].map(({ icon: Icon, label: fLabel, value: fValue, tint: fTint, iconColor: fIconColor, ring: fRing }) => (
+                          <div key={fLabel} className={`flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br ${fTint} border ${fRing} hover:shadow-sm transition-all`}>
+                            <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+                              <Icon className={`w-4 h-4 ${fIconColor}`} />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs font-semibold text-red-700 mb-0.5">{fLabel}</p>
+                              <p className="text-sm font-normal text-slate-800 truncate">{fValue}</p>
+                            </div>
                           </div>
                         ))}
+                        {/* Certificate Status */}
+                        <div className={`flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br ${tint} border ${ring} hover:shadow-sm transition-all`}>
+                          <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+                            {d.certificateUrl ? <CheckCircle className={`w-4 h-4 ${iconColor}`} /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-red-700 mb-0.5">Certificate</p>
+                            {d.certificateUrl ? (
+                              <button onClick={() => openBase64(d.certificateUrl!)} className="text-sm font-normal text-blue-700 underline hover:text-blue-900">
+                                View Certificate
+                              </button>
+                            ) : (
+                              <p className="text-sm font-normal text-slate-400">Not Uploaded</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
                 })}
-                {academic.phd && Object.values(academic.phd).some(v => v) && (
-                  <div className="border border-slate-300 rounded-lg overflow-hidden">
-                    <div className="flex items-center justify-between px-3 py-2 bg-red-50 border-b border-slate-200">
-                      <p className="text-sm font-medium text-red-700">PhD / Research / Other</p>
-                      {academic.phd.certificateUrl
-                        ? <button onClick={() => openBase64(academic.phd!.certificateUrl!)} className="text-[10px] text-green-700 font-bold flex items-center gap-0.5 hover:text-green-900 underline">
-                            <CheckCircle className="w-3 h-3" /> View Certificate
-                          </button>
-                        : <span className="text-[10px] text-red-500 font-bold flex items-center gap-0.5">
-                            <AlertTriangle className="w-3 h-3" /> Not Uploaded
-                          </span>
-                      }
+
+                {/* PhD / Research */}
+                {academic.phd?.institution && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-1 h-5 bg-purple-500 rounded-full" />
+                      <GraduationCap className="w-4 h-4 text-purple-600" />
+                      <h3 className="text-sm font-bold text-slate-800">PhD / Research / Other</h3>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-2 p-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                       {[
-                        { label: "Institution", value: academic.phd.institution },
-                        { label: "Research Topic", value: academic.phd.topic },
-                        { label: "Year", value: academic.phd.year },
-                        { label: "Status", value: academic.phd.status },
-                      ].filter(f => f.value).map(({ label, value }) => (
-                        <div key={label}>
-                          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-600 mb-0.5">{label}</p>
-                          <p className="text-xs font-bold text-slate-900">{value}</p>
+                        { icon: Building2, label: "Institution", value: academic.phd.institution || "—", tint: "from-purple-50 to-white", iconColor: "text-purple-600", ring: "border-purple-100" },
+                        { icon: BookOpen, label: "Research Topic", value: academic.phd.topic || "—", tint: "from-purple-50 to-white", iconColor: "text-purple-600", ring: "border-purple-100" },
+                        { icon: Calendar, label: "Year", value: academic.phd.year || "—", tint: "from-purple-50 to-white", iconColor: "text-purple-600", ring: "border-purple-100" },
+                        { icon: ShieldCheck, label: "Status", value: academic.phd.status || "—", tint: "from-purple-50 to-white", iconColor: "text-purple-600", ring: "border-purple-100" },
+                      ].map(({ icon: Icon, label, value, tint: fTint, iconColor: fIconColor, ring: fRing }) => (
+                        <div key={label} className={`flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br ${fTint} border ${fRing} hover:shadow-sm transition-all`}>
+                          <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+                            <Icon className={`w-4 h-4 ${fIconColor}`} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-red-700 mb-0.5">{label}</p>
+                            <p className="text-sm font-normal text-slate-800 truncate">{value}</p>
+                          </div>
                         </div>
                       ))}
+                      {/* Certificate */}
+                      <div className="flex items-start gap-3 p-3 rounded-xl bg-gradient-to-br from-purple-50 to-white border border-purple-100 hover:shadow-sm transition-all">
+                        <div className="w-9 h-9 rounded-lg bg-white border border-slate-200 flex items-center justify-center flex-shrink-0 shadow-sm">
+                          {academic.phd.certificateUrl ? <CheckCircle className="w-4 h-4 text-purple-600" /> : <AlertTriangle className="w-4 h-4 text-amber-500" />}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold text-red-700 mb-0.5">Certificate</p>
+                          {academic.phd.certificateUrl ? (
+                            <button onClick={() => openBase64(academic.phd!.certificateUrl!)} className="text-sm font-normal text-blue-700 underline hover:text-blue-900">
+                              View Certificate
+                            </button>
+                          ) : (
+                            <p className="text-sm font-normal text-slate-400">Not Uploaded</p>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}
+
                 {!academic.sslc?.institution && !academic.plustwo?.institution && !academic.ug?.institution && !academic.pg?.institution && !academic.phd?.institution && (
-                  <p className="text-xs font-semibold text-slate-700 text-center py-4">No academic details added yet.</p>
+                  <div className="flex flex-col items-center gap-3 py-8">
+                    <GraduationCap className="w-10 h-10 text-slate-300" />
+                    <p className="text-sm font-semibold text-slate-500">No academic details added yet.</p>
+                  </div>
                 )}
               </div>
             ) : (
@@ -985,70 +1043,72 @@ export default function StudentDashboard() {
                     </button>
                   ))}
                 </div>
-                <div className="p-4">
+                <div className="p-5 sm:p-6 bg-slate-50/50 space-y-4">
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
                   {activeStep === 0 && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="col-span-2"><Input label="Institution Name" value={academic.sslc?.institution || ""} onChange={v => upAc("sslc", "institution", v)} disabled={!canEdit} /></div>
                       <Input label="Board / University" value={academic.sslc?.board || ""} onChange={v => upAc("sslc", "board", v)} disabled={!canEdit} />
-                      <Input label="Year of Passing" value={academic.sslc?.year || ""} onChange={v => upAc("sslc", "year", v)} inputMode="numeric" disabled={!canEdit} />
+                      <Input label="Year of Passing" type="select" value={academic.sslc?.year || ""} onChange={v => upAc("sslc", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
                       <Input label="Percentage / CGPA" value={academic.sslc?.percentage || ""} onChange={v => upAc("sslc", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
                       <CertUpload level="SSLC / 10th" url={academic.sslc?.certificateUrl}
                         uploading={!!uploadingCert.sslc} onUpload={f => handleCertUpload("sslc", f)} disabled={!canEdit} />
                     </div>
                   )}
                   {activeStep === 1 && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="col-span-2"><Input label="Institution Name" value={academic.plustwo?.institution || ""} onChange={v => upAc("plustwo", "institution", v)} disabled={!canEdit} /></div>
                       <Input label="Board / University" value={academic.plustwo?.board || ""} onChange={v => upAc("plustwo", "board", v)} disabled={!canEdit} />
                       <Input label="Stream" type="select" value={academic.plustwo?.stream || ""} onChange={v => upAc("plustwo", "stream", v)}
                         options={["Science (Bio)", "Science (Maths)", "Commerce", "Arts / Humanities", "Vocational", "Other"]} disabled={!canEdit} />
-                      <Input label="Year of Passing" value={academic.plustwo?.year || ""} onChange={v => upAc("plustwo", "year", v)} inputMode="numeric" disabled={!canEdit} />
+                      <Input label="Year of Passing" type="select" value={academic.plustwo?.year || ""} onChange={v => upAc("plustwo", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
                       <Input label="Percentage / CGPA" value={academic.plustwo?.percentage || ""} onChange={v => upAc("plustwo", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
                       <CertUpload level="HSC / 12th" url={academic.plustwo?.certificateUrl}
                         uploading={!!uploadingCert.plustwo} onUpload={f => handleCertUpload("plustwo", f)} disabled={!canEdit} />
                     </div>
                   )}
                   {activeStep === 2 && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="col-span-2"><Input label="Institution Name" value={academic.ug?.institution || ""} onChange={v => upAc("ug", "institution", v)} disabled={!canEdit} /></div>
                       <Input label="Board / University" value={academic.ug?.board || ""} onChange={v => upAc("ug", "board", v)} disabled={!canEdit} />
                       <Input label="Degree (e.g. B.Com, B.Sc)" value={academic.ug?.degree || ""} onChange={v => upAc("ug", "degree", v)} disabled={!canEdit} />
-                      <Input label="Year of Passing" value={academic.ug?.year || ""} onChange={v => upAc("ug", "year", v)} inputMode="numeric" disabled={!canEdit} />
+                      <Input label="Year of Passing" type="select" value={academic.ug?.year || ""} onChange={v => upAc("ug", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
                       <Input label="Percentage / CGPA" value={academic.ug?.percentage || ""} onChange={v => upAc("ug", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
                       <CertUpload level="UG Degree" url={academic.ug?.certificateUrl}
                         uploading={!!uploadingCert.ug} onUpload={f => handleCertUpload("ug", f)} disabled={!canEdit} />
                     </div>
                   )}
                   {activeStep === 3 && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="col-span-2"><Input label="Institution Name" value={academic.pg?.institution || ""} onChange={v => upAc("pg", "institution", v)} disabled={!canEdit} /></div>
                       <Input label="Board / University" value={academic.pg?.board || ""} onChange={v => upAc("pg", "board", v)} disabled={!canEdit} />
                       <Input label="Degree (e.g. M.Com, MBA)" value={academic.pg?.degree || ""} onChange={v => upAc("pg", "degree", v)} disabled={!canEdit} />
-                      <Input label="Year of Passing" value={academic.pg?.year || ""} onChange={v => upAc("pg", "year", v)} inputMode="numeric" disabled={!canEdit} />
+                      <Input label="Year of Passing" type="select" value={academic.pg?.year || ""} onChange={v => upAc("pg", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
                       <Input label="Percentage / CGPA" value={academic.pg?.percentage || ""} onChange={v => upAc("pg", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
                       <CertUpload level="PG Degree" url={academic.pg?.certificateUrl}
                         uploading={!!uploadingCert.pg} onUpload={f => handleCertUpload("pg", f)} disabled={!canEdit} />
                     </div>
                   )}
                   {activeStep === 4 && (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="col-span-2"><Input label="Institution / University" value={academic.phd?.institution || ""} onChange={v => upPhd("institution", v)} disabled={!canEdit} /></div>
                       <div className="col-span-2"><Input label="Research Topic / Thesis Title" value={academic.phd?.topic || ""} onChange={v => upPhd("topic", v)} disabled={!canEdit} /></div>
-                      <Input label="Year of Registration" value={academic.phd?.year || ""} onChange={v => upPhd("year", v)} inputMode="numeric" disabled={!canEdit} />
+                      <Input label="Year of Registration" type="select" value={academic.phd?.year || ""} onChange={v => upPhd("year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
                       <Input label="Current Status" type="select" value={academic.phd?.status || ""} onChange={v => upPhd("status", v)}
                         options={["Ongoing", "Submitted", "Awarded"]} disabled={!canEdit} />
                       <CertUpload level="PhD / Research" url={academic.phd?.certificateUrl}
                         uploading={!!uploadingCert.phd} onUpload={f => handleCertUpload("phd", f)} disabled={!canEdit} />
                     </div>
                   )}
-                  <div className="flex gap-2 mt-3">
+                  </div>
+                  <div className="flex gap-3 pt-2">
                     <button onClick={() => setEditingAcademic(false)}
-                      className="px-3 py-2 text-xs font-bold border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+                      className="px-4 py-2.5 text-[13px] font-semibold border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
                       Cancel
                     </button>
                     <button onClick={saveAcademic} disabled={savingAcademic}
-                      className="flex-1 py-2 text-xs font-bold text-white rounded-lg gradient-bg flex items-center justify-center gap-2 disabled:opacity-60">
-                      {savingAcademic ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : savedAcademic ? <CheckCircle className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+                      className="flex-1 py-2.5 text-[13px] font-semibold text-white rounded-lg gradient-bg flex items-center justify-center gap-2 disabled:opacity-60">
+                      {savingAcademic ? <Loader2 className="w-4 h-4 animate-spin" /> : savedAcademic ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                       {savingAcademic ? "Saving\u2026" : savedAcademic ? "Saved Successfully" : "Save Academic Details"}
                     </button>
                   </div>
