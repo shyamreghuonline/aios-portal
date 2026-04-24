@@ -182,14 +182,42 @@ export default function StudentsPage() {
 
   // Calculate end year from duration string like "3 Years (6 Semesters)" or "4 Years"
   function calcEndYear(duration: string, startYear: string): string {
-    const match = duration.match(/(\d+)\s*Year/i);
-    if (match && startYear) {
-      return String(parseInt(startYear) + parseInt(match[1]));
+    const yearMatch = duration.match(/(\d+)\s*Year/i);
+    if (yearMatch && startYear) {
+      return String(parseInt(startYear) + parseInt(yearMatch[1]));
+    }
+    // For 6 Months, end year is same as start year
+    if (duration.toLowerCase().includes("month") && startYear) {
+      return startYear;
     }
     return "";
   }
 
+  // Duration options for custom courses
+  const DURATION_OPTIONS = [
+    "6 Months",
+    "1 Year",
+    "2 Years",
+    "3 Years",
+    "4 Years",
+    "5 Years",
+    "6 Years",
+    "7 Years",
+    "8 Years"
+  ];
+
   const yearOptions = Array.from({ length: currentYear - 2008 + 10 }, (_, i) => 2008 + i);
+
+  // Update end year when custom duration changes
+  useEffect(() => {
+    if (customCourse && formData.duration && formData.startYear) {
+      const endYear = calcEndYear(formData.duration, formData.startYear);
+      setFormData(prev => ({
+        ...prev,
+        endYear: endYear
+      }));
+    }
+  }, [customCourse, formData.duration, formData.startYear]);
 
   async function toggleStudentProfileEdit(student: Student) {
     setTogglingProfileId(student.id);
@@ -2012,14 +2040,21 @@ export default function StudentsPage() {
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Duration{customCourse ? " *" : ""}</label>
                   {customCourse ? (
-                    <input
-                      type="text"
+                    <select
                       value={formData.duration}
-                      onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                      onChange={(e) => {
+                        const dur = e.target.value;
+                        const end = dur ? calcEndYear(dur, formData.startYear) : "";
+                        setFormData({ ...formData, duration: dur, endYear: end });
+                      }}
                       required
-                      placeholder="e.g., 3 Years"
-                      className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
-                    />
+                      className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
+                    >
+                      <option value="">Select duration</option>
+                      {DURATION_OPTIONS.map((d) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
                   ) : (
                     <input
                       type="text"
@@ -2064,19 +2099,21 @@ export default function StudentsPage() {
               </div>
 
               {/* Fee, Discount & Enrollment Date */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Total Fee (₹) *</label>
                   <div className="relative">
                     <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <input
-                      type="number"
-                      value={formData.totalFee}
-                      onChange={(e) => setFormData({ ...formData, totalFee: e.target.value })}
+                      type="text"
+                      value={formData.totalFee ? parseInt(formData.totalFee).toLocaleString("en-IN") : ""}
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/[^\d]/g, "");
+                        setFormData({ ...formData, totalFee: rawValue });
+                      }}
                       required
-                      min="1"
                       className="w-full pl-9 pr-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
-                      placeholder="50000"
+                      placeholder="50,000"
                     />
                   </div>
                 </div>
@@ -2085,17 +2122,24 @@ export default function StudentsPage() {
                   <div className="relative">
                     <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                     <input
-                      type="number"
-                      value={formData.discountAmount}
-                      onChange={(e) => setFormData({ ...formData, discountAmount: e.target.value })}
-                      min="0"
+                      type="text"
+                      value={formData.discountAmount ? parseInt(formData.discountAmount).toLocaleString("en-IN") : ""}
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/[^\d]/g, "");
+                        setFormData({ ...formData, discountAmount: rawValue });
+                      }}
                       className="w-full pl-9 pr-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none"
                       placeholder="0"
                     />
                   </div>
-                  {formData.discountAmount && parseFloat(formData.discountAmount) > 0 && (
-                    <p className="text-xs text-green-600 mt-1">Effective Fee: ₹{(parseFloat(formData.totalFee || "0") - parseFloat(formData.discountAmount || "0")).toLocaleString("en-IN")}</p>
-                  )}
+                </div>
+                <div className="flex items-end">
+                  <div className="w-full bg-slate-50 rounded-lg border border-slate-200 px-3 py-1.5 text-center">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Effective Fee</p>
+                    <p className="text-sm font-bold text-slate-800">
+                      ₹{((parseFloat(formData.totalFee || "0") - parseFloat(formData.discountAmount || "0")).toLocaleString("en-IN"))}
+                    </p>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Enrollment Date</label>

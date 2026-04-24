@@ -49,9 +49,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen flex">
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-slate-900 text-white px-4 py-3 flex items-center justify-between shadow-lg">
-        <div>
-          <h1 className="text-base font-extrabold text-white tracking-wide">AIOS EDU</h1>
-          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Admin Portal</p>
+        <div className="flex items-center h-full overflow-hidden">
+          <img src="/admin-logo.png" alt="Admin Portal" className="h-12 w-auto max-w-[180px] object-contain" />
         </div>
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -67,14 +66,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         ${mobileMenuOpen ? 'top-0' : 'top-0 lg:top-0'}
       `}>
-        <div className="px-5 py-5 border-b border-slate-700/60 hidden lg:block">
-          <h1 className="text-lg font-extrabold text-white tracking-wide">AIOS EDU</h1>
-          <p className="text-sm text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Admin Portal</p>
+        <div className="border-b border-slate-700/60 hidden lg:block flex items-center justify-center overflow-hidden" style={{ height: '80px' }}>
+          <img src="/admin-logo.png" alt="Admin Portal" className="h-full w-full object-contain" />
         </div>
 
-        <div className="lg:hidden px-5 py-4 border-b border-slate-700/60">
-          <h1 className="text-lg font-extrabold text-white tracking-wide">AIOS EDU</h1>
-          <p className="text-sm text-slate-400 font-semibold uppercase tracking-wider mt-0.5">Admin Portal</p>
+        <div className="lg:hidden border-b border-slate-700/60 flex items-center justify-center overflow-hidden" style={{ height: '60px' }}>
+          <img src="/admin-logo.png" alt="Admin Portal" className="h-full w-full object-contain" />
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-0.5">

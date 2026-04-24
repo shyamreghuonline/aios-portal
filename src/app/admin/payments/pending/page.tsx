@@ -596,7 +596,7 @@ Thank you!`,
                               setPreviousPayments(totalPaid);
                               setInstallmentNumber(maxInst + 1);
                               setPaymentDate(new Date().toISOString().split("T")[0]);
-                              setPaymentMode(payment.paymentMethod === "qr" ? "UPI / QR Code" : "");
+                              setPaymentMode(payment.paymentMethod === "qr" ? "UPI / QR Code" : payment.paymentMethod === "card" ? "Credit/Debit Card" : "");
                               setTransactionRef(payment.transactionId || "");
                               setRemarks("");
                               setApproveModalOpen(true);
