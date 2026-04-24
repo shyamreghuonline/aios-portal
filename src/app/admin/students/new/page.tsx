@@ -103,6 +103,8 @@ export default function NewStudentPage() {
   const [passwordLink, setPasswordLink] = useState<string | null>(null);
   const [createdStudentName, setCreatedStudentName] = useState<string>("");
   const [copied, setCopied] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [tokenError, setTokenError] = useState<string | null>(null);
   const currentYear = new Date().getFullYear();
   
   const [formData, setFormData] = useState({
@@ -246,9 +248,15 @@ export default function NewStudentPage() {
         console.error("Error generating password token:", tokenErr);
       }
 
-      // Show success UI with password link for admin to share manually
+      // Show success UI with password link for admin to share
       setPasswordLink(generatedLink);
       setCreatedStudentName(name);
+      setShowSuccess(true);
+      if (!generatedLink) {
+        setTokenError("Password token could not be generated. You can still share the link later from the Students page.");
+      } else {
+        setTokenError(null);
+      }
     } catch (err) {
       console.error("Error adding student:", err);
       alert("Failed to add student. Please try again.");
@@ -624,7 +632,7 @@ export default function NewStudentPage() {
       </form>
 
       {/* Success UI — Password Link for Admin to Share */}
-      {passwordLink && (
+      {showSuccess && (
         <div className="mt-6 bg-green-50 border border-green-200 rounded-xl p-6 space-y-4">
           <div className="flex items-center gap-2 text-green-800">
             <Check className="w-5 h-5" />
@@ -634,43 +642,57 @@ export default function NewStudentPage() {
             <strong>{createdStudentName}</strong> has been enrolled. Share the password setup link below with the student via WhatsApp, SMS, or email.
           </p>
 
-          <div className="bg-white border border-green-200 rounded-lg p-4 space-y-3">
-            <label className="block text-xs font-semibold text-green-800 uppercase tracking-wide">Password Setup Link</label>
-            <div className="flex gap-2">
-              <input
-                readOnly
-                value={passwordLink}
-                className="flex-1 px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-mono break-all"
-              />
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(passwordLink);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }}
-                className="px-4 py-2 text-sm font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 flex-shrink-0"
-              >
-                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {copied ? "Copied!" : "Copy"}
-              </button>
-            </div>
-            <p className="text-xs text-slate-500">
-              Link valid for <strong>24 hours</strong> and can only be used once.
-            </p>
-          </div>
+          {passwordLink ? (
+            <>
+              <div className="bg-white border border-green-200 rounded-lg p-4 space-y-3">
+                <label className="block text-xs font-semibold text-green-800 uppercase tracking-wide">Password Setup Link</label>
+                <div className="flex gap-2">
+                  <input
+                    readOnly
+                    value={passwordLink}
+                    className="flex-1 px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-mono break-all"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(passwordLink);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className="px-4 py-2 text-sm font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2 flex-shrink-0"
+                  >
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {copied ? "Copied!" : "Copy"}
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Link valid for <strong>24 hours</strong> and can only be used once.
+                </p>
+              </div>
 
-          {/* WhatsApp share button */}
-          <a
-            href={`https://wa.me/?text=${encodeURIComponent(
-              `Welcome to AIOS EDU! Dear ${createdStudentName}, your enrollment is confirmed. Please set your portal password here: ${passwordLink} (valid 24h). -AIOS EDU Team`
-            )}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors"
-          >
-            <Send className="w-4 h-4" />
-            Share via WhatsApp
-          </a>
+              {/* WhatsApp share button */}
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(
+                  `Welcome to AIOS EDU! Dear ${createdStudentName}, your enrollment is confirmed. Please set your portal password here: ${passwordLink} (valid 24h). -AIOS EDU Team`
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors"
+              >
+                <Send className="w-4 h-4" />
+                Share via WhatsApp
+              </a>
+            </>
+          ) : tokenError ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-2">
+              <p className="text-sm text-amber-800 font-medium">
+                <span className="inline-block mr-1">⚠️</span>
+                {tokenError}
+              </p>
+              <p className="text-xs text-amber-700">
+                The student has been created successfully. You can generate a password reset link from the Students page later.
+              </p>
+            </div>
+          ) : null}
 
           <div className="flex gap-3 pt-2">
             <button
@@ -678,6 +700,8 @@ export default function NewStudentPage() {
                 setPasswordLink(null);
                 setCreatedStudentName("");
                 setCopied(false);
+                setShowSuccess(false);
+                setTokenError(null);
                 setFormData({
                   name: "",
                   email: "",

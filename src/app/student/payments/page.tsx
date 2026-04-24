@@ -53,15 +53,16 @@ export default function StudentPaymentsPage() {
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [studentData, setStudentData] = useState<{ totalFee: number; discountAmount: number } | null>(null);
+  const studentPhone = user?.studentData ? (user.studentData.id as string) || (user.studentData.phone as string) : undefined;
 
   useEffect(() => {
     async function fetchPayments() {
-      if (!user?.phone) return;
+      if (!studentPhone) return;
       try {
         // Fetch confirmed payments
         const q = query(
           collection(db, "payments"),
-          where("studentPhone", "==", user.phone)
+          where("studentPhone", "==", studentPhone)
         );
         const snap = await getDocs(q);
         const data = snap.docs.map((d) => ({ 
@@ -73,7 +74,7 @@ export default function StudentPaymentsPage() {
         // Fetch pending payments
         const pendingQuery = query(
           collection(db, "pendingPayments"),
-          where("studentPhone", "==", user.phone)
+          where("studentPhone", "==", studentPhone)
         );
         const pendingSnap = await getDocs(pendingQuery);
         const pendingData = pendingSnap.docs.map((d) => {
