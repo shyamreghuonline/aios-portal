@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Fragment } from "react";
 import { collection, doc, getDoc, getDocs, query, setDoc, where, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
@@ -434,68 +434,73 @@ export default function StudentDashboard() {
   return (
     <div className="pb-24 lg:pb-6">
 
-      {/* ══ TOP IDENTITY BANNER ══ */}
-      <div className="gradient-bg -mx-4 -mt-6 px-6 py-4 mb-5">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="relative flex-shrink-0">
-              <div className="w-14 h-14 rounded-xl border-2 border-white/40 overflow-hidden bg-white/20 flex items-center justify-center shadow-lg">
-                {personal.photo
-                  ? <img src={personal.photo} alt="Photo" className="w-full h-full object-cover" />
-                  : <span className="text-lg font-extrabold text-white">{initials}</span>}
+      {/* ══ WELCOME BANNER WITH PROFILE PROGRESS ══ */}
+      <div className="mb-5">
+        <div className="bg-white rounded-xl shadow-md border border-slate-200">
+          <div className="px-4 py-4 sm:px-6">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              {/* Left: Photo + Welcome */}
+              <div className="flex items-center gap-3 flex-shrink-0">
+                <div className="relative flex-shrink-0">
+                  <div className="w-14 h-14 rounded-xl border-2 border-slate-200 overflow-hidden bg-slate-100 flex items-center justify-center">
+                    {personal.photo
+                      ? <img src={personal.photo} alt="Photo" className="w-full h-full object-cover" />
+                      : <span className="text-xl font-bold text-slate-400">{initials}</span>}
+                  </div>
+                  {canEdit && (
+                    <label htmlFor="student-photo-upload"
+                      className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center shadow cursor-pointer hover:bg-blue-600 transition-colors ${uploadingPhoto ? 'opacity-50' : ''}`}
+                      title="Change photo">
+                      {uploadingPhoto ? <Loader2 className="w-3 h-3 text-white animate-spin" /> : <Camera className="w-3 h-3 text-white" />}
+                    </label>
+                  )}
+                  <input id="student-photo-upload" ref={photoRef} type="file" accept="image/*" className="hidden"
+                    onChange={e => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])} />
+                </div>
+                
+                <div className="min-w-0">
+                  <p className="text-xs text-slate-500">Welcome back,</p>
+                  <h1 className="text-xl font-bold text-slate-900 leading-tight">{name.split(' ')[0]}</h1>
+                  <p className="text-sm text-slate-600">{(sd.course as string) || "Student"}{typeof sd.stream === "string" && sd.stream.length > 0 ? ` • ${sd.stream}` : ""}</p>
+                </div>
               </div>
-              {canEdit && (
-                <label htmlFor="student-photo-upload"
-                  className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white flex items-center justify-center shadow border border-slate-200 cursor-pointer ${uploadingPhoto ? 'opacity-50' : ''}`}
-                  title="Change photo">
-                  {uploadingPhoto ? <Loader2 className="w-2.5 h-2.5 text-red-600 animate-spin" /> : <Camera className="w-2.5 h-2.5 text-red-600" />}
-                </label>
-              )}
-              <input id="student-photo-upload" ref={photoRef} type="file" accept="image/*" className="hidden"
-                onChange={e => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])} />
+              
+              {/* Middle: Profile Completion Progress */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-medium text-slate-500">Profile Completion</span>
+                  <span className="text-xs font-bold text-blue-600">{Math.round(((personal.dob ? 1 : 0) + (personal.gender ? 1 : 0) + (personal.aadhaarNumber ? 1 : 0) + (personal.fatherName ? 1 : 0) + (personal.address ? 1 : 0) + (academic.sslc?.institution ? 1 : 0)) / 6 * 100)}%</span>
+                </div>
+                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.round(((personal.dob ? 1 : 0) + (personal.gender ? 1 : 0) + (personal.aadhaarNumber ? 1 : 0) + (personal.fatherName ? 1 : 0) + (personal.address ? 1 : 0) + (academic.sslc?.institution ? 1 : 0)) / 6 * 100)}%` }}
+                  ></div>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  {((personal.dob ? 1 : 0) + (personal.gender ? 1 : 0) + (personal.aadhaarNumber ? 1 : 0) + (personal.fatherName ? 1 : 0) + (personal.address ? 1 : 0) + (academic.sslc?.institution ? 1 : 0))} of 6 sections completed
+                </p>
+              </div>
+              
+              {/* Right: Actions */}
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Link
+                  href="/student/payments"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-500 transition-colors shadow-sm"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  <span className="hidden sm:inline">Pay Fees</span>
+                </Link>
+                <button
+                  onClick={generatePDF}
+                  disabled={generatingPDF}
+                  className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 border border-slate-200 rounded-lg hover:bg-slate-200 hover:text-slate-800 transition-colors disabled:opacity-60"
+                  title="Print Admission Form"
+                >
+                  {generatingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">Welcome Back</p>
-              <h1 className="text-lg font-extrabold text-white leading-tight">{name}</h1>
-              <p className="text-xs text-white/70 mt-0.5">
-                {(sd.course as string) || ""}
-                {sd.stream ? ` | ${sd.stream}` : ""}
-                {sd.university ? ` · ${sd.university}` : ""}
-              </p>
-              {studentId && (
-                <p className="text-[10px] font-mono text-white/80 mt-0.5">ID: {studentId}</p>
-              )}
-            </div>
-          </div>
-          {/* Header Action Buttons */}
-          <div className="flex-shrink-0 flex items-center gap-2">
-            <Link
-              href="/student/payments"
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-white/15 border border-white/30 rounded-lg hover:bg-white/25 transition-colors backdrop-blur-sm"
-              title="Make Payment"
-            >
-              <QrCode className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Pay</span>
-            </Link>
-            <Link
-              href="/student/payments"
-              className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-white/15 border border-white/30 rounded-lg hover:bg-white/25 transition-colors backdrop-blur-sm"
-              title="View Receipts"
-            >
-              <Receipt className="w-4 h-4" />
-              <span className="hidden sm:inline">Receipts</span>
-            </Link>
-            {(personal.aadhaarNumber || academic.sslc?.institution) && (
-              <button
-                onClick={generatePDF}
-                disabled={generatingPDF}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-red-600 bg-white rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60 shadow-sm"
-                title="Print Admission Form"
-              >
-                {generatingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
-                <span className="hidden sm:inline">{generatingPDF ? "Generating..." : "Print Form"}</span>
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -700,18 +705,18 @@ export default function StudentDashboard() {
               </div>
             ) : (
               /* EDIT MODE */
-              <div className="p-5 sm:p-6 bg-slate-50/50 space-y-6">
+              <div className="p-5 sm:p-6 bg-gradient-to-br from-red-50/50 to-white space-y-6">
                 {/* Section 1: Basic Details - All merged */}
                 <div>
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-1 h-5 bg-blue-500 rounded-full" />
                     <User className="w-4 h-4 text-blue-600" />
-                    <h3 className="text-sm font-bold text-slate-800">Basic Details</h3>
+                    <h3 className="text-sm font-bold text-blue-800">Basic Details</h3>
                   </div>
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                  <div className="bg-white rounded-xl border border-blue-100 shadow-sm p-5 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div>
-                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Date of Birth <span className="text-red-500">*</span></label>
+                        <label className="block text-[13px] font-semibold text-blue-700 mb-2">Date of Birth <span className="text-red-500">*</span></label>
                         <input 
                           type="date" 
                           value={personal.dob || ""} 
@@ -721,12 +726,12 @@ export default function StudentDashboard() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Gender <span className="text-red-500">*</span></label>
+                        <label className="block text-[13px] font-semibold text-blue-700 mb-2">Gender <span className="text-red-500">*</span></label>
                         <select 
                           value={personal.gender || ""} 
                           onChange={e => up("gender", e.target.value)}
                           disabled={!canEdit}
-                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all bg-white"
+                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-white text-slate-800"
                         >
                           <option value="">— Select —</option>
                           <option value="Male">Male</option>
@@ -735,12 +740,12 @@ export default function StudentDashboard() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Blood Group <span className="text-red-500">*</span></label>
+                        <label className="block text-[13px] font-semibold text-blue-700 mb-2">Blood Group <span className="text-red-500">*</span></label>
                         <select 
                           value={personal.bloodGroup || ""} 
                           onChange={e => up("bloodGroup", e.target.value)}
                           disabled={!canEdit}
-                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all bg-white"
+                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-white text-slate-800"
                         >
                           <option value="">— Select —</option>
                           <option value="A+">A+</option>
@@ -754,7 +759,7 @@ export default function StudentDashboard() {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Aadhaar Number <span className="text-red-500">*</span></label>
+                        <label className="block text-[13px] font-semibold text-blue-700 mb-2">Aadhaar Number <span className="text-red-500">*</span></label>
                         <input 
                           type="text"
                           value={personal.aadhaarNumber || ""}
@@ -768,7 +773,7 @@ export default function StudentDashboard() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Father&apos;s Name <span className="text-red-500">*</span></label>
+                        <label className="block text-[13px] font-semibold text-blue-700 mb-2">Father&apos;s Name <span className="text-red-500">*</span></label>
                         <input 
                           type="text"
                           value={personal.fatherName || ""}
@@ -778,7 +783,7 @@ export default function StudentDashboard() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Mother&apos;s Name <span className="text-red-500">*</span></label>
+                        <label className="block text-[13px] font-semibold text-blue-700 mb-2">Mother&apos;s Name <span className="text-red-500">*</span></label>
                         <input 
                           type="text"
                           value={personal.motherName || ""}
@@ -790,12 +795,12 @@ export default function StudentDashboard() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Employment Type <span className="text-red-500">*</span></label>
+                        <label className="block text-[13px] font-semibold text-blue-700 mb-2">Employment Type <span className="text-red-500">*</span></label>
                         <select 
                           value={personal.employmentType || ""} 
                           onChange={e => { up("employmentType", e.target.value); if (e.target.value === "Not Employed") up("yearsOfExperience", ""); }}
                           disabled={!canEdit}
-                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none transition-all bg-white"
+                          className="w-full px-3 py-2.5 text-[14px] rounded-lg border border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all bg-white text-slate-800"
                         >
                           <option value="">— Select —</option>
                           <option value="Not Employed">Not Employed</option>
@@ -807,7 +812,7 @@ export default function StudentDashboard() {
                       </div>
                       {personal.employmentType && personal.employmentType !== "Not Employed" && (
                         <div>
-                          <label className="block text-[13px] font-semibold text-slate-700 mb-2">Years of Experience <span className="text-red-500">*</span></label>
+                          <label className="block text-[13px] font-semibold text-blue-700 mb-2">Years of Experience <span className="text-red-500">*</span></label>
                           <input 
                             type="text"
                             value={personal.yearsOfExperience || ""}
@@ -821,7 +826,7 @@ export default function StudentDashboard() {
                       )}
                     </div>
                     <div>
-                      <label className="block text-[13px] font-semibold text-slate-700 mb-2">Aadhaar Card <span className="text-red-500">*</span></label>
+                      <label className="block text-[13px] font-semibold text-blue-700 mb-2">Aadhaar Card <span className="text-red-500">*</span></label>
                       <div className="flex items-center gap-3">
                         <label 
                           htmlFor="student-aadhaar-upload"
@@ -856,11 +861,11 @@ export default function StudentDashboard() {
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-1 h-5 bg-emerald-500 rounded-full" />
                     <MapPin className="w-4 h-4 text-emerald-600" />
-                    <h3 className="text-sm font-bold text-slate-800">Address</h3>
+                    <h3 className="text-sm font-bold text-emerald-800">Address</h3>
                   </div>
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                  <div className="bg-white rounded-xl border border-emerald-100 shadow-sm p-5 space-y-4">
                     <div>
-                      <label className="block text-[13px] font-semibold text-slate-700 mb-2">Street / Locality <span className="text-red-500">*</span></label>
+                      <label className="block text-[13px] font-semibold text-emerald-700 mb-2">Street / Locality <span className="text-red-500">*</span></label>
                       <input 
                         type="text"
                         value={personal.address || ""}
@@ -872,7 +877,7 @@ export default function StudentDashboard() {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">City <span className="text-red-500">*</span></label>
+                        <label className="block text-[13px] font-semibold text-emerald-700 mb-2">City <span className="text-red-500">*</span></label>
                         <input 
                           type="text"
                           value={personal.city || ""}
@@ -882,7 +887,7 @@ export default function StudentDashboard() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">State <span className="text-red-500">*</span></label>
+                        <label className="block text-[13px] font-semibold text-emerald-700 mb-2">State <span className="text-red-500">*</span></label>
                         <input 
                           type="text"
                           value={personal.state || ""}
@@ -892,7 +897,7 @@ export default function StudentDashboard() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[13px] font-semibold text-slate-700 mb-2">Pincode <span className="text-red-500">*</span></label>
+                        <label className="block text-[13px] font-semibold text-emerald-700 mb-2">Pincode <span className="text-red-500">*</span></label>
                         <input 
                           type="text"
                           value={personal.pincode || ""}
@@ -1072,20 +1077,20 @@ export default function StudentDashboard() {
             ) : (
               /* Academic EDIT MODE */
               <>
-                <div className="flex border-b border-slate-200 overflow-x-auto">
+                <div className="flex border-b border-red-200 overflow-x-auto bg-gradient-to-r from-red-50/30 to-white">
                   {ACADEMIC_STEPS.map((step, i) => (
                     <button key={step.key} onClick={() => setActiveStep(i)}
                       className={`flex-shrink-0 px-5 py-3 text-xs font-bold border-b-2 transition-colors whitespace-nowrap ${
                         activeStep === i
-                          ? "border-red-600 text-red-600 bg-red-50/40"
-                          : "border-transparent text-slate-700 hover:text-slate-900 hover:bg-slate-50"
+                          ? "border-red-600 text-red-600 bg-red-50"
+                          : "border-transparent text-slate-700 hover:text-red-700 hover:bg-red-50/30"
                       }`}>
                       {step.label}
                     </button>
                   ))}
                 </div>
-                <div className="p-5 sm:p-6 bg-slate-50/50 space-y-4">
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+                <div className="p-5 sm:p-6 bg-gradient-to-br from-red-50/30 to-white space-y-4">
+                  <div className="bg-white rounded-xl border border-red-100 shadow-sm p-5 space-y-4">
                   {activeStep === 0 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="col-span-2"><Input label="Institution Name" value={academic.sslc?.institution || ""} onChange={v => upAc("sslc", "institution", v)} disabled={!canEdit} /></div>
@@ -1144,11 +1149,11 @@ export default function StudentDashboard() {
                   </div>
                   <div className="flex gap-3 pt-2">
                     <button onClick={() => setEditingAcademic(false)}
-                      className="px-4 py-2.5 text-[13px] font-semibold border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+                      className="px-4 py-2.5 text-[13px] font-semibold border border-red-200 text-slate-700 rounded-lg hover:bg-red-50 transition-colors">
                       Cancel
                     </button>
                     <button onClick={saveAcademic} disabled={savingAcademic}
-                      className="flex-1 py-2.5 text-[13px] font-semibold text-white rounded-lg gradient-bg flex items-center justify-center gap-2 disabled:opacity-60">
+                      className="flex-1 py-2.5 text-[13px] font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 rounded-lg hover:shadow-lg hover:from-red-700 hover:to-red-800 flex items-center justify-center gap-2 disabled:opacity-60">
                       {savingAcademic ? <Loader2 className="w-4 h-4 animate-spin" /> : savedAcademic ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                       {savingAcademic ? "Saving\u2026" : savedAcademic ? "Saved Successfully" : "Save Academic Details"}
                     </button>

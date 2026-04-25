@@ -122,38 +122,50 @@ export default function PaymentsHub() {
 
   // (No auto-scroll — panel opens in-place)
 
-  useEffect(() => {
-    async function fetchAll() {
-      if (!studentPhone) { setLoading(false); return; }
-      try {
-        const [pSnap, pendSnap, sDoc] = await Promise.all([
-          getDocs(query(collection(db, "payments"), where("studentPhone", "==", studentPhone))),
-          getDocs(query(collection(db, "pendingPayments"), where("studentPhone", "==", studentPhone))),
-          getDoc(doc(db, "students", studentPhone)),
-        ]);
-        setConfirmedPayments(pSnap.docs.map(d => ({ id: d.id, ...d.data() } as ConfirmedPayment)));
-        setPendingPayments(
-          pendSnap.docs
-            .map(d => ({ id: d.id, ...d.data() } as PendingPayment))
-            .filter(p => p.status !== "approved")
-        );
-        if (sDoc.exists()) {
-          const d = sDoc.data();
-          setStudentMeta({
-            totalFee: d.totalFee || 0,
-            discountAmount: d.discountAmount || 0,
-            name: d.name || "",
-            studentId: d.studentId || "",
-            course: d.course || "",
-          });
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+  // Fetch payments data
+  const fetchAll = async () => {
+    if (!studentPhone) { setLoading(false); return; }
+    try {
+      const [pSnap, pendSnap, sDoc] = await Promise.all([
+        getDocs(query(collection(db, "payments"), where("studentPhone", "==", studentPhone))),
+        getDocs(query(collection(db, "pendingPayments"), where("studentPhone", "==", studentPhone))),
+        getDoc(doc(db, "students", studentPhone)),
+      ]);
+      setConfirmedPayments(pSnap.docs.map(d => ({ id: d.id, ...d.data() } as ConfirmedPayment)));
+      setPendingPayments(
+        pendSnap.docs
+          .map(d => ({ id: d.id, ...d.data() } as PendingPayment))
+          .filter(p => p.status !== "approved")
+      );
+      if (sDoc.exists()) {
+        const d = sDoc.data();
+        setStudentMeta({
+          totalFee: d.totalFee || 0,
+          discountAmount: d.discountAmount || 0,
+          name: d.name || "",
+          studentId: d.studentId || "",
+          course: d.course || "",
+        });
       }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // Initial fetch when studentPhone changes
+  useEffect(() => {
     fetchAll();
+  }, [studentPhone]);
+
+  // Refresh data when window gains focus (user returns to tab)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (studentPhone) fetchAll();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [studentPhone]);
 
   // Totals
