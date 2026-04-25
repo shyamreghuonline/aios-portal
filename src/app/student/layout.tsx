@@ -39,8 +39,8 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           {/* Top Row: Logo & User */}
           <div className="flex items-center justify-between py-3 border-b border-slate-700/60">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg gradient-bg flex items-center justify-center flex-shrink-0">
-                <span className="text-white font-extrabold text-base">A</span>
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <img src="/login-page.jpeg" alt="AIOS EDU" className="w-full h-full object-cover" />
               </div>
               <div>
                 <h1 className="text-base font-bold text-white tracking-tight">AIOS EDU</h1>

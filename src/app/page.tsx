@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
-import { ShieldCheck, Loader2, ArrowRight, Lock, Mail, UserCog, GraduationCap, IdCard, Eye, EyeOff } from "lucide-react";
+import { Loader2, ArrowRight, Lock, Mail, UserCog, GraduationCap, IdCard, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -92,14 +92,10 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl gradient-bg flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <ShieldCheck className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900">AIOS EDU</h1>
-          <p className="text-sm text-slate-600 mt-1">Student &amp; Admin Portal</p>
+          <img src="/login-page.jpeg" alt="AIOS EDU" className="mx-auto w-[440px] h-auto object-contain mb-4" />
         </div>
 
         {/* Tabs */}
