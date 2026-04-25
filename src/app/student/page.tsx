@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, Fragment } from "react";
-import { collection, doc, getDoc, getDocs, query, setDoc, where, orderBy } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -61,21 +61,33 @@ interface AcademicDetails {
 }
 
 function Input({
-  label, value, onChange, type = "text", options, inputMode, placeholder, disabled,
+  label, value, onChange, type = "text", options, inputMode, placeholder, disabled, color = "red",
 }: {
   label: string; value: string; onChange: (v: string) => void;
   type?: "text" | "date" | "select"; options?: string[];
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
   placeholder?: string; disabled?: boolean;
+  color?: "red" | "blue" | "amber" | "emerald" | "purple" | "indigo" | "rose" | "sky";
 }) {
+  const colorMap = {
+    red: { border: "border-red-200", focusBorder: "focus:border-red-500", focusRing: "focus:ring-red-100", label: "text-red-700" },
+    blue: { border: "border-blue-200", focusBorder: "focus:border-blue-500", focusRing: "focus:ring-blue-100", label: "text-blue-700" },
+    amber: { border: "border-amber-200", focusBorder: "focus:border-amber-500", focusRing: "focus:ring-amber-100", label: "text-amber-700" },
+    emerald: { border: "border-emerald-200", focusBorder: "focus:border-emerald-500", focusRing: "focus:ring-emerald-100", label: "text-emerald-700" },
+    purple: { border: "border-purple-200", focusBorder: "focus:border-purple-500", focusRing: "focus:ring-purple-100", label: "text-purple-700" },
+    indigo: { border: "border-indigo-200", focusBorder: "focus:border-indigo-500", focusRing: "focus:ring-indigo-100", label: "text-indigo-700" },
+    rose: { border: "border-rose-200", focusBorder: "focus:border-rose-500", focusRing: "focus:ring-rose-100", label: "text-rose-700" },
+    sky: { border: "border-sky-200", focusBorder: "focus:border-sky-500", focusRing: "focus:ring-sky-100", label: "text-sky-700" },
+  };
+  const c = colorMap[color];
   const cls = `w-full px-3 py-2.5 text-[14px] rounded-lg border outline-none font-medium transition-all ${
     disabled
       ? "bg-slate-50 border-slate-200 text-slate-700 cursor-default"
-      : "border-slate-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 bg-white text-slate-900"
+      : `${c.border} ${c.focusBorder} ${c.focusRing} bg-white text-slate-900`
   }`;
   return (
     <div>
-      <label className="block text-[13px] font-semibold text-slate-700 mb-2">{label}</label>
+      <label className={`block text-[13px] font-semibold mb-2 ${c.label}`}>{label}</label>
       {type === "select" ? (
         <select value={value} onChange={e => onChange(e.target.value)} disabled={disabled} className={cls}>
           <option value="">— Select —</option>
@@ -111,19 +123,31 @@ function DocModal({ url, onClose }: { url: string; onClose: () => void }) {
   );
 }
 
-function CertUpload({ level, url, uploading, onUpload, onView, disabled }: {
+function CertUpload({ level, url, uploading, onUpload, onView, disabled, color = "red" }: {
   level: string; url?: string; uploading: boolean;
   onUpload: (f: File) => void; onView?: (url: string) => void; disabled?: boolean;
+  color?: "red" | "blue" | "amber" | "emerald" | "purple" | "indigo" | "rose" | "sky";
 }) {
   const inputId = `cert-upload-${level.replace(/\s+/g, '-').toLowerCase()}`;
+  const colorMap = {
+    red: { label: "text-red-700", border: "border-red-300", bg: "bg-red-50/30", hoverBorder: "hover:border-red-500", hoverBg: "hover:bg-red-50", hoverText: "hover:text-red-700" },
+    blue: { label: "text-blue-700", border: "border-blue-300", bg: "bg-blue-50/30", hoverBorder: "hover:border-blue-500", hoverBg: "hover:bg-blue-50", hoverText: "hover:text-blue-700" },
+    amber: { label: "text-amber-700", border: "border-amber-300", bg: "bg-amber-50/30", hoverBorder: "hover:border-amber-500", hoverBg: "hover:bg-amber-50", hoverText: "hover:text-amber-700" },
+    emerald: { label: "text-emerald-700", border: "border-emerald-300", bg: "bg-emerald-50/30", hoverBorder: "hover:border-emerald-500", hoverBg: "hover:bg-emerald-50", hoverText: "hover:text-emerald-700" },
+    purple: { label: "text-purple-700", border: "border-purple-300", bg: "bg-purple-50/30", hoverBorder: "hover:border-purple-500", hoverBg: "hover:bg-purple-50", hoverText: "hover:text-purple-700" },
+    indigo: { label: "text-indigo-700", border: "border-indigo-300", bg: "bg-indigo-50/30", hoverBorder: "hover:border-indigo-500", hoverBg: "hover:bg-indigo-50", hoverText: "hover:text-indigo-700" },
+    rose: { label: "text-rose-700", border: "border-rose-300", bg: "bg-rose-50/30", hoverBorder: "hover:border-rose-500", hoverBg: "hover:bg-rose-50", hoverText: "hover:text-rose-700" },
+    sky: { label: "text-sky-700", border: "border-sky-300", bg: "bg-sky-50/30", hoverBorder: "hover:border-sky-500", hoverBg: "hover:bg-sky-50", hoverText: "hover:text-sky-700" },
+  };
+  const c = colorMap[color];
   return (
     <div className="col-span-2">
-      <label className="block text-[13px] font-semibold text-slate-700 mb-2">Upload Certificate / Marksheet</label>
+      <label className={`block text-[13px] font-semibold mb-2 ${c.label}`}>Upload Certificate / Marksheet</label>
       <label htmlFor={inputId}
         className={`w-full flex items-center justify-center gap-2 py-2.5 text-[13px] font-semibold rounded-lg border-2 border-dashed transition-all cursor-pointer ${(uploading || disabled) ? 'opacity-50 pointer-events-none' : ''} ${
           url
             ? "border-green-500 bg-green-50 text-green-800"
-            : "border-slate-300 bg-slate-50 text-slate-700 hover:border-red-400 hover:bg-red-50/30 hover:text-red-700"
+            : `${c.border} ${c.bg} text-slate-700 ${c.hoverBorder} ${c.hoverBg} ${c.hoverText}`
         }`}>
         {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : url ? <CheckCircle className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
         {uploading ? "Uploading…" : url ? "Certificate Uploaded ✓ — Click to Replace" : `Upload ${level} Certificate / Marksheet (PDF or Image)`}
@@ -285,6 +309,9 @@ export default function StudentDashboard() {
     try {
       const photoUrl = await uploadToBase64(file);
       setPersonal(p => ({ ...p, photo: photoUrl }));
+      // Save to Firestore immediately - use personalDetails path to match data loading
+      const studentRef = doc(db, "students", phone);
+      await setDoc(studentRef, { personalDetails: { photo: photoUrl } }, { merge: true });
     } catch (e: unknown) {
       const raw = e instanceof Error ? e.message : String(e);
       const msg = raw === "FILE_TOO_LARGE" ? "Photo is too large. Please use an image under 500 KB." : "Photo upload failed. Please try again with a smaller image.";
@@ -436,32 +463,23 @@ export default function StudentDashboard() {
 
       {/* ══ WELCOME BANNER WITH PROFILE PROGRESS ══ */}
       <div className="mb-5">
-        <div className="bg-white rounded-xl shadow-md border border-slate-200">
+        <div className="bg-gradient-to-br from-red-50 via-white to-rose-50 rounded-xl shadow-md border border-red-100">
           <div className="px-4 py-4 sm:px-6">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               {/* Left: Photo + Welcome */}
               <div className="flex items-center gap-3 flex-shrink-0">
-                <div className="relative flex-shrink-0">
-                  <div className="w-14 h-14 rounded-xl border-2 border-slate-200 overflow-hidden bg-slate-100 flex items-center justify-center">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 rounded-xl border-2 border-red-200 overflow-hidden bg-white flex items-center justify-center shadow-sm">
                     {personal.photo
                       ? <img src={personal.photo} alt="Photo" className="w-full h-full object-cover" />
-                      : <span className="text-xl font-bold text-slate-400">{initials}</span>}
+                      : <span className="text-lg font-bold text-red-700">{initials}</span>}
                   </div>
-                  {canEdit && (
-                    <label htmlFor="student-photo-upload"
-                      className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center shadow cursor-pointer hover:bg-blue-600 transition-colors ${uploadingPhoto ? 'opacity-50' : ''}`}
-                      title="Change photo">
-                      {uploadingPhoto ? <Loader2 className="w-3 h-3 text-white animate-spin" /> : <Camera className="w-3 h-3 text-white" />}
-                    </label>
-                  )}
-                  <input id="student-photo-upload" ref={photoRef} type="file" accept="image/*" className="hidden"
-                    onChange={e => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])} />
                 </div>
                 
                 <div className="min-w-0">
                   <p className="text-xs text-slate-500">Welcome back,</p>
-                  <h1 className="text-xl font-bold text-slate-900 leading-tight">{name.split(' ')[0]}</h1>
-                  <p className="text-sm text-slate-600">{(sd.course as string) || "Student"}{typeof sd.stream === "string" && sd.stream.length > 0 ? ` • ${sd.stream}` : ""}</p>
+                  <h1 className="text-xl font-bold text-slate-800 leading-tight">{name.split(' ')[0]}</h1>
+                  <p className="text-sm text-red-700 font-semibold">{(sd.course as string) || "Student"}{typeof sd.stream === "string" && sd.stream.length > 0 ? ` • ${sd.stream}` : ""}</p>
                 </div>
               </div>
               
@@ -469,11 +487,11 @@ export default function StudentDashboard() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs font-medium text-slate-500">Profile Completion</span>
-                  <span className="text-xs font-bold text-blue-600">{Math.round(((personal.dob ? 1 : 0) + (personal.gender ? 1 : 0) + (personal.aadhaarNumber ? 1 : 0) + (personal.fatherName ? 1 : 0) + (personal.address ? 1 : 0) + (academic.sslc?.institution ? 1 : 0)) / 6 * 100)}%</span>
+                  <span className="text-xs font-bold text-red-700">{Math.round(((personal.dob ? 1 : 0) + (personal.gender ? 1 : 0) + (personal.aadhaarNumber ? 1 : 0) + (personal.fatherName ? 1 : 0) + (personal.address ? 1 : 0) + (academic.sslc?.institution ? 1 : 0)) / 6 * 100)}%</span>
                 </div>
-                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
                   <div 
-                    className="h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-red-700 to-red-600 rounded-full transition-all duration-500"
                     style={{ width: `${Math.round(((personal.dob ? 1 : 0) + (personal.gender ? 1 : 0) + (personal.aadhaarNumber ? 1 : 0) + (personal.fatherName ? 1 : 0) + (personal.address ? 1 : 0) + (academic.sslc?.institution ? 1 : 0)) / 6 * 100)}%` }}
                   ></div>
                 </div>
@@ -486,18 +504,19 @@ export default function StudentDashboard() {
               <div className="flex items-center gap-2 flex-shrink-0">
                 <Link
                   href="/student/payments"
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-500 transition-colors shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-gradient-to-r from-red-700 to-red-600 rounded-lg hover:from-red-800 hover:to-red-700 transition-all shadow-sm"
                 >
-                  <CreditCard className="w-4 h-4" />
+                  <CreditCard className="w-3.5 h-3.5" />
                   <span className="hidden sm:inline">Pay Fees</span>
                 </Link>
                 <button
                   onClick={generatePDF}
                   disabled={generatingPDF}
-                  className="inline-flex items-center gap-1.5 px-3 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 border border-slate-200 rounded-lg hover:bg-slate-200 hover:text-slate-800 transition-colors disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:text-slate-800 transition-all disabled:opacity-60 shadow-sm"
                   title="Print Admission Form"
                 >
-                  {generatingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+                  {generatingPDF ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Printer className="w-3.5 h-3.5" />}
+                  <span className="hidden sm:inline">Print Form</span>
                 </button>
               </div>
             </div>
@@ -1089,61 +1108,61 @@ export default function StudentDashboard() {
                     </button>
                   ))}
                 </div>
-                <div className="p-5 sm:p-6 bg-gradient-to-br from-red-50/30 to-white space-y-4">
-                  <div className="bg-white rounded-xl border border-red-100 shadow-sm p-5 space-y-4">
+                <div className={activeStep === 0 ? "p-5 sm:p-6 space-y-4 bg-gradient-to-br from-amber-50/30 to-white" : activeStep === 1 ? "p-5 sm:p-6 space-y-4 bg-gradient-to-br from-blue-50/30 to-white" : activeStep === 2 ? "p-5 sm:p-6 space-y-4 bg-gradient-to-br from-purple-50/30 to-white" : activeStep === 3 ? "p-5 sm:p-6 space-y-4 bg-gradient-to-br from-indigo-50/30 to-white" : "p-5 sm:p-6 space-y-4 bg-gradient-to-br from-rose-50/30 to-white"}>
+                  <div className={activeStep === 0 ? "bg-white rounded-xl shadow-sm p-5 space-y-4 border border-amber-100" : activeStep === 1 ? "bg-white rounded-xl shadow-sm p-5 space-y-4 border border-blue-100" : activeStep === 2 ? "bg-white rounded-xl shadow-sm p-5 space-y-4 border border-purple-100" : activeStep === 3 ? "bg-white rounded-xl shadow-sm p-5 space-y-4 border border-indigo-100" : "bg-white rounded-xl shadow-sm p-5 space-y-4 border border-rose-100"}>
                   {activeStep === 0 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="col-span-2"><Input label="Institution Name" value={academic.sslc?.institution || ""} onChange={v => upAc("sslc", "institution", v)} disabled={!canEdit} /></div>
-                      <Input label="Board / University" value={academic.sslc?.board || ""} onChange={v => upAc("sslc", "board", v)} disabled={!canEdit} />
-                      <Input label="Year of Passing" type="select" value={academic.sslc?.year || ""} onChange={v => upAc("sslc", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
-                      <Input label="Percentage / CGPA" value={academic.sslc?.percentage || ""} onChange={v => upAc("sslc", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
+                      <div className="col-span-2"><Input label="Institution Name" value={academic.sslc?.institution || ""} onChange={v => upAc("sslc", "institution", v)} disabled={!canEdit} color="amber" /></div>
+                      <Input label="Board / University" value={academic.sslc?.board || ""} onChange={v => upAc("sslc", "board", v)} disabled={!canEdit} color="amber" />
+                      <Input label="Year of Passing" type="select" value={academic.sslc?.year || ""} onChange={v => upAc("sslc", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} color="amber" />
+                      <Input label="Percentage / CGPA" value={academic.sslc?.percentage || ""} onChange={v => upAc("sslc", "percentage", v)} inputMode="decimal" disabled={!canEdit} color="amber" />
                       <CertUpload level="SSLC / 10th" url={academic.sslc?.certificateUrl}
-                        uploading={!!uploadingCert.sslc} onUpload={f => handleCertUpload("sslc", f)} onView={setViewDocUrl} disabled={!canEdit} />
+                        uploading={!!uploadingCert.sslc} onUpload={f => handleCertUpload("sslc", f)} onView={setViewDocUrl} disabled={!canEdit} color="amber" />
                     </div>
                   )}
                   {activeStep === 1 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="col-span-2"><Input label="Institution Name" value={academic.plustwo?.institution || ""} onChange={v => upAc("plustwo", "institution", v)} disabled={!canEdit} /></div>
-                      <Input label="Board / University" value={academic.plustwo?.board || ""} onChange={v => upAc("plustwo", "board", v)} disabled={!canEdit} />
+                      <div className="col-span-2"><Input label="Institution Name" value={academic.plustwo?.institution || ""} onChange={v => upAc("plustwo", "institution", v)} disabled={!canEdit} color="blue" /></div>
+                      <Input label="Board / University" value={academic.plustwo?.board || ""} onChange={v => upAc("plustwo", "board", v)} disabled={!canEdit} color="blue" />
                       <Input label="Stream" type="select" value={academic.plustwo?.stream || ""} onChange={v => upAc("plustwo", "stream", v)}
-                        options={["Science (Bio)", "Science (Maths)", "Commerce", "Arts / Humanities", "Vocational", "Other"]} disabled={!canEdit} />
-                      <Input label="Year of Passing" type="select" value={academic.plustwo?.year || ""} onChange={v => upAc("plustwo", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
-                      <Input label="Percentage / CGPA" value={academic.plustwo?.percentage || ""} onChange={v => upAc("plustwo", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
+                        options={["Science (Bio)", "Science (Maths)", "Commerce", "Arts / Humanities", "Vocational", "Other"]} disabled={!canEdit} color="blue" />
+                      <Input label="Year of Passing" type="select" value={academic.plustwo?.year || ""} onChange={v => upAc("plustwo", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} color="blue" />
+                      <Input label="Percentage / CGPA" value={academic.plustwo?.percentage || ""} onChange={v => upAc("plustwo", "percentage", v)} inputMode="decimal" disabled={!canEdit} color="blue" />
                       <CertUpload level="HSC / 12th" url={academic.plustwo?.certificateUrl}
-                        uploading={!!uploadingCert.plustwo} onUpload={f => handleCertUpload("plustwo", f)} onView={setViewDocUrl} disabled={!canEdit} />
+                        uploading={!!uploadingCert.plustwo} onUpload={f => handleCertUpload("plustwo", f)} onView={setViewDocUrl} disabled={!canEdit} color="blue" />
                     </div>
                   )}
                   {activeStep === 2 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="col-span-2"><Input label="Institution Name" value={academic.ug?.institution || ""} onChange={v => upAc("ug", "institution", v)} disabled={!canEdit} /></div>
-                      <Input label="Board / University" value={academic.ug?.board || ""} onChange={v => upAc("ug", "board", v)} disabled={!canEdit} />
-                      <Input label="Degree (e.g. B.Com, B.Sc)" value={academic.ug?.degree || ""} onChange={v => upAc("ug", "degree", v)} disabled={!canEdit} />
-                      <Input label="Year of Passing" type="select" value={academic.ug?.year || ""} onChange={v => upAc("ug", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
-                      <Input label="Percentage / CGPA" value={academic.ug?.percentage || ""} onChange={v => upAc("ug", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
+                      <div className="col-span-2"><Input label="Institution Name" value={academic.ug?.institution || ""} onChange={v => upAc("ug", "institution", v)} disabled={!canEdit} color="purple" /></div>
+                      <Input label="Board / University" value={academic.ug?.board || ""} onChange={v => upAc("ug", "board", v)} disabled={!canEdit} color="purple" />
+                      <Input label="Degree (e.g. B.Com, B.Sc)" value={academic.ug?.degree || ""} onChange={v => upAc("ug", "degree", v)} disabled={!canEdit} color="purple" />
+                      <Input label="Year of Passing" type="select" value={academic.ug?.year || ""} onChange={v => upAc("ug", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} color="purple" />
+                      <Input label="Percentage / CGPA" value={academic.ug?.percentage || ""} onChange={v => upAc("ug", "percentage", v)} inputMode="decimal" disabled={!canEdit} color="purple" />
                       <CertUpload level="UG Degree" url={academic.ug?.certificateUrl}
-                        uploading={!!uploadingCert.ug} onUpload={f => handleCertUpload("ug", f)} onView={setViewDocUrl} disabled={!canEdit} />
+                        uploading={!!uploadingCert.ug} onUpload={f => handleCertUpload("ug", f)} onView={setViewDocUrl} disabled={!canEdit} color="purple" />
                     </div>
                   )}
                   {activeStep === 3 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="col-span-2"><Input label="Institution Name" value={academic.pg?.institution || ""} onChange={v => upAc("pg", "institution", v)} disabled={!canEdit} /></div>
-                      <Input label="Board / University" value={academic.pg?.board || ""} onChange={v => upAc("pg", "board", v)} disabled={!canEdit} />
-                      <Input label="Degree (e.g. M.Com, MBA)" value={academic.pg?.degree || ""} onChange={v => upAc("pg", "degree", v)} disabled={!canEdit} />
-                      <Input label="Year of Passing" type="select" value={academic.pg?.year || ""} onChange={v => upAc("pg", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
-                      <Input label="Percentage / CGPA" value={academic.pg?.percentage || ""} onChange={v => upAc("pg", "percentage", v)} inputMode="decimal" disabled={!canEdit} />
+                      <div className="col-span-2"><Input label="Institution Name" value={academic.pg?.institution || ""} onChange={v => upAc("pg", "institution", v)} disabled={!canEdit} color="indigo" /></div>
+                      <Input label="Board / University" value={academic.pg?.board || ""} onChange={v => upAc("pg", "board", v)} disabled={!canEdit} color="indigo" />
+                      <Input label="Degree (e.g. M.Com, MBA)" value={academic.pg?.degree || ""} onChange={v => upAc("pg", "degree", v)} disabled={!canEdit} color="indigo" />
+                      <Input label="Year of Passing" type="select" value={academic.pg?.year || ""} onChange={v => upAc("pg", "year", v)} options={YEAR_OPTIONS} disabled={!canEdit} color="indigo" />
+                      <Input label="Percentage / CGPA" value={academic.pg?.percentage || ""} onChange={v => upAc("pg", "percentage", v)} inputMode="decimal" disabled={!canEdit} color="indigo" />
                       <CertUpload level="PG Degree" url={academic.pg?.certificateUrl}
-                        uploading={!!uploadingCert.pg} onUpload={f => handleCertUpload("pg", f)} onView={setViewDocUrl} disabled={!canEdit} />
+                        uploading={!!uploadingCert.pg} onUpload={f => handleCertUpload("pg", f)} onView={setViewDocUrl} disabled={!canEdit} color="indigo" />
                     </div>
                   )}
                   {activeStep === 4 && (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="col-span-2"><Input label="Institution / University" value={academic.phd?.institution || ""} onChange={v => upPhd("institution", v)} disabled={!canEdit} /></div>
-                      <div className="col-span-2"><Input label="Research Topic / Thesis Title" value={academic.phd?.topic || ""} onChange={v => upPhd("topic", v)} disabled={!canEdit} /></div>
-                      <Input label="Year of Registration" type="select" value={academic.phd?.year || ""} onChange={v => upPhd("year", v)} options={YEAR_OPTIONS} disabled={!canEdit} />
+                      <div className="col-span-2"><Input label="Institution / University" value={academic.phd?.institution || ""} onChange={v => upPhd("institution", v)} disabled={!canEdit} color="rose" /></div>
+                      <div className="col-span-2"><Input label="Research Topic / Thesis Title" value={academic.phd?.topic || ""} onChange={v => upPhd("topic", v)} disabled={!canEdit} color="rose" /></div>
+                      <Input label="Year of Registration" type="select" value={academic.phd?.year || ""} onChange={v => upPhd("year", v)} options={YEAR_OPTIONS} disabled={!canEdit} color="rose" />
                       <Input label="Current Status" type="select" value={academic.phd?.status || ""} onChange={v => upPhd("status", v)}
-                        options={["Ongoing", "Submitted", "Awarded"]} disabled={!canEdit} />
+                        options={["Ongoing", "Submitted", "Awarded"]} disabled={!canEdit} color="rose" />
                       <CertUpload level="PhD / Research" url={academic.phd?.certificateUrl}
-                        uploading={!!uploadingCert.phd} onUpload={f => handleCertUpload("phd", f)} onView={setViewDocUrl} disabled={!canEdit} />
+                        uploading={!!uploadingCert.phd} onUpload={f => handleCertUpload("phd", f)} onView={setViewDocUrl} disabled={!canEdit} color="rose" />
                     </div>
                   )}
                   </div>

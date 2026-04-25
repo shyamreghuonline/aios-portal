@@ -333,7 +333,7 @@ export default function PaymentsHub() {
       {activeAction === "none" && (
         <div className="bg-white border border-red-200 rounded-xl overflow-hidden shadow-sm mb-5">
           {/* Header — matching Enrollment Details style */}
-          <header className="flex items-center gap-3 px-4 py-3 border-b border-slate-200 bg-gradient-to-r from-red-50 via-rose-50 to-white">
+          <header className="flex items-center gap-3 px-4 py-3 border-b border-slate-200 bg-white">
             <span className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm">
               <Receipt className="w-5 h-5 text-white" />
             </span>
@@ -345,14 +345,14 @@ export default function PaymentsHub() {
               {balanceDue > 0 && (
                 <button
                   onClick={() => { resetFlow(); setActiveAction("custom"); }}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-extrabold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-sm"
                 >
                   <Banknote className="w-4 h-4" /> Pay Now
                 </button>
               )}
               <button
                 onClick={() => { resetFlow(); setActiveAction("upload"); }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-extrabold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
               >
                 <FileUp className="w-4 h-4" /> Upload Receipt
               </button>
