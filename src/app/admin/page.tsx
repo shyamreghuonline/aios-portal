@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Users, IndianRupee, Receipt, AlertTriangle, TrendingUp, CalendarDays, Plus, ArrowRight, X, Phone, CheckCircle2, Edit3, Trash2, Loader2, Save } from "lucide-react";
+import { Users, IndianRupee, Receipt, AlertTriangle, TrendingUp, CalendarDays, Plus, ArrowRight, X, Phone, CheckCircle2, Edit3, Trash2, Loader2, Save, Clock } from "lucide-react";
 import Link from "next/link";
 
 type PeriodTab = "today" | "week" | "month";
@@ -21,6 +21,7 @@ interface DashboardStats {
   totalPayments: number;
   totalCollected: number;
   totalPending: number;
+  pendingPaymentCount: number;
   allPayments: Payment[];
 }
 
@@ -30,6 +31,7 @@ export default function AdminDashboard() {
     totalPayments: 0,
     totalCollected: 0,
     totalPending: 0,
+    pendingPaymentCount: 0,
     allPayments: [],
   });
   const [loading, setLoading] = useState(true);
@@ -56,6 +58,12 @@ export default function AdminDashboard() {
           totalCollected += parseFloat(doc.data().amountPaid || "0");
         });
 
+        // Get pending payment count
+        const pendingSnap = await getDocs(
+          query(collection(db, "pendingPayments"), where("status", "==", "pending"))
+        );
+        const pendingPaymentCount = pendingSnap.size;
+
         // Calculate pending
         let totalFees = 0;
         studentsSnap.forEach((doc) => {
@@ -81,6 +89,7 @@ export default function AdminDashboard() {
           totalPayments: paymentsSnap.size,
           totalCollected,
           totalPending: totalFees - totalCollected,
+          pendingPaymentCount,
           allPayments,
         });
       } catch (err) {
@@ -116,11 +125,11 @@ export default function AdminDashboard() {
       iconBg: "bg-red-100",
     },
     {
-      label: "Total Receipts",
-      value: stats.totalPayments,
-      icon: Receipt,
-      color: "bg-purple-50 text-purple-600",
-      iconBg: "bg-purple-100",
+      label: "Pending Approvals",
+      value: stats.pendingPaymentCount,
+      icon: Clock,
+      color: "bg-amber-50 text-amber-600",
+      iconBg: "bg-amber-100",
     },
   ];
 
