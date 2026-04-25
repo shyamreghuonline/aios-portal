@@ -498,6 +498,7 @@ Thank you!`,
             <tr className="gradient-bg border-b-2 border-red-900">
               <th className="text-left px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wide">Student</th>
               <th className="text-left px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wide">University</th>
+              <th className="text-left px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wide">Student ID</th>
               <th className="text-left px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wide">Course</th>
               <th className="text-left px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wide">Amount</th>
               <th className="text-left px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wide">Method</th>
@@ -524,6 +525,9 @@ Thank you!`,
                   </td>
                   <td className="px-3 py-2.5 text-sm text-slate-900">
                     {student?.university || "—"}
+                  </td>
+                  <td className="px-3 py-2.5 text-sm text-slate-900 font-mono">
+                    {student?.studentId || "—"}
                   </td>
                   <td className="px-3 py-2.5 text-sm text-slate-900">
                     {student ? `${(student.course || "").replace(/\s*\([^)]*\)/g, "")}${student.stream ? `-${student.stream}` : ""}` : "—"}
