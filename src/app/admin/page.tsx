@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Users, IndianRupee, Receipt, AlertTriangle, TrendingUp, CalendarDays, Plus, ArrowRight, X, Phone, CheckCircle2, Edit3, Trash2, Loader2, Save, Clock } from "lucide-react";
+import { Users, IndianRupee, Receipt, AlertTriangle, TrendingUp, CalendarDays, Plus, ArrowRight, X, Phone, CheckCircle2, Edit3, Trash2, Loader2, Save, Clock, Mail, GraduationCap } from "lucide-react";
 import Link from "next/link";
 
 type PeriodTab = "today" | "week" | "month";
@@ -199,7 +199,8 @@ export default function AdminDashboard() {
       {detailStudent && (
         <StudentDetailModal 
           student={detailStudent} 
-          onClose={() => setDetailStudent(null)} 
+          onClose={() => setDetailStudent(null)}
+          payments={payments}
         />
       )}
     </div>
@@ -207,10 +208,19 @@ export default function AdminDashboard() {
 }
 
 // Student Detail Modal Component
-function StudentDetailModal({ student, onClose }: { student: any; onClose: () => void }) {
+function StudentDetailModal({ student, onClose, payments }: { student: any; onClose: () => void; payments: any[] }) {
+  const [showPayments, setShowPayments] = useState(false);
+  const [showFullDetails, setShowFullDetails] = useState(false);
+  
+  // Filter payments for this student
+  const studentPayments = payments.filter(p => p.studentPhone === student.phone || p.studentName === student.name);
+  
+  // Helper to safely get nested personal details
+  const pd = student.personalDetails || {};
+  
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className={`bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transition-all duration-300 ${showPayments ? 'max-w-3xl' : ''}`}>
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-red-700 to-red-600 text-white px-5 py-4 flex items-center justify-between">
           <div>
@@ -226,21 +236,30 @@ function StudentDetailModal({ student, onClose }: { student: any; onClose: () =>
         <div className="p-5 space-y-4">
           {/* Contact Info */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-slate-50 rounded-lg p-3">
-              <p className="text-xs text-slate-500 uppercase">Phone</p>
-              <a href={`tel:${student.phone}`} className="text-sm font-medium text-blue-700 hover:underline">
+            <div className="bg-gradient-to-br from-blue-50 to-white rounded-xl p-4 border border-blue-100">
+              <div className="flex items-center gap-2 mb-1">
+                <Phone className="w-4 h-4 text-blue-600" />
+                <p className="text-xs text-blue-900 uppercase tracking-wide">Phone Number</p>
+              </div>
+              <a href={`tel:${student.phone}`} className="text-sm text-blue-700 hover:underline">
                 {student.phone}
               </a>
             </div>
-            <div className="bg-slate-50 rounded-lg p-3">
-              <p className="text-xs text-slate-500 uppercase">Email</p>
-              <p className="text-sm font-medium text-slate-900">{student.email || "—"}</p>
+            <div className="bg-gradient-to-br from-slate-50 to-white rounded-xl p-4 border border-slate-200">
+              <div className="flex items-center gap-2 mb-1">
+                <Mail className="w-4 h-4 text-slate-600" />
+                <p className="text-xs text-slate-900 uppercase tracking-wide">Email Address</p>
+              </div>
+              <p className="text-sm text-slate-800">{student.email || "—"}</p>
             </div>
           </div>
           
           {/* Course Info */}
-          <div className="bg-slate-50 rounded-lg p-3">
-            <p className="text-xs text-slate-500 uppercase mb-2">Course Details</p>
+          <div className="bg-gradient-to-br from-amber-50 to-white rounded-xl p-4 border border-amber-100">
+            <div className="flex items-center gap-2 mb-3">
+              <GraduationCap className="w-5 h-5 text-amber-600" />
+              <p className="text-xs font-bold text-amber-900 uppercase tracking-wide">Course Details</p>
+            </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div><span className="text-slate-500">Faculty:</span> <span className="font-medium">{student.faculty || "—"}</span></div>
               <div><span className="text-slate-500">Course:</span> <span className="font-medium">{student.course || "—"}</span></div>
@@ -270,12 +289,20 @@ function StudentDetailModal({ student, onClose }: { student: any; onClose: () =>
           
           {/* Actions */}
           <div className="flex gap-3 pt-2">
-            <Link 
-              href={`/admin/students?id=${student.id}`}
-              className="flex-1 bg-red-600 text-white text-center py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors"
+            <button
+              onClick={() => setShowFullDetails(!showFullDetails)}
+              className="flex-1 bg-red-600 text-white text-center py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
             >
-              View Full Profile
-            </Link>
+              <ArrowRight className="w-4 h-4" />
+              {showFullDetails ? 'Hide Full Details' : 'View Full Profile'}
+            </button>
+            <button
+              onClick={() => setShowPayments(!showPayments)}
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 transition-colors"
+            >
+              <Receipt className="w-4 h-4" />
+              {showPayments ? 'Hide Payments' : `View Payments (${studentPayments.length})`}
+            </button>
             <a 
               href={`tel:${student.phone}`}
               className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors"
@@ -284,6 +311,99 @@ function StudentDetailModal({ student, onClose }: { student: any; onClose: () =>
               Call
             </a>
           </div>
+          
+          {/* Full Details Section */}
+          {showFullDetails && (
+            <div className="mt-4 border-t border-slate-200 pt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <ArrowRight className="w-5 h-5 text-red-600" />
+                <p className="text-sm font-bold text-slate-900 uppercase tracking-wide">Full Profile Details</p>
+              </div>
+              
+              {/* Basic Information */}
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 mb-3">
+                <p className="text-xs font-bold text-slate-900 uppercase tracking-wide mb-3">Basic Information</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-slate-500">Student ID:</span> <span className="font-medium text-slate-900">{student.studentId || student.id}</span></div>
+                  <div><span className="text-slate-500">Name:</span> <span className="font-medium text-slate-900">{student.name}</span></div>
+                  <div><span className="text-slate-500">Phone:</span> <span className="font-medium text-slate-900">{student.phone}</span></div>
+                  <div><span className="text-slate-500">Email:</span> <span className="font-medium text-slate-900">{student.email || "—"}</span></div>
+                  <div><span className="text-slate-500">Enrollment Date:</span> <span className="font-medium text-slate-900">{student.enrollmentDate || "—"}</span></div>
+                  <div><span className="text-slate-500">Profile Edit:</span> <span className="font-medium text-slate-900">{student.profileEditEnabled ? 'Enabled' : 'Disabled'}</span></div>
+                </div>
+              </div>
+              
+              {/* Academic Information */}
+              <div className="bg-amber-50 rounded-xl p-4 border border-amber-100 mb-3">
+                <p className="text-xs font-bold text-amber-900 uppercase tracking-wide mb-3">Academic Information</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-slate-500">University:</span> <span className="font-medium text-slate-900">{student.university || "—"}</span></div>
+                  <div><span className="text-slate-500">Faculty:</span> <span className="font-medium text-slate-900">{student.faculty || "—"}</span></div>
+                  <div><span className="text-slate-500">Course:</span> <span className="font-medium text-slate-900">{student.course || "—"}</span></div>
+                  <div><span className="text-slate-500">Stream:</span> <span className="font-medium text-slate-900">{student.stream || "—"}</span></div>
+                  <div><span className="text-slate-500">Duration:</span> <span className="font-medium text-slate-900">{student.duration || "—"}</span></div>
+                  <div><span className="text-slate-500">Start Year:</span> <span className="font-medium text-slate-900">{student.startYear || "—"}</span></div>
+                  <div><span className="text-slate-500">End Year:</span> <span className="font-medium text-slate-900">{student.endYear || "—"}</span></div>
+                </div>
+              </div>
+              
+              {/* Fee Information */}
+              <div className="bg-green-50 rounded-xl p-4 border border-green-100 mb-3">
+                <p className="text-xs font-bold text-green-900 uppercase tracking-wide mb-3">Fee Information</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-slate-500">Total Fee:</span> <span className="font-medium text-slate-900">₹{(student.totalFee || 0).toLocaleString("en-IN")}</span></div>
+                  <div><span className="text-slate-500">Discount:</span> <span className="font-medium text-green-700">₹{(student.discountAmount || 0).toLocaleString("en-IN")}</span></div>
+                  <div><span className="text-slate-500">Due Amount:</span> <span className="font-medium text-red-700">₹{((student.totalFee || 0) - (student.discountAmount || 0)).toLocaleString("en-IN")}</span></div>
+                </div>
+              </div>
+              
+              {/* Personal Details */}
+              {(pd.dob || pd.gender || pd.bloodGroup || pd.aadhaarNumber || pd.fatherName || pd.motherName || pd.guardianName || pd.address) && (
+                <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                  <p className="text-xs font-bold text-blue-900 uppercase tracking-wide mb-3">Personal Details</p>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    {pd.dob && <div><span className="text-slate-500">Date of Birth:</span> <span className="font-medium text-slate-900">{pd.dob}</span></div>}
+                    {pd.gender && <div><span className="text-slate-500">Gender:</span> <span className="font-medium text-slate-900">{pd.gender}</span></div>}
+                    {pd.bloodGroup && <div><span className="text-slate-500">Blood Group:</span> <span className="font-medium text-slate-900">{pd.bloodGroup}</span></div>}
+                    {pd.aadhaarNumber && <div><span className="text-slate-500">Aadhaar:</span> <span className="font-medium text-slate-900">{pd.aadhaarNumber}</span></div>}
+                    {pd.fatherName && <div><span className="text-slate-500">Father's Name:</span> <span className="font-medium text-slate-900">{pd.fatherName}</span></div>}
+                    {pd.motherName && <div><span className="text-slate-500">Mother's Name:</span> <span className="font-medium text-slate-900">{pd.motherName}</span></div>}
+                    {pd.guardianName && <div><span className="text-slate-500">Guardian:</span> <span className="font-medium text-slate-900">{pd.guardianName}</span></div>}
+                    {pd.guardianPhone && <div><span className="text-slate-500">Guardian Phone:</span> <span className="font-medium text-slate-900">{pd.guardianPhone}</span></div>}
+                    {pd.address && <div className="col-span-2"><span className="text-slate-500">Address:</span> <span className="font-medium text-slate-900">{pd.address}</span></div>}
+                    {pd.city && <div><span className="text-slate-500">City:</span> <span className="font-medium text-slate-900">{pd.city}</span></div>}
+                    {pd.state && <div><span className="text-slate-500">State:</span> <span className="font-medium text-slate-900">{pd.state}</span></div>}
+                    {pd.pincode && <div><span className="text-slate-500">Pincode:</span> <span className="font-medium text-slate-900">{pd.pincode}</span></div>}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Payment History Section */}
+          {showPayments && (
+            <div className="mt-4 border-t border-slate-200 pt-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Receipt className="w-5 h-5 text-amber-600" />
+                <p className="text-sm font-bold text-slate-900 uppercase tracking-wide">Payment History</p>
+              </div>
+              {studentPayments.length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-4">No payments found</p>
+              ) : (
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {studentPayments.map((payment, idx) => (
+                    <div key={payment.id || idx} className="bg-slate-50 rounded-lg p-3 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-slate-900">Receipt #{payment.receiptNumber}</p>
+                        <p className="text-xs text-slate-500">{payment.paymentDate}</p>
+                      </div>
+                      <p className="text-sm font-bold text-green-700">₹{parseFloat(payment.amountPaid || "0").toLocaleString('en-IN')}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
