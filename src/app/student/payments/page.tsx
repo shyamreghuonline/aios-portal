@@ -229,7 +229,7 @@ export default function PaymentsHub() {
     try {
       const screenshotUrl = screenshotPreview || "";
       await addDoc(collection(db, "pendingPayments"), {
-        studentId: studentMeta?.studentId || studentPhone,
+        studentId: studentMeta?.studentId || "",
         studentPhone,
         studentName: studentMeta?.name || "",
         amount: parseFloat(amount),
@@ -342,14 +342,12 @@ export default function PaymentsHub() {
               <p className="text-xs text-slate-500">{confirmedPayments.length + pendingPayments.length} payment records</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              {balanceDue > 0 && (
-                <button
-                  onClick={() => { resetFlow(); setActiveAction("custom"); }}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-sm"
-                >
-                  <Banknote className="w-4 h-4" /> Pay Now
-                </button>
-              )}
+              <button
+                onClick={() => { resetFlow(); setActiveAction("custom"); }}
+                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors shadow-sm"
+              >
+                <Banknote className="w-4 h-4" /> Pay Now
+              </button>
               <button
                 onClick={() => { resetFlow(); setActiveAction("upload"); }}
                 className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
@@ -466,19 +464,27 @@ export default function PaymentsHub() {
 
       {/* ── PAYMENT FLOW PANEL ────────────────────────────────────────────── */}
       {activeAction === "custom" && (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white border border-purple-200 rounded-2xl overflow-hidden shadow-lg ring-1 ring-purple-100">
 
           {/* Header with close */}
-          <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900">Make Payment</h3>
-            <button onClick={() => setActiveAction("none")} className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 transition-colors">
+          <div className="px-5 py-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Banknote className="w-4.5 h-4.5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Make Payment</h3>
+                <p className="text-[10px] text-purple-200">Complete your fee payment securely</p>
+              </div>
+            </div>
+            <button onClick={() => setActiveAction("none")} className="p-1.5 rounded-lg hover:bg-white/20 text-white/80 hover:text-white transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Step breadcrumb (not on success) */}
           {step !== "success" && (
-            <div className="px-5 py-2 bg-slate-50 border-b border-slate-100 flex items-center gap-1.5">
+            <div className="px-5 py-2 bg-purple-50 border-b border-purple-100 flex items-center gap-1.5">
               {(["amount", "method", "qr", "upload"] as PayStep[])
                 .filter(s => !(s === "qr" && paymentMethod !== "qr"))
                 .map((s, i, arr) => {
@@ -489,9 +495,9 @@ export default function PaymentsHub() {
                   const isActive = s === step;
                   return (
                     <span key={s} className="flex items-center gap-1">
-                      {i > 0 && <span className="text-slate-300 text-xs">›</span>}
+                      {i > 0 && <span className="text-purple-300 text-xs">›</span>}
                       <span className={`text-[10px] font-bold uppercase tracking-wider ${
-                        isActive ? "text-red-600" : isDone ? "text-emerald-600" : "text-slate-400"
+                        isActive ? "text-purple-700" : isDone ? "text-indigo-600" : "text-slate-400"
                       }`}>
                         {isDone && "✓ "}{STEP_LABELS[s]}
                       </span>
@@ -501,12 +507,12 @@ export default function PaymentsHub() {
             </div>
           )}
 
-          <div className="p-5 max-w-xl mx-auto">
+          <div className="p-5 sm:p-6 max-w-xl mx-auto">
             {/* Success */}
             {step === "success" && (
               <div className="text-center py-8">
-                <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
-                  <Clock className="w-8 h-8 text-amber-600" />
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center mx-auto mb-4">
+                  <Clock className="w-8 h-8 text-indigo-600" />
                 </div>
                 <h3 className="text-base font-extrabold text-slate-900 mb-2">Payment Submitted!</h3>
                 <p className="text-sm text-slate-600 mb-1">
@@ -519,7 +525,7 @@ export default function PaymentsHub() {
                     View History
                   </button>
                   <button onClick={resetFlow}
-                    className="px-4 py-2 text-xs font-bold text-white gradient-bg rounded-lg">
+                    className="px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg hover:shadow-md shadow-purple-200">
                     Pay Again
                   </button>
                 </div>
@@ -530,32 +536,35 @@ export default function PaymentsHub() {
             {step === "amount" && (
               <div className="space-y-5">
                 {balanceDue > 0 && (
-                  <div className="bg-red-50 border border-red-100 rounded-lg px-4 py-3 flex items-center gap-2">
-                    <Receipt className="w-4 h-4 text-red-500" />
-                    <p className="text-xs text-slate-600">Balance due: <strong className="text-red-700">₹{balanceDue.toLocaleString("en-IN")}</strong></p>
+                  <div className="bg-purple-50 border border-purple-100 rounded-lg px-4 py-3 flex items-center gap-2">
+                    <Receipt className="w-4 h-4 text-purple-500" />
+                    <p className="text-xs text-slate-600">Balance due: <strong className="text-purple-700">₹{balanceDue.toLocaleString("en-IN")}</strong></p>
                   </div>
                 )}
                 <div>
-                  <label className="text-xs font-bold text-slate-700 mb-2 block uppercase tracking-wide">Enter Amount (₹)</label>
+                  <label className="text-xs font-bold text-purple-700 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-md bg-purple-100 flex items-center justify-center text-[10px] font-black text-purple-600">₹</span>
+                    Enter Amount (₹)
+                  </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-slate-300">₹</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-purple-300">₹</span>
                     <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
                       placeholder="0" min={1}
-                      className="w-full pl-11 pr-4 py-4 border-2 border-slate-200 focus:border-red-400 rounded-xl text-2xl font-extrabold text-slate-900 outline-none transition-colors" />
+                      className="w-full pl-11 pr-4 py-4 border-2 border-purple-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 rounded-xl text-2xl font-extrabold text-slate-900 outline-none transition-all bg-purple-50/30" />
                   </div>
                 </div>
                 {/* Quick amounts */}
                 <div>
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Quick Select</p>
+                  <p className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider mb-2">Quick Select</p>
                   <div className="flex flex-wrap gap-2">
                     {[5000, 10000, 15000, ...(balanceDue > 0 && ![5000, 10000, 15000].includes(balanceDue) ? [balanceDue] : [])]
                       .filter(v => v > 0)
                       .map(v => (
                         <button key={v} onClick={() => setAmount(String(v))}
-                          className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${
+                          className={`px-3 py-1.5 text-xs font-bold rounded-xl border-2 transition-all ${
                             amount === String(v)
-                              ? "gradient-bg text-white border-transparent"
-                              : "bg-slate-50 text-slate-700 border-slate-200 hover:border-red-300"
+                              ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-transparent shadow-md shadow-purple-200"
+                              : "bg-white text-slate-700 border-slate-200 hover:border-purple-300 hover:bg-purple-50"
                           }`}>
                           ₹{v.toLocaleString("en-IN")}{v === balanceDue ? " (Full)" : ""}
                         </button>
@@ -564,7 +573,7 @@ export default function PaymentsHub() {
                 </div>
                 <button onClick={() => amount && parseFloat(amount) > 0 && setStep("method")}
                   disabled={!amount || parseFloat(amount) <= 0}
-                  className="w-full py-3.5 text-sm font-extrabold text-white gradient-bg rounded-xl disabled:opacity-40 transition-opacity">
+                  className="w-full py-3.5 text-sm font-extrabold text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl disabled:opacity-40 transition-opacity hover:shadow-lg shadow-purple-200">
                   Continue →
                 </button>
               </div>
@@ -592,7 +601,7 @@ export default function PaymentsHub() {
                     </div>
                     <div className="flex gap-2 mt-4">
                       <button onClick={() => setShowCardNotice(false)}
-                        className="flex-1 py-2.5 text-xs font-bold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
+                        className="flex-1 py-2.5 text-xs font-bold text-slate-600 bg-purple-50 border border-purple-100 rounded-lg hover:bg-purple-100 transition-colors">
                         ← Choose Another Method
                       </button>
                     </div>
@@ -600,17 +609,17 @@ export default function PaymentsHub() {
                 ) : (
                   <div className="grid grid-cols-2 gap-3 mb-4">
                     <button onClick={() => { setPaymentMethod("qr"); setStep("qr"); }}
-                      className="p-5 border-2 border-slate-200 hover:border-red-400 rounded-xl flex flex-col items-center gap-2 transition-all group">
-                      <div className="w-12 h-12 rounded-full bg-slate-100 group-hover:bg-red-50 flex items-center justify-center transition-colors">
-                        <QrCode className="w-6 h-6 text-red-600" />
+                      className="p-5 border-2 border-purple-200 hover:border-purple-500 rounded-xl flex flex-col items-center gap-2 transition-all group bg-white hover:bg-purple-50/50">
+                      <div className="w-12 h-12 rounded-full bg-purple-100 group-hover:bg-purple-200 flex items-center justify-center transition-colors">
+                        <QrCode className="w-6 h-6 text-purple-600" />
                       </div>
                       <span className="text-sm font-bold text-slate-800">UPI / QR</span>
                       <span className="text-[10px] text-slate-400">Scan & Pay</span>
                     </button>
                     <button onClick={() => { setPaymentMethod("card"); setShowCardNotice(true); }}
-                      className="p-5 border-2 border-slate-200 hover:border-red-400 rounded-xl flex flex-col items-center gap-2 transition-all group">
-                      <div className="w-12 h-12 rounded-full bg-slate-100 group-hover:bg-red-50 flex items-center justify-center transition-colors">
-                        <CreditCard className="w-6 h-6 text-red-600" />
+                      className="p-5 border-2 border-indigo-200 hover:border-indigo-500 rounded-xl flex flex-col items-center gap-2 transition-all group bg-white hover:bg-indigo-50/50">
+                      <div className="w-12 h-12 rounded-full bg-indigo-100 group-hover:bg-indigo-200 flex items-center justify-center transition-colors">
+                        <CreditCard className="w-6 h-6 text-indigo-600" />
                       </div>
                       <span className="text-sm font-bold text-slate-800">Card / Net</span>
                       <span className="text-[10px] text-slate-400">In-Person</span>
@@ -619,7 +628,7 @@ export default function PaymentsHub() {
                 )}
                 {!showCardNotice && (
                   <button onClick={() => setStep("amount")}
-                    className="w-full py-2.5 text-xs text-slate-400 hover:text-slate-700 transition-colors">
+                    className="w-full py-2.5 text-xs text-slate-400 hover:text-purple-700 transition-colors">
                     ← Back
                   </button>
                 )}
@@ -631,21 +640,21 @@ export default function PaymentsHub() {
               <>
                 <p className="text-xs text-slate-500 mb-4 text-center">Scan with any UPI app</p>
                 <div className="flex flex-col items-center mb-4">
-                  <div className="p-4 bg-white border-2 border-slate-200 rounded-2xl inline-block mb-3">
+                  <div className="p-4 bg-white border-2 border-purple-200 rounded-2xl inline-block mb-3 shadow-sm">
                     <img src={qrCodeUrl} alt="QR Code" className="w-48 h-48 block" />
                   </div>
-                  <div className="bg-slate-50 rounded-xl px-5 py-3 text-center w-full">
+                  <div className="bg-purple-50 rounded-xl px-5 py-3 text-center w-full border border-purple-100">
                     <p className="text-xs text-slate-600">UPI: <strong>{upiId}</strong></p>
                     <p className="text-xs text-slate-600 mt-1">
-                      Amount: <strong className="text-emerald-700">₹{parseInt(amount).toLocaleString("en-IN")}</strong>
+                      Amount: <strong className="text-purple-700">₹{parseInt(amount).toLocaleString("en-IN")}</strong>
                     </p>
                   </div>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setStep("method")}
-                    className="flex-1 py-3 text-xs font-bold text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50">Back</button>
+                    className="flex-1 py-3 text-xs font-bold text-slate-600 border border-purple-200 rounded-xl hover:bg-purple-50 bg-white">Back</button>
                   <button onClick={() => setStep("upload")}
-                    className="flex-1 py-3 text-xs font-bold text-white gradient-bg rounded-xl">I've Paid →</button>
+                    className="flex-1 py-3 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl hover:shadow-md shadow-purple-200">I've Paid →</button>
                 </div>
               </>
             )}
@@ -655,14 +664,17 @@ export default function PaymentsHub() {
               <>
                 {paymentMethod === "qr" ? (
                   <div className="mb-4">
-                    <label className="text-xs font-bold text-slate-700 mb-2 block">
+                    <label className="text-xs font-bold text-emerald-700 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded-md bg-emerald-100 flex items-center justify-center"><ImageIcon className="w-3 h-3 text-emerald-600" /></span>
                       Upload Screenshot <span className="text-red-500">*</span>
                     </label>
                     <div onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-slate-300 hover:border-red-400 rounded-xl p-6 text-center cursor-pointer transition-colors">
+                      className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                        screenshotPreview ? "border-emerald-400 bg-emerald-50 shadow-inner" : "border-purple-300 hover:border-purple-500 hover:bg-gradient-to-br hover:from-purple-50 hover:to-indigo-50 bg-slate-50/50"
+                      }`}>
                       {screenshotPreview ? (
                         <div className="relative">
-                          <img src={screenshotPreview} alt="Preview" className="max-h-48 mx-auto rounded-lg" />
+                          <img src={screenshotPreview} alt="Preview" className="max-h-48 mx-auto rounded-lg shadow-md ring-1 ring-emerald-200" />
                           <button onClick={e => { e.stopPropagation(); setScreenshot(null); setScreenshotPreview(null); }}
                             className="absolute top-2 right-2 w-7 h-7 bg-red-600 text-white rounded-full flex items-center justify-center shadow">
                             <X className="w-4 h-4" />
@@ -670,9 +682,11 @@ export default function PaymentsHub() {
                         </div>
                       ) : (
                         <>
-                          <ImageIcon className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                          <p className="text-sm text-slate-500">Tap to upload screenshot</p>
-                          <p className="text-[10px] text-slate-400 mt-1">JPG, PNG up to 4MB</p>
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center mx-auto mb-2">
+                            <ImageIcon className="w-6 h-6 text-purple-500" />
+                          </div>
+                          <p className="text-xs font-bold text-slate-700">Click to upload screenshot</p>
+                          <p className="text-[10px] text-slate-400 mt-1">JPEG, PNG (max 4MB)</p>
                         </>
                       )}
                     </div>
@@ -680,20 +694,21 @@ export default function PaymentsHub() {
                   </div>
                 ) : (
                   <div className="mb-4">
-                    <label className="text-xs font-bold text-slate-700 mb-2 block">
+                    <label className="text-xs font-bold text-indigo-700 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded-md bg-indigo-100 flex items-center justify-center"><Receipt className="w-3 h-3 text-indigo-600" /></span>
                       Transaction Reference <span className="text-slate-400">(optional)</span>
                     </label>
                     <input type="text" value={transactionId} onChange={e => setTransactionId(e.target.value)}
                       placeholder="e.g. RZP1234567"
-                      className="w-full px-4 py-3 border-2 border-slate-200 focus:border-red-400 rounded-xl text-sm outline-none" />
+                      className="w-full px-4 py-3 border-2 border-indigo-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 rounded-xl text-sm outline-none bg-indigo-50/30 transition-all" />
                   </div>
                 )}
                 <div className="flex gap-2">
                   <button onClick={() => setStep(paymentMethod === "qr" ? "qr" : "method")}
-                    className="flex-1 py-3 text-xs font-bold text-slate-600 border border-slate-200 rounded-xl hover:bg-slate-50">Back</button>
+                    className="flex-1 py-3 text-xs font-bold text-slate-600 border border-purple-200 rounded-xl hover:bg-purple-50 bg-white">Back</button>
                   <button onClick={handleSubmitPayment}
                     disabled={submitting || (paymentMethod === "qr" && !screenshot)}
-                    className="flex-1 py-3 text-xs font-bold text-white gradient-bg rounded-xl disabled:opacity-40 flex items-center justify-center gap-2">
+                    className="flex-1 py-3 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 hover:shadow-md shadow-purple-200">
                     {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : "Submit Payment"}
                   </button>
                 </div>
@@ -705,40 +720,54 @@ export default function PaymentsHub() {
 
       {/* ── UPLOAD RECEIPT PANEL ──────────────────────────────────────────── */}
       {activeAction === "upload" && (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-          <div className="px-5 py-3 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900">Upload External Payment Receipt</h3>
-            <button onClick={() => setActiveAction("none")} className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 transition-colors">
+        <div className="bg-white border border-purple-200 rounded-2xl overflow-hidden shadow-lg ring-1 ring-purple-100">
+          <div className="px-5 py-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <FileUp className="w-4.5 h-4.5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white">Upload Payment Receipt</h3>
+                <p className="text-[10px] text-purple-200">Submit your external payment proof for verification</p>
+              </div>
+            </div>
+            <button onClick={() => setActiveAction("none")} className="p-1.5 rounded-lg hover:bg-white/20 text-white/80 hover:text-white transition-colors">
               <X className="w-4 h-4" />
             </button>
           </div>
-          <div className="p-5 max-w-xl mx-auto">
+          <div className="p-5 sm:p-6 max-w-xl mx-auto">
             <div className="space-y-5">
               {/* Amount */}
               <div>
-                <label className="text-xs font-bold text-slate-700 mb-2 block uppercase tracking-wide">Amount Paid (₹) <span className="text-red-500">*</span></label>
+                <label className="text-xs font-bold text-purple-700 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-md bg-purple-100 flex items-center justify-center text-[10px] font-black text-purple-600">₹</span>
+                  Amount Paid <span className="text-red-500">*</span>
+                </label>
                 <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
                   placeholder="Enter amount" min={1}
-                  className="w-full px-4 py-3 border-2 border-slate-200 focus:border-red-400 rounded-xl text-sm font-bold text-slate-900 outline-none transition-colors" />
+                  className="w-full px-4 py-3 border-2 border-purple-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 rounded-xl text-sm font-bold text-slate-900 outline-none transition-all bg-purple-50/30" />
               </div>
 
               {/* Method */}
               <div>
-                <label className="text-xs font-bold text-slate-700 mb-2 block uppercase tracking-wide">Payment Method <span className="text-red-500">*</span></label>
+                <label className="text-xs font-bold text-indigo-700 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-md bg-indigo-100 flex items-center justify-center"><CreditCard className="w-3 h-3 text-indigo-600" /></span>
+                  Payment Method <span className="text-red-500">*</span>
+                </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {(["UPI", "Card", "Bank Transfer", "Cash"] as const).map(m => (
                     <button key={m} onClick={() => setPaymentMethod(m.toLowerCase() as any)}
-                      className={`px-3 py-2.5 text-xs font-bold rounded-lg border transition-all ${
+                      className={`px-3 py-2.5 text-xs font-bold rounded-xl border-2 transition-all ${
                         paymentMethod === m.toLowerCase()
-                          ? "gradient-bg text-white border-transparent"
-                          : "bg-slate-50 text-slate-700 border-slate-200 hover:border-red-300"
+                          ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-transparent shadow-md shadow-purple-200"
+                          : "bg-white text-slate-700 border-slate-200 hover:border-purple-300 hover:bg-purple-50"
                       }`}>
                       {m}
                     </button>
                   ))}
                 </div>
                 {paymentMethod === "card" && (
-                  <div className="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-start gap-2">
+                  <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
                     <Landmark className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-slate-600 leading-relaxed">
                       <strong>In-person payment required.</strong> Card payments must be completed directly at the admission center. If you have already paid in person, please upload your receipt below.
@@ -749,23 +778,31 @@ export default function PaymentsHub() {
 
               {/* Transaction ID */}
               <div>
-                <label className="text-xs font-bold text-slate-700 mb-2 block uppercase tracking-wide">Transaction / Reference ID</label>
+                <label className="text-xs font-bold text-blue-700 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center"><Receipt className="w-3 h-3 text-blue-600" /></span>
+                  Transaction / Reference ID
+                </label>
                 <input type="text" value={transactionId} onChange={e => setTransactionId(e.target.value)}
-                  placeholder="e.g. TXN12345678" className="w-full px-4 py-3 border-2 border-slate-200 focus:border-red-400 rounded-xl text-sm outline-none transition-colors" />
+                  placeholder="e.g. TXN12345678" className="w-full px-4 py-3 border-2 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-xl text-sm outline-none transition-all bg-blue-50/30" />
               </div>
 
               {/* Upload */}
               <div>
-                <label className="text-xs font-bold text-slate-700 mb-2 block uppercase tracking-wide">Upload Receipt Screenshot <span className="text-red-500">*</span></label>
+                <label className="text-xs font-bold text-emerald-700 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-md bg-emerald-100 flex items-center justify-center"><ImageIcon className="w-3 h-3 text-emerald-600" /></span>
+                  Upload Receipt Screenshot <span className="text-red-500">*</span>
+                </label>
                 <div onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
-                    screenshotPreview ? "border-emerald-300 bg-emerald-50" : "border-slate-300 hover:border-red-300 hover:bg-red-50"
+                  className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                    screenshotPreview ? "border-emerald-400 bg-emerald-50 shadow-inner" : "border-purple-300 hover:border-purple-500 hover:bg-gradient-to-br hover:from-purple-50 hover:to-indigo-50 bg-slate-50/50"
                   }`}>
                   {screenshotPreview ? (
-                    <img src={screenshotPreview} alt="Preview" className="mx-auto max-h-40 rounded-lg shadow-sm" />
+                    <img src={screenshotPreview} alt="Preview" className="mx-auto max-h-40 rounded-lg shadow-md ring-1 ring-emerald-200" />
                   ) : (
                     <div className="flex flex-col items-center gap-2">
-                      <ImageIcon className="w-8 h-8 text-slate-400" />
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
+                        <ImageIcon className="w-6 h-6 text-purple-500" />
+                      </div>
                       <p className="text-xs font-bold text-slate-700">Click to upload receipt</p>
                       <p className="text-[10px] text-slate-400">JPEG, PNG (max 4MB)</p>
                     </div>
@@ -777,10 +814,10 @@ export default function PaymentsHub() {
               {/* Actions */}
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setActiveAction("none")}
-                  className="flex-1 py-3 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors">Cancel</button>
+                  className="flex-1 py-3 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors border border-slate-200">Cancel</button>
                 <button onClick={handleSubmitPayment}
                   disabled={submitting || !amount || parseFloat(amount) <= 0 || !screenshot}
-                  className="flex-1 py-3 text-xs font-bold text-white gradient-bg rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 transition-opacity">
+                  className="flex-1 py-3 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 transition-all shadow-md shadow-purple-200 hover:shadow-lg hover:shadow-purple-300">
                   {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : "Submit Receipt"}
                 </button>
               </div>

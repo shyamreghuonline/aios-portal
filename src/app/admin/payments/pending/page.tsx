@@ -23,8 +23,12 @@ import {
   FileText,
   Mail,
   MessageSquare,
-  Trash2
+  Trash2,
+  Receipt,
+  Hourglass,
+  Landmark
 } from "lucide-react";
+import ConsolidatedPaymentsModal from "./consolidated-modal";
 
 interface PendingPayment {
   id: string;
@@ -53,6 +57,15 @@ interface Student {
   university: string;
   stream: string;
   studentId?: string;
+}
+
+interface ConfirmedPayment {
+  id: string;
+  receiptNumber: string;
+  amountPaid: number;
+  paymentDate: string;
+  paymentMode: string;
+  studentPhone: string;
 }
 
 // Month code mapping for receipt IDs (same as new payment page)
@@ -114,6 +127,28 @@ export default function PendingPaymentsPage() {
   const [remarks, setRemarks] = useState("");
   const [previousPayments, setPreviousPayments] = useState(0);
 
+  // Consolidated view states
+  const [consolidatedModalOpen, setConsolidatedModalOpen] = useState(false);
+  const [consolidatedStudentPhone, setConsolidatedStudentPhone] = useState<string | null>(null);
+  const [consolidatedConfirmed, setConsolidatedConfirmed] = useState<ConfirmedPayment[]>([]);
+  const [consolidatedLoading, setConsolidatedLoading] = useState(false);
+
+  async function openConsolidatedView(phone: string) {
+    setConsolidatedStudentPhone(phone);
+    setConsolidatedModalOpen(true);
+    setConsolidatedLoading(true);
+    try {
+      const pq = query(collection(db, "payments"), where("studentPhone", "==", phone), orderBy("paymentDate", "desc"));
+      const ps = await getDocs(pq);
+      const confirmed = ps.docs.map(d => ({ id: d.id, ...d.data() } as ConfirmedPayment));
+      setConsolidatedConfirmed(confirmed);
+    } catch (err) {
+      console.error("Error fetching confirmed payments:", err);
+    } finally {
+      setConsolidatedLoading(false);
+    }
+  }
+
   useEffect(() => {
     async function fetchData() {
       try {
@@ -150,7 +185,8 @@ export default function PendingPaymentsPage() {
               discountAmount: sData.discountAmount || 0,
               course: sData.course || "",
               university: sData.university || "",
-              stream: sData.stream || ""
+              stream: sData.stream || "",
+              studentId: sData.studentId || ""
             };
           }
         }
@@ -199,7 +235,7 @@ export default function PendingPaymentsPage() {
         studentEmail: student.email,
         studentPhone: student.phone,
         phone: student.phone,
-        studentId: student.id,
+        studentId: student.studentId || "",
         program: student.course,
         university: student.university,
         course: student.course,
@@ -528,7 +564,15 @@ Thank you!`,
                     {student?.university || "—"}
                   </td>
                   <td className="px-3 py-2.5 text-sm text-slate-900 font-mono">
-                    {student?.studentId || "—"}
+                    {student?.studentId ? (
+                      <button
+                        onClick={() => openConsolidatedView(payment.studentPhone)}
+                        className="text-blue-700 hover:underline hover:text-blue-900 transition-colors cursor-pointer"
+                        title="View consolidated transaction statement"
+                      >
+                        {student.studentId}
+                      </button>
+                    ) : "—"}
                   </td>
                   <td className="px-3 py-2.5 text-sm text-slate-900">
                     {student ? `${(student.course || "").replace(/\s*\([^)]*\)/g, "")}${student.stream ? `-${student.stream}` : ""}` : "—"}
@@ -920,6 +964,16 @@ Thank you!`,
           </div>
         </div>
       )}
+
+      <ConsolidatedPaymentsModal
+        open={consolidatedModalOpen}
+        onClose={() => setConsolidatedModalOpen(false)}
+        studentPhone={consolidatedStudentPhone || ""}
+        student={consolidatedStudentPhone ? students[consolidatedStudentPhone] : undefined}
+        pending={consolidatedStudentPhone ? pendingPayments.filter(p => p.studentPhone === consolidatedStudentPhone) : []}
+        confirmed={consolidatedConfirmed}
+        loading={consolidatedLoading}
+      />
     </div>
   );
 }

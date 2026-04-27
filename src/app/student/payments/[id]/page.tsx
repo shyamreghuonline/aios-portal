@@ -279,15 +279,7 @@ export default function ReceiptPage() {
               {/* Summary */}
               <div className="flex justify-end mt-4">
                 <div className="w-64">
-                  <div className="flex justify-between py-1 text-sm">
-                    <span className="text-gray-600">Total Fee:</span>
-                    <span className="text-gray-900 font-semibold">₹{(payment.totalFee || 0).toLocaleString("en-IN")}</span>
-                  </div>
-                  <div className="flex justify-between py-1 text-sm">
-                    <span className="text-gray-600">Balance:</span>
-                    <span className={`font-semibold ${payment.balanceAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>₹{payment.balanceAmount.toLocaleString("en-IN")}</span>
-                  </div>
-                  <div className="flex justify-between py-2 mt-2 px-3" style={{ backgroundColor: '#8B0000' }}>
+                  <div className="flex justify-between py-2 px-3" style={{ backgroundColor: '#8B0000' }}>
                     <span className="text-white font-semibold text-sm">Amount Received:</span>
                     <span className="text-white font-bold text-sm">₹{payment.amountPaid.toLocaleString("en-IN")}</span>
                   </div>

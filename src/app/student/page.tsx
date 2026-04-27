@@ -579,6 +579,8 @@ export default function StudentDashboard() {
                       {uploadingPhoto ? "Uploading…" : personal.photo ? "Change Photo" : "Upload Photo"}
                     </button>
                   )}
+                  <input ref={photoRef} type="file" accept="image/*" className="hidden"
+                    onChange={e => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])} />
                 </div>
               </div>
 
@@ -1032,7 +1034,7 @@ export default function StudentDashboard() {
                                 View Certificate
                               </button>
                             ) : (
-                              <p className="text-sm font-normal text-slate-400">Not Uploaded</p>
+                              <p className="text-sm font-semibold text-amber-600 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> Not Uploaded</p>
                             )}
                           </div>
                         </div>
@@ -1078,7 +1080,7 @@ export default function StudentDashboard() {
                               View Certificate
                             </button>
                           ) : (
-                            <p className="text-sm font-normal text-slate-400">Not Uploaded</p>
+                            <p className="text-sm font-semibold text-amber-600 flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> Not Uploaded</p>
                           )}
                         </div>
                       </div>
