@@ -46,6 +46,7 @@ import {
   KeyRound,
   Check,
   Copy,
+  Send,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -162,6 +163,7 @@ export default function StudentsPage() {
   const [resettingPasswordId, setResettingPasswordId] = useState<string | null>(null);
   const [resetLink, setResetLink] = useState<string | null>(null);
   const [resetLinkStudentName, setResetLinkStudentName] = useState<string>("");
+  const [resetLinkStudentId, setResetLinkStudentId] = useState<string>("");
   const [copied, setCopied] = useState(false);
   const [newStudentLink, setNewStudentLink] = useState<string | null>(null);
   const [newStudentName, setNewStudentName] = useState<string>("");
@@ -333,6 +335,7 @@ export default function StudentsPage() {
         // Show the link in UI for admin to copy/share
         setResetLink(tokenData.link);
         setResetLinkStudentName(student.name);
+        setResetLinkStudentId(student.studentId || "");
       } else {
         alert("Failed to generate password reset link.");
       }
@@ -458,15 +461,15 @@ export default function StudentsPage() {
     try {
       const element = printRef.current;
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 1.5,
         useCORS: true,
         logging: false,
       });
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/jpeg", 0.85);
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${detailStudent.studentId}_${detailStudent.name.replace(/\s+/g, "_")}_Admission.pdf`);
     } catch (err) {
       console.error("PDF generation error:", err);
@@ -965,16 +968,16 @@ export default function StudentsPage() {
             {/* Reset Link Banner */}
             {resetLink && (
               <div className="mx-4 sm:mx-5 mt-3">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <div className="flex items-center gap-2 text-red-800">
-                    <Check className="w-4 h-4 text-red-600" />
-                    <p className="text-sm font-medium">Password reset link generated for {resetLinkStudentName}</p>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-green-800">
+                    <Check className="w-4 h-4 text-green-600" />
+                    <p className="text-sm font-medium">Password reset link generated for {resetLinkStudentName} {resetLinkStudentId ? `(ID: ${resetLinkStudentId})` : ""}</p>
                   </div>
                   <div className="flex gap-2 mt-3">
                     <input
                       readOnly
                       value={resetLink}
-                      className="flex-1 px-3 py-2 text-xs bg-white border border-red-100 rounded-lg text-slate-700 font-mono break-all"
+                      className="flex-1 px-3 py-2 text-xs bg-white border border-green-100 rounded-lg text-slate-700 font-mono break-all"
                     />
                     <button
                       onClick={() => {
@@ -982,7 +985,7 @@ export default function StudentsPage() {
                         setCopied(true);
                         setTimeout(() => setCopied(false), 2000);
                       }}
-                      className="px-3 py-2 text-xs font-bold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors flex items-center gap-1.5 flex-shrink-0"
+                      className="px-3 py-2 text-xs font-bold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-1.5 flex-shrink-0"
                     >
                       {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                       {copied ? "Copied!" : "Copy"}
@@ -1001,7 +1004,7 @@ export default function StudentsPage() {
                       Share via WhatsApp
                     </a>
                     <button
-                      onClick={() => { setResetLink(null); setResetLinkStudentName(""); setCopied(false); }}
+                      onClick={() => { setResetLink(null); setResetLinkStudentName(""); setResetLinkStudentId(""); setCopied(false); }}
                       className="text-xs text-slate-500 hover:text-slate-700 underline"
                     >
                       Dismiss

@@ -137,6 +137,9 @@ function SetPasswordForm() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
       <div className="max-w-md w-full">
+        <div className="text-center mb-8">
+          <img src="/login-page.jpeg" alt="AIOS EDU" className="mx-auto w-[440px] h-auto object-contain mb-4" />
+        </div>
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
           <div className="text-center mb-6">
             <div className="w-12 h-12 rounded-xl gradient-bg flex items-center justify-center mx-auto mb-3">
