@@ -47,6 +47,7 @@ import {
   Check,
   Copy,
   Send,
+  Download,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -94,6 +95,8 @@ interface Student {
     motherName?: string;
     guardianName?: string;
     guardianPhone?: string;
+    employmentType?: string;
+    yearsOfExperience?: string;
     address?: string;
     city?: string;
     state?: string;
@@ -461,15 +464,16 @@ export default function StudentsPage() {
     try {
       const element = printRef.current;
       const canvas = await html2canvas(element, {
-        scale: 1.5,
+        scale: 2,
         useCORS: true,
         logging: false,
+        backgroundColor: "#ffffff",
       });
-      const imgData = canvas.toDataURL("image/jpeg", 0.85);
+      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF("p", "mm", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${detailStudent.studentId}_${detailStudent.name.replace(/\s+/g, "_")}_Admission.pdf`);
     } catch (err) {
       console.error("PDF generation error:", err);
@@ -1017,42 +1021,28 @@ export default function StudentsPage() {
             {/* ── Body ── */}
             <div className="p-4 sm:p-5 space-y-4">
 
-              {/* ── Quick Stats ── */}
+              {/* ── Fee Summary (compact) ── */}
               <div className="bg-white border border-amber-200 rounded-2xl shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-r from-amber-50 via-orange-50/50 to-white border-b border-slate-200 p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900">Fee Summary</h3>
-                      <p className="text-xs text-slate-500">Financial overview</p>
-                    </div>
+                <div className="flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-amber-50 via-orange-50/50 to-white border-b border-slate-200">
+                  <div className="w-7 h-7 rounded-lg gradient-bg flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                   </div>
+                  <h3 className="text-sm font-bold text-slate-900">Fee Summary</h3>
                 </div>
-                <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <div className="bg-gradient-to-br from-amber-50 to-white rounded-xl border border-amber-100 p-3 text-center">
-                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center mx-auto mb-2">
-                      <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    </div>
-                    <p className="text-xs text-amber-700 font-semibold mb-1">Total Fee</p>
-                    <p className="text-lg font-medium text-slate-700">₹{(detailStudent.totalFee || 0).toLocaleString("en-IN")}</p>
+                <div className="flex items-center divide-x divide-amber-100">
+                  <div className="flex-1 px-4 py-2.5 text-center">
+                    <p className="text-[10px] text-amber-600 font-semibold uppercase tracking-wider">Total</p>
+                    <p className="text-sm font-bold text-slate-800">₹{(detailStudent.totalFee || 0).toLocaleString("en-IN")}</p>
                   </div>
                   {(detailStudent.discountAmount || 0) > 0 && (
-                    <div className="bg-gradient-to-br from-emerald-50 to-white rounded-xl border border-emerald-100 p-3 text-center">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center mx-auto mb-2">
-                        <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
-                      </div>
-                      <p className="text-xs text-emerald-700 font-semibold mb-1">Discount</p>
-                      <p className="text-lg font-medium text-slate-700">₹{(detailStudent.discountAmount || 0).toLocaleString("en-IN")}</p>
+                    <div className="flex-1 px-4 py-2.5 text-center">
+                      <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Discount</p>
+                      <p className="text-sm font-bold text-emerald-700">₹{(detailStudent.discountAmount || 0).toLocaleString("en-IN")}</p>
                     </div>
                   )}
-                  <div className="bg-gradient-to-br from-rose-50 to-white rounded-xl border border-rose-100 p-3 text-center">
-                    <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center mx-auto mb-2">
-                      <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                    </div>
-                    <p className="text-xs text-rose-700 font-semibold mb-1">Effective Fee</p>
-                    <p className="text-lg font-medium text-slate-700">₹{((detailStudent.totalFee || 0) - (detailStudent.discountAmount || 0)).toLocaleString("en-IN")}</p>
+                  <div className="flex-1 px-4 py-2.5 text-center">
+                    <p className="text-[10px] text-rose-600 font-semibold uppercase tracking-wider">Effective</p>
+                    <p className="text-sm font-bold text-slate-800">₹{((detailStudent.totalFee || 0) - (detailStudent.discountAmount || 0)).toLocaleString("en-IN")}</p>
                   </div>
                 </div>
               </div>
@@ -1094,7 +1084,7 @@ export default function StudentsPage() {
                 <div className="bg-gradient-to-r from-sky-50 via-blue-50/50 to-white border-b border-slate-200 p-3">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                      <FileText className="w-4 h-4 text-white" />
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-slate-900">Documents</h3>
@@ -1102,96 +1092,34 @@ export default function StudentsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="p-4 grid grid-cols-3 sm:grid-cols-6 gap-3">
-                  {/* Photo */}
-                  {detailStudent.personalDetails?.photo ? (
-                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-gradient-to-br from-sky-50 to-white border border-sky-100 shadow-sm hover:shadow-md transition-shadow">
-                      <button onClick={() => openBase64(detailStudent.personalDetails!.photo as string)} className="w-10 h-10 rounded-lg bg-sky-100 border border-sky-200 flex items-center justify-center hover:bg-sky-200 transition-colors">
-                        <Eye className="w-5 h-5 text-sky-600" />
-                      </button>
-                      <span className="text-xs font-semibold text-sky-700">Photo</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                        <X className="w-5 h-5 text-slate-400" />
+                <div className="divide-y divide-slate-100">
+                  {[
+                    { label: "Photo", url: detailStudent.personalDetails?.photo as string | undefined },
+                    { label: "Aadhaar Card", url: detailStudent.personalDetails?.aadhaarUrl as string | undefined },
+                    { label: "SSLC / 10th Certificate", url: detailStudent.academicDetails?.sslc?.certificateUrl as string | undefined },
+                    { label: "HSC / 12th Certificate", url: detailStudent.academicDetails?.plustwo?.certificateUrl as string | undefined },
+                    { label: "UG Certificate", url: detailStudent.academicDetails?.ug?.certificateUrl as string | undefined },
+                    { label: "PG Certificate", url: detailStudent.academicDetails?.pg?.certificateUrl as string | undefined },
+                  ].map(({ label, url }) => (
+                    <div key={label} className="flex items-center justify-between px-4 py-2.5 hover:bg-slate-50/50 transition-colors">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-2 h-2 rounded-full flex-shrink-0 ${url ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                        <span className="text-sm font-medium text-slate-700 truncate">{label}</span>
                       </div>
-                      <span className="text-xs font-semibold text-slate-400">Photo</span>
+                      {url ? (
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <button onClick={() => openBase64(url)} className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-200 rounded-md hover:bg-sky-100 transition-colors">
+                            <Eye className="w-3 h-3" /> View
+                          </button>
+                          <button onClick={() => downloadDocument(url, `${detailStudent.studentId || detailStudent.id}-${label.replace(/\s+/g, '-').toLowerCase()}`)} className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-md hover:bg-slate-100 transition-colors">
+                            <Download className="w-3 h-3" /> Download
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="flex items-center gap-1 text-xs font-medium text-amber-600"><AlertTriangle className="w-3 h-3" /> Not uploaded</span>
+                      )}
                     </div>
-                  )}
-                  {/* Aadhaar */}
-                  {detailStudent.personalDetails?.aadhaarUrl ? (
-                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-gradient-to-br from-sky-50 to-white border border-sky-100 shadow-sm hover:shadow-md transition-shadow">
-                      <button onClick={() => openBase64(detailStudent.personalDetails!.aadhaarUrl as string)} className="w-10 h-10 rounded-lg bg-sky-100 border border-sky-200 flex items-center justify-center hover:bg-sky-200 transition-colors">
-                        <Eye className="w-5 h-5 text-sky-600" />
-                      </button>
-                      <span className="text-xs font-semibold text-sky-700">Aadhaar</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                        <X className="w-5 h-5 text-slate-400" />
-                      </div>
-                      <span className="text-xs font-semibold text-slate-400">Aadhaar</span>
-                    </div>
-                  )}
-                  {/* SSLC */}
-                  {detailStudent.academicDetails?.sslc?.certificateUrl ? (
-                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-gradient-to-br from-sky-50 to-white border border-sky-100 shadow-sm hover:shadow-md transition-shadow">
-                      <button onClick={() => openBase64(detailStudent.academicDetails!.sslc!.certificateUrl as string)} className="w-10 h-10 rounded-lg bg-sky-100 border border-sky-200 flex items-center justify-center hover:bg-sky-200 transition-colors">
-                        <Eye className="w-5 h-5 text-sky-600" />
-                      </button>
-                      <span className="text-xs font-semibold text-sky-700">SSLC</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                        <X className="w-5 h-5 text-slate-400" />
-                      </div>
-                      <span className="text-xs font-semibold text-slate-400">SSLC</span>
-                    </div>
-                  )}
-                  {/* HSC */}
-                  {detailStudent.academicDetails?.plustwo?.certificateUrl ? (
-                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-gradient-to-br from-sky-50 to-white border border-sky-100 shadow-sm hover:shadow-md transition-shadow">
-                      <button onClick={() => openBase64(detailStudent.academicDetails!.plustwo!.certificateUrl as string)} className="w-10 h-10 rounded-lg bg-sky-100 border border-sky-200 flex items-center justify-center hover:bg-sky-200 transition-colors">
-                        <Eye className="w-5 h-5 text-sky-600" />
-                      </button>
-                      <span className="text-xs font-semibold text-sky-700">HSC</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                        <X className="w-5 h-5 text-slate-400" />
-                      </div>
-                      <span className="text-xs font-semibold text-slate-400">HSC</span>
-                    </div>
-                  )}
-                  {/* UG */}
-                  {detailStudent.academicDetails?.ug?.certificateUrl ? (
-                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-gradient-to-br from-sky-50 to-white border border-sky-100 shadow-sm hover:shadow-md transition-shadow">
-                      <button onClick={() => openBase64(detailStudent.academicDetails!.ug!.certificateUrl as string)} className="w-10 h-10 rounded-lg bg-sky-100 border border-sky-200 flex items-center justify-center hover:bg-sky-200 transition-colors">
-                        <Eye className="w-5 h-5 text-sky-600" />
-                      </button>
-                      <span className="text-xs font-semibold text-sky-700">UG</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                      <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                        <X className="w-5 h-5 text-slate-400" />
-                      </div>
-                      <span className="text-xs font-semibold text-slate-400">UG</span>
-                    </div>
-                  )}
-                  {/* PG */}
-                  {detailStudent.academicDetails?.pg?.certificateUrl && (
-                    <div className="flex flex-col items-center gap-1.5 p-3 rounded-xl bg-gradient-to-br from-sky-50 to-white border border-sky-100 shadow-sm hover:shadow-md transition-shadow">
-                      <button onClick={() => openBase64(detailStudent.academicDetails!.pg!.certificateUrl as string)} className="w-10 h-10 rounded-lg bg-sky-100 border border-sky-200 flex items-center justify-center hover:bg-sky-200 transition-colors">
-                        <Eye className="w-5 h-5 text-sky-600" />
-                      </button>
-                      <span className="text-xs font-semibold text-sky-700">PG</span>
-                    </div>
-                  )}
+                  ))}
                 </div>
               </div>
 
@@ -1220,41 +1148,41 @@ export default function StudentsPage() {
                             <th className="px-3 py-2.5 text-right text-[9px] font-medium uppercase tracking-wider text-slate-500">%</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-50">
+                        <tbody className="divide-y divide-slate-100">
                           {detailStudent.academicDetails?.sslc?.institution && (
-                            <tr className="hover:bg-rose-50/30 transition-colors">
-                              <td className="px-3 py-2.5 text-sm font-medium text-rose-700">SSLC / 10th</td>
+                            <tr className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-3 py-2.5 text-sm font-semibold text-slate-800">SSLC / 10th</td>
                               <td className="px-3 py-2.5 text-sm text-slate-600">{detailStudent.academicDetails.sslc.institution}</td>
                               <td className="px-3 py-2.5 text-sm text-slate-600">{detailStudent.academicDetails.sslc.board || "—"}</td>
                               <td className="px-3 py-2.5 text-sm text-slate-600">{detailStudent.academicDetails.sslc.year || "—"}</td>
-                              <td className="px-3 py-2.5 text-sm font-medium text-rose-600 text-right">{detailStudent.academicDetails.sslc.percentage || "—"}%</td>
+                              <td className="px-3 py-2.5 text-sm font-semibold text-slate-800 text-right">{detailStudent.academicDetails.sslc.percentage || "—"}%</td>
                             </tr>
                           )}
                           {detailStudent.academicDetails?.plustwo?.institution && (
-                            <tr className="hover:bg-amber-50/30 transition-colors">
-                              <td className="px-3 py-2.5 text-sm font-medium text-amber-700">HSC / 12th</td>
+                            <tr className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-3 py-2.5 text-sm font-semibold text-slate-800">HSC / 12th</td>
                               <td className="px-3 py-2.5 text-sm text-slate-600">{detailStudent.academicDetails.plustwo.institution}</td>
                               <td className="px-3 py-2.5 text-sm text-slate-600">{detailStudent.academicDetails.plustwo.board || detailStudent.academicDetails.plustwo.stream || "—"}</td>
                               <td className="px-3 py-2.5 text-sm text-slate-600">{detailStudent.academicDetails.plustwo.year || "—"}</td>
-                              <td className="px-3 py-2.5 text-sm font-medium text-amber-600 text-right">{detailStudent.academicDetails.plustwo.percentage || "—"}%</td>
+                              <td className="px-3 py-2.5 text-sm font-semibold text-slate-800 text-right">{detailStudent.academicDetails.plustwo.percentage || "—"}%</td>
                             </tr>
                           )}
                           {detailStudent.academicDetails?.ug?.institution && (
-                            <tr className="hover:bg-blue-50/30 transition-colors">
-                              <td className="px-3 py-2.5 text-sm font-medium text-blue-700">UG Degree</td>
+                            <tr className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-3 py-2.5 text-sm font-semibold text-slate-800">UG Degree</td>
                               <td className="px-3 py-2.5 text-sm text-slate-600">{detailStudent.academicDetails.ug.institution}</td>
                               <td className="px-3 py-2.5 text-sm text-slate-600">{detailStudent.academicDetails.ug.degree || detailStudent.academicDetails.ug.board || "—"}</td>
                               <td className="px-3 py-2.5 text-sm text-slate-600">{detailStudent.academicDetails.ug.year || "—"}</td>
-                              <td className="px-3 py-2.5 text-sm font-medium text-blue-600 text-right">{detailStudent.academicDetails.ug.percentage || "—"}%</td>
+                              <td className="px-3 py-2.5 text-sm font-semibold text-slate-800 text-right">{detailStudent.academicDetails.ug.percentage || "—"}%</td>
                             </tr>
                           )}
                           {detailStudent.academicDetails?.pg?.institution && (
-                            <tr className="hover:bg-indigo-50/30 transition-colors">
-                              <td className="px-3 py-2.5 text-sm font-medium text-indigo-700">PG Degree</td>
+                            <tr className="hover:bg-slate-50/50 transition-colors">
+                              <td className="px-3 py-2.5 text-sm font-semibold text-slate-800">PG Degree</td>
                               <td className="px-3 py-2.5 text-sm text-slate-600">{detailStudent.academicDetails.pg.institution}</td>
                               <td className="px-3 py-2.5 text-sm text-slate-600">{detailStudent.academicDetails.pg.degree || detailStudent.academicDetails.pg.board || "—"}</td>
                               <td className="px-3 py-2.5 text-sm text-slate-600">{detailStudent.academicDetails.pg.year || "—"}</td>
-                              <td className="px-3 py-2.5 text-sm font-medium text-indigo-600 text-right">{detailStudent.academicDetails.pg.percentage || "—"}%</td>
+                              <td className="px-3 py-2.5 text-sm font-semibold text-slate-800 text-right">{detailStudent.academicDetails.pg.percentage || "—"}%</td>
                             </tr>
                           )}
                         </tbody>
@@ -1281,12 +1209,13 @@ export default function StudentsPage() {
                     { label: "Full Name", value: `${detailStudent.firstName || ""} ${detailStudent.lastName || ""}` },
                     { label: "Email", value: detailStudent.email },
                     { label: "Phone", value: detailStudent.phone || "—" },
-                    { label: "WhatsApp", value: detailStudent.whatsappNumber || "—" },
-                    { label: "Date of Birth", value: detailStudent.personalDetails?.dateOfBirth || "—" },
+                    { label: "Date of Birth", value: detailStudent.personalDetails?.dateOfBirth || detailStudent.personalDetails?.dob || "—" },
                     { label: "Gender", value: detailStudent.personalDetails?.gender || "—" },
+                    { label: "Blood Group", value: detailStudent.personalDetails?.bloodGroup || "—" },
                     { label: "Father", value: detailStudent.personalDetails?.fatherName || "—" },
                     { label: "Mother", value: detailStudent.personalDetails?.motherName || "—" },
-                    { label: "Parent Phone", value: detailStudent.personalDetails?.parentPhoneNumber || "—" },
+                    { label: "Aadhaar No.", value: detailStudent.personalDetails?.aadhaarNumber || "—" },
+                    { label: "Employment", value: detailStudent.personalDetails?.employmentType ? `${detailStudent.personalDetails.employmentType}${detailStudent.personalDetails.yearsOfExperience && detailStudent.personalDetails.employmentType !== "Not Employed" ? ` (${detailStudent.personalDetails.yearsOfExperience} yrs)` : ""}` : "—" },
                   ].map(({ label, value }: any) => (
                     <div key={label} className="bg-gradient-to-br from-rose-50 to-white rounded-xl border border-rose-100 shadow-sm p-3">
                       <p className="text-xs text-rose-700 font-semibold mb-1">{label}</p>
@@ -1328,183 +1257,171 @@ export default function StudentsPage() {
         </div>
       )}
 
-      {/* Hidden Print Form for PDF Generation - Admission Form */}
+      {/* Professional Admission Form for PDF Generation */}
       {detailStudent && (
         <div ref={printRef} style={{ position: "absolute", left: "-9999px", top: 0 }}>
-          <div style={{ backgroundColor: "#ffffff", padding: "20px 24px", width: "210mm", minHeight: "297mm", fontFamily: "Arial, sans-serif", boxSizing: "border-box" }}>
-            {/* Header with Emblem Left, Details Right */}
-            <div style={{ border: "2px solid #dc2626", marginBottom: "16px" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", padding: "12px" }}>
-                {/* Left: Emblem */}
-                <div style={{ flexShrink: 0, marginRight: "16px" }}>
-                  <img src="/emblem.png" alt="Emblem" style={{ width: "80px", height: "80px", objectFit: "contain" }} />
-                </div>
-                {/* Center: Institute Name */}
-                <div style={{ flex: 1, textAlign: "center" }}>
-                  <h1 style={{ fontSize: "22px", fontWeight: "bold", color: "#b91c1c", margin: 0, lineHeight: 1.2 }}>AIOS Institute of Advanced Management</h1>
-                  <h2 style={{ fontSize: "18px", fontWeight: "bold", color: "#dc2626", margin: "4px 0", lineHeight: 1.2 }}>& Technology Pvt. Ltd</h2>
-                  <p style={{ fontSize: "11px", color: "#475569", margin: "4px 0" }}>An ISO 9001:2015 Certified Organisation</p>
-                  <p style={{ fontSize: "10px", color: "#334155", margin: "2px 0" }}>Phone: 0481 291 9090, +91 62829 69090 | Email: institute.aios@gmail.com</p>
-                  <p style={{ fontSize: "10px", color: "#334155", margin: "2px 0" }}>www.aiosinstitute.com | 2nd Floor, Vishnu Arcade, Maruthi Nagar Main Road, Bangalore, Karnataka, India</p>
-                </div>
+          <div style={{ width: "210mm", minHeight: "297mm", padding: "10mm 16mm", fontFamily: "'Calibri', 'Helvetica Neue', Arial, sans-serif", fontSize: "9pt", color: "#000", lineHeight: 1.3, background: "#fff", border: "3px double #000" }}>
+
+            {/* ===== HEADER ===== */}
+            <div style={{ display: "flex", alignItems: "center", borderBottom: "3px solid #8b0000", paddingBottom: "6px", marginBottom: "4px" }}>
+              <img src="/emblem.png" alt="Emblem" style={{ width: "72px", height: "72px", objectFit: "contain", marginRight: "14px" }} />
+              <div style={{ flex: 1, textAlign: "center" }}>
+                <div style={{ fontSize: "18pt", fontWeight: "bold", color: "#8b0000", letterSpacing: "2px", lineHeight: 1.1 }}>AIOS INSTITUTE</div>
+                <div style={{ fontSize: "9.5pt", fontWeight: "bold", color: "#000", letterSpacing: "1px", marginTop: "2px" }}>OF ADVANCED MANAGEMENT &amp; TECHNOLOGY PVT. LTD.</div>
+                <div style={{ fontSize: "7pt", color: "#000", marginTop: "2px" }}>An ISO 9001:2015 Certified Organisation</div>
+                <div style={{ fontSize: "6.5pt", color: "#444", marginTop: "1px" }}>2nd Floor, Vishnu Arcade, Maruthi Nagar Main Road, Bangalore, Karnataka, India</div>
+                <div style={{ fontSize: "6.5pt", color: "#444" }}>Phone: 0481 291 9090, +91 62829 69090 | Email: institute.aios@gmail.com | www.aiosinstitute.com</div>
               </div>
             </div>
 
-            {/* Application Title - Compact */}
-            <div style={{ textAlign: "center", marginBottom: "10px", borderBottom: "2px solid #dc2626", paddingBottom: "6px" }}>
-              <h3 style={{ fontSize: "16px", fontWeight: "bold", color: "#1a1a1a", textTransform: "uppercase", letterSpacing: "1px", margin: 0 }}>
-                ADMISSION FORM
-              </h3>
-              <p style={{ fontSize: "10px", color: "#555555", margin: "2px 0 0 0" }}>Student Admission - Academic Year {detailStudent.startYear || new Date().getFullYear()}-{detailStudent.endYear || (new Date().getFullYear() + 1)}</p>
+            {/* ===== FORM TITLE ===== */}
+            <div style={{ textAlign: "center", marginBottom: "2px", paddingTop: "4px" }}>
+              <div style={{ fontSize: "11pt", fontWeight: "bold", letterSpacing: "3px", textTransform: "uppercase" }}>Admission Form</div>
+              <div style={{ fontSize: "7pt", color: "#555", marginTop: "1px", letterSpacing: "1px" }}>Academic Year {detailStudent.startYear ? `${detailStudent.startYear} - ${detailStudent.endYear}` : new Date().getFullYear()}</div>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "8.5pt", marginBottom: "6px", padding: "2px 2px" }}>
+              <div><strong>Student No:</strong> {detailStudent.studentId || "___________"}</div>
+              <div><strong>Date:</strong> {(() => { const d = new Date(); const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; return `${String(d.getDate()).padStart(2,"0")}-${months[d.getMonth()]}-${d.getFullYear()}`; })()}</div>
             </div>
 
-            {/* Photo + Enrollment Details - Side by Side Aligned */}
-            <div style={{ display: "flex", gap: "10px", marginBottom: "10px", alignItems: "stretch" }}>
-              {/* Photo Box - Left Side */}
-              <div style={{ width: "110px", minHeight: "130px", border: "2px solid #333333", backgroundColor: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center", flexShrink: 0 }}>
-                {detailStudent.personalDetails?.photo ? (
-                  <img src={detailStudent.personalDetails.photo} alt="Student Photo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : (
-                  <div>
-                    <span style={{ fontSize: "8px", color: "#666666", display: "block" }}>Affix</span>
-                    <span style={{ fontSize: "8px", color: "#666666", display: "block" }}>Recent</span>
-                    <span style={{ fontSize: "8px", color: "#666666", display: "block" }}>Photo</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Enrollment Details - Right Side */}
-              <div style={{ flex: 1, border: "2px solid #dc2626", display: "flex", flexDirection: "column" }}>
-                <div style={{ backgroundColor: "#dc2626", padding: "5px 10px", textAlign: "center" }}>
-                  <h4 style={{ fontSize: "11px", fontWeight: "bold", color: "#ffffff", margin: 0, textTransform: "uppercase" }}>Enrollment Details</h4>
-                </div>
-                <div style={{ padding: "6px", backgroundColor: "#fef2f2", flex: 1 }}>
-                  <table style={{ width: "100%", fontSize: "9px", borderCollapse: "separate", borderSpacing: "0 3px" }}>
-                    <tbody>
-                      <tr>
-                        <td style={{ width: "20%", padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>University</td>
-                        <td style={{ width: "30%", padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.university || "—"}</td>
-                        <td style={{ width: "20%", padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Faculty</td>
-                        <td style={{ width: "30%", padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.faculty || "—"}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Course</td>
-                        <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.course || "—"}</td>
-                        <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Stream</td>
-                        <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.stream || "—"}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Duration</td>
-                        <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.duration ? `${detailStudent.duration} Years` : "—"}</td>
-                        <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Academic Year</td>
-                        <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.startYear ? `${detailStudent.startYear}-${detailStudent.endYear}` : "—"}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+            {/* ===== SECTION 1: PHOTO + ENROLLMENT / COURSE DETAILS ===== */}
+            <div style={{ display: "flex", gap: "8px", marginBottom: "8px", alignItems: "stretch" }}>
+              <div style={{ width: "110px", flexShrink: 0, display: "flex", flexDirection: "column" }}>
+                <div style={{ flex: 1, border: "2px solid #000", display: "flex", alignItems: "center", justifyContent: "center", minHeight: "120px" }}>
+                  {detailStudent.personalDetails?.photo ? (
+                    <img src={detailStudent.personalDetails.photo} alt="Photo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  ) : (
+                    <div style={{ textAlign: "center", color: "#666", fontSize: "8pt", lineHeight: 1.3 }}>
+                      <div>Photo</div>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
-
-            {/* Personal Information - Same Style as Enrollment */}
-            <div style={{ marginBottom: "10px", border: "1px solid #dc2626" }}>
-              <div style={{ backgroundColor: "#dc2626", padding: "5px 10px", textAlign: "center" }}>
-                <h4 style={{ fontSize: "11px", fontWeight: "bold", color: "#ffffff", margin: 0, textTransform: "uppercase" }}>Personal Information</h4>
-              </div>
-              <div style={{ padding: "6px", backgroundColor: "#fef2f2" }}>
-                <table style={{ width: "100%", fontSize: "9px", borderCollapse: "separate", borderSpacing: "0 3px" }}>
+              <div style={{ flex: 1, border: "1.5px solid #000" }}>
+                <div style={{ background: "#8b0000", padding: "5px 10px" }}>
+                  <span style={{ fontSize: "8pt", fontWeight: "bold", color: "#fff", letterSpacing: "0.5px" }}>1. ENROLLMENT / COURSE DETAILS</span>
+                </div>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "8.5pt" }}>
                   <tbody>
                     <tr>
-                      <td style={{ width: "20%", padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Full Name</td>
-                      <td style={{ width: "30%", padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.name || "—"}</td>
-                      <td style={{ width: "20%", padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Date of Birth</td>
-                      <td style={{ width: "30%", padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.personalDetails?.dob || "—"}</td>
+                      <td style={{ width: "25%", padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>University</td>
+                      <td style={{ width: "25%", padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.university || "—"}</td>
+                      <td style={{ width: "25%", padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Faculty</td>
+                      <td style={{ width: "25%", padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.faculty || "—"}</td>
                     </tr>
                     <tr>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Gender</td>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.personalDetails?.gender || "—"}</td>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Blood Group</td>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.personalDetails?.bloodGroup || "—"}</td>
+                      <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Course</td>
+                      <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.course || "—"}</td>
+                      <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Stream / Branch</td>
+                      <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.stream || "—"}</td>
                     </tr>
                     <tr>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Father&apos;s Name</td>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.personalDetails?.fatherName || "—"}</td>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Mother&apos;s Name</td>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.personalDetails?.motherName || "—"}</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Guardian</td>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.personalDetails?.guardianName || "—"}</td>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Aadhaar No</td>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0", fontFamily: "monospace" }}>{detailStudent.personalDetails?.aadhaarNumber || "—"}</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Contact</td>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.phone || "—"}</td>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Email</td>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>{detailStudent.email || "—"}</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: "4px 6px", backgroundColor: "#fee2e2", fontWeight: 700, color: "#991b1b", border: "1px solid #fca5a5", borderRadius: "2px 0 0 2px" }}>Address</td>
-                      <td colSpan={3} style={{ padding: "4px 6px", backgroundColor: "#ffffff", fontWeight: 600, color: "#1a1a1a", border: "1px solid #d1d5db", borderLeft: "none", borderRadius: "0 2px 2px 0" }}>
-                        {[detailStudent.personalDetails?.address, detailStudent.personalDetails?.city, detailStudent.personalDetails?.state, detailStudent.personalDetails?.pincode].filter(Boolean).join(", ") || "—"}
-                      </td>
+                      <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Duration</td>
+                      <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.duration ? `${detailStudent.duration} Years` : "—"}</td>
+                      <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Academic Year</td>
+                      <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.startYear ? `${detailStudent.startYear} - ${detailStudent.endYear}` : "—"}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </div>
 
-            {/* Academic Details Section */}
+            {/* ===== SECTION 2: PERSONAL & CONTACT DETAILS (6 columns: 3 label-value pairs per row) ===== */}
+            <div style={{ marginBottom: "8px", border: "1.5px solid #000" }}>
+              <div style={{ background: "#8b0000", padding: "5px 10px" }}>
+                <span style={{ fontSize: "8pt", fontWeight: "bold", color: "#fff", letterSpacing: "0.5px" }}>2. PERSONAL &amp; CONTACT DETAILS</span>
+              </div>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "8pt" }}>
+                <tbody>
+                  <tr>
+                    <td style={{ width: "14%", padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Full Name</td>
+                    <td colSpan={3} style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.name || `${detailStudent.firstName || ""} ${detailStudent.lastName || ""}`.trim() || "—"}</td>
+                    <td style={{ width: "14%", padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Email</td>
+                    <td style={{ width: "20%", padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.email || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Date of Birth</td>
+                    <td style={{ width: "19%", padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.personalDetails?.dateOfBirth || detailStudent.personalDetails?.dob || "—"}</td>
+                    <td style={{ width: "14%", padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Gender</td>
+                    <td style={{ width: "19%", padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.personalDetails?.gender || "—"}</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Blood Group</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.personalDetails?.bloodGroup || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Father&apos;s Name</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.personalDetails?.fatherName || "—"}</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Mother&apos;s Name</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.personalDetails?.motherName || "—"}</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Aadhaar No.</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.personalDetails?.aadhaarNumber || "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Phone</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.phone || "—"}</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Employment</td>
+                    <td colSpan={3} style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.personalDetails?.employmentType ? `${detailStudent.personalDetails.employmentType}${detailStudent.personalDetails.yearsOfExperience && detailStudent.personalDetails.employmentType !== "Not Employed" ? ` (${detailStudent.personalDetails.yearsOfExperience} yrs)` : ""}` : "—"}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Address</td>
+                    <td colSpan={5} style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>
+                      {[detailStudent.personalDetails?.address, detailStudent.personalDetails?.city, detailStudent.personalDetails?.state, detailStudent.personalDetails?.pincode].filter(Boolean).join(", ") || "—"}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* ===== SECTION 3: ACADEMIC HISTORY ===== */}
             {(detailStudent.academicDetails?.sslc?.institution || detailStudent.academicDetails?.plustwo?.institution || detailStudent.academicDetails?.ug?.institution || detailStudent.academicDetails?.pg?.institution) && (
-              <div style={{ marginBottom: "16px", border: "1px solid #dc2626" }}>
-                <div style={{ backgroundColor: "#dc2626", padding: "6px 12px" }}>
-                  <h4 style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff", margin: 0 }}>ACADEMIC DETAILS</h4>
+              <div style={{ marginBottom: "8px", border: "1.5px solid #000" }}>
+                <div style={{ background: "#8b0000", padding: "5px 10px" }}>
+                  <span style={{ fontSize: "8pt", fontWeight: "bold", color: "#fff", letterSpacing: "0.5px" }}>3. ACADEMIC HISTORY</span>
                 </div>
-                <table style={{ width: "100%", fontSize: "11px", borderCollapse: "collapse" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "8pt" }}>
                   <thead>
-                    <tr style={{ backgroundColor: "#fef2f2" }}>
-                      <th style={{ padding: "6px 8px", fontWeight: "bold", color: "#b91c1c", border: "1px solid #fecaca", textAlign: "left", width: "20%" }}>Qualification</th>
-                      <th style={{ padding: "6px 8px", fontWeight: "bold", color: "#b91c1c", border: "1px solid #fecaca", textAlign: "left", width: "30%" }}>Institution / University</th>
-                      <th style={{ padding: "6px 8px", fontWeight: "bold", color: "#b91c1c", border: "1px solid #fecaca", textAlign: "left", width: "20%" }}>Board / Stream</th>
-                      <th style={{ padding: "6px 8px", fontWeight: "bold", color: "#b91c1c", border: "1px solid #fecaca", textAlign: "left", width: "15%" }}>Year</th>
-                      <th style={{ padding: "6px 8px", fontWeight: "bold", color: "#b91c1c", border: "1px solid #fecaca", textAlign: "left", width: "15%" }}>Percentage</th>
+                    <tr style={{ background: "#f7f7f7" }}>
+                      <th style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", textAlign: "left", verticalAlign: "middle", width: "22%" }}>Qualification</th>
+                      <th style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", textAlign: "left", verticalAlign: "middle", width: "30%" }}>Institution</th>
+                      <th style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", textAlign: "left", verticalAlign: "middle", width: "20%" }}>Board / Stream</th>
+                      <th style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", textAlign: "center", verticalAlign: "middle", width: "14%" }}>Year</th>
+                      <th style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", textAlign: "center", verticalAlign: "middle", width: "14%" }}>Percentage</th>
                     </tr>
                   </thead>
                   <tbody>
                     {detailStudent.academicDetails?.sslc?.institution && (
-                      <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                        <td style={{ padding: "6px 8px", fontWeight: 600, color: "#334155", border: "1px solid #e2e8f0" }}>SSLC / 10th</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.sslc.institution}</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.sslc.board || "—"}</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.sslc.year || "—"}</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.sslc.percentage || "—"}</td>
+                      <tr>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", verticalAlign: "middle" }}>SSLC / 10th</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.academicDetails.sslc.institution}</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.academicDetails.sslc.board || "—"}</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", textAlign: "center", verticalAlign: "middle" }}>{detailStudent.academicDetails.sslc.year || "—"}</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", textAlign: "center", verticalAlign: "middle" }}>{detailStudent.academicDetails.sslc.percentage || "—"}</td>
                       </tr>
                     )}
                     {detailStudent.academicDetails?.plustwo?.institution && (
-                      <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                        <td style={{ padding: "6px 8px", fontWeight: 600, color: "#334155", border: "1px solid #e2e8f0" }}>HSC / 12th</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.plustwo.institution}</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.plustwo.stream || detailStudent.academicDetails.plustwo.board || "—"}</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.plustwo.year || "—"}</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.plustwo.percentage || "—"}</td>
+                      <tr>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", verticalAlign: "middle" }}>HSC / 12th</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.academicDetails.plustwo.institution}</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.academicDetails.plustwo.stream || detailStudent.academicDetails.plustwo.board || "—"}</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", textAlign: "center", verticalAlign: "middle" }}>{detailStudent.academicDetails.plustwo.year || "—"}</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", textAlign: "center", verticalAlign: "middle" }}>{detailStudent.academicDetails.plustwo.percentage || "—"}</td>
                       </tr>
                     )}
                     {detailStudent.academicDetails?.ug?.institution && (
-                      <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
-                        <td style={{ padding: "6px 8px", fontWeight: 600, color: "#334155", border: "1px solid #e2e8f0" }}>Under Graduate (UG)</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.ug.institution}</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.ug.degree || detailStudent.academicDetails.ug.board || "—"}</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.ug.year || "—"}</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.ug.percentage || "—"}</td>
+                      <tr>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", verticalAlign: "middle" }}>UG Degree</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.academicDetails.ug.institution}</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.academicDetails.ug.degree || detailStudent.academicDetails.ug.board || "—"}</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", textAlign: "center", verticalAlign: "middle" }}>{detailStudent.academicDetails.ug.year || "—"}</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", textAlign: "center", verticalAlign: "middle" }}>{detailStudent.academicDetails.ug.percentage || "—"}</td>
                       </tr>
                     )}
                     {detailStudent.academicDetails?.pg?.institution && (
                       <tr>
-                        <td style={{ padding: "6px 8px", fontWeight: 600, color: "#334155", border: "1px solid #e2e8f0" }}>Post Graduate (PG)</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.pg.institution}</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.pg.degree || detailStudent.academicDetails.pg.board || "—"}</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.pg.year || "—"}</td>
-                        <td style={{ padding: "6px 8px", fontWeight: 500, color: "#0f172a", border: "1px solid #e2e8f0" }}>{detailStudent.academicDetails.pg.percentage || "—"}</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", verticalAlign: "middle" }}>PG Degree</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.academicDetails.pg.institution}</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.academicDetails.pg.degree || detailStudent.academicDetails.pg.board || "—"}</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", textAlign: "center", verticalAlign: "middle" }}>{detailStudent.academicDetails.pg.year || "—"}</td>
+                        <td style={{ padding: "6px 10px", border: "1px solid #bbb", textAlign: "center", verticalAlign: "middle" }}>{detailStudent.academicDetails.pg.percentage || "—"}</td>
                       </tr>
                     )}
                   </tbody>
@@ -1512,35 +1429,74 @@ export default function StudentsPage() {
               </div>
             )}
 
-            {/* Declaration Section */}
-            <div style={{ marginBottom: "16px", border: "1px solid #dc2626" }}>
-              <div style={{ backgroundColor: "#dc2626", padding: "6px 12px" }}>
-                <h4 style={{ fontSize: "13px", fontWeight: "bold", color: "#ffffff", margin: 0 }}>DECLARATION</h4>
+            {/* ===== DECLARATION & SIGNATURES ===== */}
+            <div style={{ marginBottom: "6px", border: "1.5px solid #000" }}>
+              <div style={{ background: "#8b0000", padding: "5px 10px" }}>
+                <span style={{ fontSize: "8pt", fontWeight: "bold", color: "#fff", letterSpacing: "0.5px" }}>DECLARATION</span>
               </div>
-              <div style={{ padding: "12px" }}>
-                <p style={{ fontSize: "11px", color: "#334155", lineHeight: "1.5", margin: "0 0 16px 0" }}>
-                  I hereby declare that all the information furnished above is true to the best of my knowledge and belief.
-                  I understand that any false information or concealment of facts may result in the cancellation of my admission
-                  and/or disciplinary action as deemed fit by the institution.
+              <div style={{ padding: "6px 12px" }}>
+                <p style={{ fontSize: "8pt", lineHeight: 1.5, margin: 0, textAlign: "justify" }}>
+                  I, <strong>{detailStudent.name || `${detailStudent.firstName || ""} ${detailStudent.lastName || ""}`.trim() || "_______________"} ({detailStudent.studentId || ""})</strong>, hereby declare that the information provided above is true and correct to the best of my knowledge. I agree to abide by the rules and regulations of the institute.
                 </p>
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: "20px" }}>
-                  <div>
-                    <p style={{ fontSize: "11px", color: "#475569", margin: 0 }}>Date: ____________________</p>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <p style={{ fontSize: "11px", color: "#475569", margin: "0 0 16px 0" }}>Signature of Applicant</p>
-                    <div style={{ width: "140px", borderBottom: "1px solid #64748b", marginLeft: "auto" }}></div>
-                  </div>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 16px 14px", borderTop: "1px solid #ccc" }}>
+                <div style={{ textAlign: "left", width: "40%" }}>
+                  <div style={{ fontSize: "8pt", marginTop: "10px" }}>Date: {(() => { const d = detailStudent.enrollmentDate ? new Date(detailStudent.enrollmentDate) : (detailStudent.createdAt && typeof (detailStudent.createdAt as any).toDate === "function" ? (detailStudent.createdAt as any).toDate() : new Date()); const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; return `${String(d.getDate()).padStart(2,"0")}-${months[d.getMonth()]}-${d.getFullYear()}`; })()}</div>
+                  <div style={{ fontSize: "8pt", marginTop: "6px" }}>Place: Bengaluru</div>
+                </div>
+                <div style={{ textAlign: "center", width: "30%" }}>
+                  <div style={{ borderTop: "1px solid #000", width: "140px", marginLeft: "auto", marginRight: "auto", marginTop: "32px" }}></div>
+                  <div style={{ fontSize: "8pt", fontWeight: "bold", marginTop: "2px" }}>{detailStudent.name || `${detailStudent.firstName || ""} ${detailStudent.lastName || ""}`.trim() || ""}</div>
+                  <div style={{ fontSize: "7pt", fontWeight: "bold" }}>{detailStudent.studentId || ""}</div>
                 </div>
               </div>
             </div>
 
-            {/* Footer */}
-            <div style={{ textAlign: "center", padding: "10px", backgroundColor: "#f3f4f6", borderTop: "2px solid #4b5563", marginTop: "12px" }}>
-              <p style={{ margin: "2px 0", fontSize: "10px", color: "#1f2937", fontWeight: 600 }}>AIOS Institute of Advanced Management & Technology Pvt. Ltd.</p>
-              <p style={{ margin: "2px 0", fontSize: "9px", color: "#4b5563" }}>ISO 9001:2015 Certified | Phone: 0481 291 9090 | www.aiosinstitute.com</p>
-              <p style={{ margin: "2px 0", fontSize: "9px", color: "#6b7280" }}>2nd Floor, Vishnu Arcade, Maruthi Nagar Main Road, Bangalore, Karnataka, India</p>
+            {/* ===== TEAR LINE ===== */}
+            <div style={{ borderTop: "2px dashed #999", marginTop: "10px", position: "relative" }}>
+              <span style={{ position: "absolute", top: "-7px", left: "50%", transform: "translateX(-50%)", background: "#fff", padding: "0 8px", fontSize: "7pt", color: "#999", letterSpacing: "1px" }}>&#9986; CUT HERE</span>
             </div>
+
+            {/* ===== OFFICE USE ONLY ===== */}
+            <div style={{ border: "1.5px solid #000", marginTop: "10px" }}>
+              <div style={{ background: "#8b0000", padding: "5px 10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: "8pt", fontWeight: "bold", color: "#fff", letterSpacing: "0.5px" }}>FOR OFFICE USE ONLY</span>
+                <span style={{ fontSize: "7pt", color: "#ddd" }}>AIOS Institute</span>
+              </div>
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "8pt" }}>
+                <tbody>
+                  <tr>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle", width: "22%" }}>Student Name</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle", width: "28%" }}>{detailStudent.name || `${detailStudent.firstName || ""} ${detailStudent.lastName || ""}`.trim() || ""}</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle", width: "22%" }}>Student ID</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle", width: "28%" }}>{detailStudent.studentId || ""}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Course</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.course || ""}</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Date of Admission</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{(() => { const d = detailStudent.enrollmentDate ? new Date(detailStudent.enrollmentDate) : (detailStudent.createdAt && typeof (detailStudent.createdAt as any).toDate === "function" ? (detailStudent.createdAt as any).toDate() : null); if (!d || isNaN(d.getTime())) return ""; const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; return `${String(d.getDate()).padStart(2,"0")}-${months[d.getMonth()]}-${d.getFullYear()}`; })()}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Remarks</td>
+                    <td colSpan={3} style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle", minHeight: "20px" }}>&nbsp;</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style={{ display: "flex", justifyContent: "flex-end", padding: "6px 12px 10px" }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ borderTop: "1px solid #000", width: "150px", marginTop: "22px" }}></div>
+                  <div style={{ fontSize: "7.5pt", fontWeight: "bold", marginTop: "2px" }}>Authorized Signature</div>
+                </div>
+              </div>
+            </div>
+
+            {/* ===== FOOTER ===== */}
+            <div style={{ textAlign: "center", marginTop: "10px", paddingTop: "6px", borderTop: "2px solid #8b0000" }}>
+              <p style={{ fontSize: "7.5pt", margin: "1px 0", fontWeight: "bold" }}>AIOS Institute of Advanced Management &amp; Technology Pvt. Ltd.</p>
+              <p style={{ fontSize: "7pt", margin: "1px 0" }}>ISO 9001:2015 Certified | Phone: 0481 291 9090 | www.aiosinstitute.com</p>
+            </div>
+
           </div>
         </div>
       )}

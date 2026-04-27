@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, query, collection, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { ArrowLeft, Printer, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -61,6 +61,7 @@ function numberToWords(num: number): string {
 export default function ReceiptPage() {
   const params = useParams();
   const [payment, setPayment] = useState<Payment | null>(null);
+  const [resolvedStudentId, setResolvedStudentId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -69,7 +70,21 @@ export default function ReceiptPage() {
       try {
         const snap = await getDoc(doc(db, "payments", params.id as string));
         if (snap.exists()) {
-          setPayment(snap.data() as Payment);
+          const p = snap.data() as Payment;
+          setPayment(p);
+          // Resolve actual enrollment ID from students collection
+          if (p.studentPhone) {
+            const studentQuery = query(
+              collection(db, "students"),
+              where("phone", "==", p.studentPhone)
+            );
+            const studentSnap = await getDocs(studentQuery);
+            if (!studentSnap.empty) {
+              const sData = studentSnap.docs[0].data();
+              const actualId = (sData.studentId as string) || "";
+              if (actualId) setResolvedStudentId(actualId);
+            }
+          }
         }
       } catch (err) {
         console.error("Error fetching payment:", err);
@@ -153,6 +168,7 @@ export default function ReceiptPage() {
               .rounded { border-radius: 4px; }
               .rounded-lg { border-radius: 8px; }
               .print-header { display: block; }
+              .no-print { display: none !important; }
               .relative { position: relative; }
               .absolute { position: absolute; }
               .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
@@ -339,7 +355,7 @@ export default function ReceiptPage() {
                 </div>
                 <div>
                   <span style={{ color: '#8B0000' }} className="font-semibold">Enrollment ID:</span>
-                  <span className="ml-2 text-gray-900">{payment.studentId || "—"}</span>
+                  <span className="ml-2 text-gray-900">{resolvedStudentId || payment.studentId || "—"}</span>
                 </div>
                 <div>
                   <span style={{ color: '#8B0000' }} className="font-semibold">Phone:</span>
@@ -380,11 +396,11 @@ export default function ReceiptPage() {
               {/* Summary */}
               <div className="flex justify-end mt-4">
                 <div className="w-64 space-y-1">
-                  <div className="flex justify-between py-1 text-sm">
+                  <div className="flex justify-between py-1 text-sm no-print">
                     <span className="text-gray-600">Total Fee:</span>
                     <span className="text-gray-900 font-semibold">₹{(payment.totalFee || 0).toLocaleString("en-IN")}</span>
                   </div>
-                  <div className="flex justify-between py-1 text-sm">
+                  <div className="flex justify-between py-1 text-sm no-print">
                     <span className="text-gray-600">Balance:</span>
                     <span className={`font-semibold ${payment.balanceAmount > 0 ? 'text-red-600' : 'text-green-600'}`}>₹{payment.balanceAmount.toLocaleString("en-IN")}</span>
                   </div>
