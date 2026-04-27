@@ -474,12 +474,13 @@ function FollowUpList({ loading, students, payments, onViewStudent }: { loading:
       
       // Calculate total cash collected (ignore discounts)
       const totalCashCollected = studentPayments.reduce(
-        (sum, p) => sum + parseFloat(p.amountPaid as string || "0"), 
+        (sum, p) => sum + (parseFloat(String(p.amountPaid || "0")) || 0), 
         0
       );
       
       // Due amount = Total Fee - Cash Collected
-      const dueAmount = (student.totalFee || 0) - totalCashCollected;
+      const totalFee = parseFloat(String(student.totalFee || "0")) || 0;
+      const dueAmount = totalFee - totalCashCollected;
       
       // Find last payment date
       const lastPayment = studentPayments
