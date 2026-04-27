@@ -129,6 +129,10 @@ export default function FollowUpsPage() {
           ...d.data() 
         })) as FollowUpRecord[];
         setFollowUpRecords(followUpsData);
+        
+        // Debug logging
+        console.log("Follow-ups page - Students:", studentsData.length, "Payments:", paymentsData.length);
+        console.log("Follow-ups page - FollowUpRecords:", followUpsData.length);
       } catch (err) {
         console.error("Error fetching data:", err);
       } finally {
@@ -150,15 +154,23 @@ export default function FollowUpsPage() {
                !p.isDiscount && 
                p.paymentMode !== "Discount"
       );
+      
+      // Debug for Feb
+      if (student.name?.toLowerCase().includes("febin")) {
+        console.log("Febin - Phone:", student.phone, "TotalFee:", student.totalFee);
+        console.log("Febin - Matching payments:", payments.filter(p => p.studentPhone === student.phone));
+        console.log("Febin - Non-discount payments:", studentPayments);
+      }
 
       // Calculate total CASH collected (ignore discounts)
       const totalCashCollected = studentPayments.reduce(
-        (sum, p) => sum + parseFloat(p.amountPaid as string || "0"), 
+        (sum, p) => sum + (parseFloat(String(p.amountPaid || "0")) || 0), 
         0
       );
 
       // Due amount = Total Fee - Cash Collected (ignore discounts)
-      const dueAmount = (student.totalFee || 0) - totalCashCollected;
+      const totalFee = parseFloat(String(student.totalFee || "0")) || 0;
+      const dueAmount = totalFee - totalCashCollected;
 
       // Find last payment date
       const lastPayment = studentPayments
@@ -169,6 +181,13 @@ export default function FollowUpsPage() {
 
       const lastPaymentDate = lastPayment?.paymentDate || student.createdAt || new Date().toISOString();
       const daysOverdue = daysBetween(today, parseLocalDate(lastPaymentDate));
+      
+      // Debug for Feb
+      if (student.name?.toLowerCase().includes("febin")) {
+        console.log("Febin - totalFee:", totalFee, "totalCashCollected:", totalCashCollected, "dueAmount:", dueAmount);
+        console.log("Febin - lastPaymentDate:", lastPaymentDate, "daysOverdue:", daysOverdue);
+        console.log("Febin - qualifies?", daysOverdue > 20 && dueAmount > 0);
+      }
 
       // Check if student qualifies for follow-up (>20 days AND due amount > 0)
       if (daysOverdue > 20 && dueAmount > 0) {
@@ -182,11 +201,14 @@ export default function FollowUpsPage() {
 
         if (existingRecord) {
           // Update existing record with fresh calculations
+          // Reset status to pending if it was deleted but now qualifies again
+          const newStatus = existingRecord.status === "deleted" ? "pending" : existingRecord.status;
           items.push({
             ...existingRecord,
             dueAmount,
             daysOverdue,
             lastPaymentDate: lastPaymentDateStr,
+            status: newStatus,
           });
         } else {
           // Create new pending record
@@ -210,6 +232,11 @@ export default function FollowUpsPage() {
       }
     });
 
+    
+    // Debug logging
+    console.log("calculatedFollowUps count:", items.length);
+    console.log("calculatedFollowUps items:", items);
+    
     return items.sort((a, b) => b.daysOverdue - a.daysOverdue);
   }, [students, payments, followUpRecords]);
 
@@ -223,13 +250,14 @@ export default function FollowUpsPage() {
         if (!existing) {
           // Create new record
           await setDoc(doc(db, "followUps", item.id), item);
-        } else if (existing.dueAmount !== item.dueAmount || existing.daysOverdue !== item.daysOverdue) {
-          // Update existing record with new calculations
+        } else if (existing.dueAmount !== item.dueAmount || existing.daysOverdue !== item.daysOverdue || existing.status !== item.status) {
+          // Update existing record with new calculations (including status if it changed from deleted)
           await setDoc(doc(db, "followUps", existing.id), {
             ...existing,
             dueAmount: item.dueAmount,
             daysOverdue: item.daysOverdue,
             lastPaymentDate: item.lastPaymentDate,
+            status: item.status,
             updatedAt: new Date().toISOString(),
           });
         }
@@ -247,6 +275,10 @@ export default function FollowUpsPage() {
     inprogress: calculatedFollowUps.filter((i) => i.status === "inprogress").length,
     completed: calculatedFollowUps.filter((i) => i.status === "completed").length,
   };
+  
+  // Debug logging
+  console.log("activeTab:", activeTab, "filteredItems count:", filteredItems.length);
+  console.log("tabCounts:", tabCounts);
 
   // Handle adding note
   const handleAddNote = async () => {
