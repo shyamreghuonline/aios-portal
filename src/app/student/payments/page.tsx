@@ -366,22 +366,22 @@ export default function PaymentsHub() {
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="gradient-bg">
+                  <thead className="bg-slate-100">
                     <tr>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider w-12">S.No</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Receipt #</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Date</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Mode</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Amount</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Status</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Reason</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Balance</th>
-                      <th className="text-center px-4 py-3 text-xs font-semibold text-white uppercase tracking-wider">Actions</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-slate-700 uppercase tracking-wider w-12">S.No</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-700 uppercase tracking-wider">Receipt #</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-700 uppercase tracking-wider">Date</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-700 uppercase tracking-wider">Mode</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-700 uppercase tracking-wider">Amount</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-slate-700 uppercase tracking-wider">Status</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-700 uppercase tracking-wider">Reason</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-slate-700 uppercase tracking-wider">Balance</th>
+                      <th className="text-center px-4 py-3 text-xs font-semibold text-slate-700 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100 bg-white">
                     {pendingPayments.map((p, i) => (
-                      <tr key={p.id} className={p.status === "rejected" ? "bg-red-50/50 hover:bg-red-50 transition-colors" : "bg-amber-50/50 hover:bg-amber-50 transition-colors"}>
+                      <tr key={p.id} className="bg-white hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-3 text-center"><span className="text-xs font-bold text-amber-700">{i + 1}</span></td>
                         <td className="px-4 py-3"><span className="font-mono text-xs text-slate-400">-</span></td>
                         <td className="px-4 py-3"><span className="text-xs text-slate-600">{p.createdAt?.toDate?.().toISOString().split('T')[0] || "-"}</span></td>
@@ -425,7 +425,7 @@ export default function PaymentsHub() {
                       const dueAfter = Math.max(0, effectiveFee - cumPaid);
                       const rowNum = pendingPayments.length + i + 1;
                       return (
-                        <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                        <tr key={p.id} className="bg-white hover:bg-slate-50 transition-colors">
                           <td className="px-4 py-3 text-center"><span className="text-xs font-bold text-slate-700">{rowNum}</span></td>
                           <td className="px-4 py-3">
                             <Link href={`/student/payments/${p.id}`} className="font-mono text-xs text-blue-700 font-medium hover:underline">
