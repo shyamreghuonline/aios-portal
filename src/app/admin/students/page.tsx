@@ -43,6 +43,9 @@ import {
   AlertTriangle,
   Home,
   MapPin,
+  KeyRound,
+  Check,
+  Copy,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -859,7 +862,10 @@ export default function StudentsPage() {
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleResetPassword(student)}
+                            onClick={() => {
+                              setDetailStudent(student);
+                              handleResetPassword(student);
+                            }}
                             disabled={resettingPasswordId === student.id}
                             className="p-1.5 text-slate-600 hover:text-amber-600 transition-colors disabled:opacity-50"
                             title="Reset Password"
