@@ -52,6 +52,7 @@ interface Student {
   course: string;
   university: string;
   stream: string;
+  studentId?: string;
 }
 
 // Month code mapping for receipt IDs (same as new payment page)
@@ -236,9 +237,9 @@ export default function PendingPaymentsPage() {
       await sendNotifications(student, selectedPayment.amount, receiptNumber);
 
       // Update local state
-      setPendingPayments(prev => prev.map(p => 
-        p.id === selectedPayment.id 
-          ? { ...p, status: "approved", receiptNumber }
+      setPendingPayments(prev => prev.map(p =>
+        p.id === selectedPayment.id
+          ? { ...p, status: "approved", receiptNumber, reviewedAt: new Date() }
           : p
       ));
 
@@ -265,9 +266,9 @@ export default function PendingPaymentsPage() {
         rejectionReason: rejectionReason
       });
 
-      setPendingPayments(prev => prev.map(p => 
-        p.id === selectedPayment.id 
-          ? { ...p, status: "rejected", rejectionReason }
+      setPendingPayments(prev => prev.map(p =>
+        p.id === selectedPayment.id
+          ? { ...p, status: "rejected", rejectionReason, reviewedAt: new Date() }
           : p
       ));
 
@@ -430,8 +431,8 @@ Thank you!`,
           <p className="text-sm font-bold text-green-700">
             {pendingPayments.filter(p => {
               if (p.status !== "approved") return false;
-              const approvedDate = p.reviewedAt?.toDate?.();
-              if (!approvedDate) return false;
+              const approvedDate = p.reviewedAt ? (p.reviewedAt.toDate ? p.reviewedAt.toDate() : new Date(p.reviewedAt)) : null;
+              if (!approvedDate || isNaN(approvedDate.getTime())) return false;
               const today = new Date();
               return approvedDate.toDateString() === today.toDateString();
             }).length}
@@ -445,8 +446,8 @@ Thank you!`,
           <p className="text-sm font-bold text-red-600">
             {pendingPayments.filter(p => {
               if (p.status !== "rejected") return false;
-              const rejectedDate = p.reviewedAt?.toDate?.();
-              if (!rejectedDate) return false;
+              const rejectedDate = p.reviewedAt ? (p.reviewedAt.toDate ? p.reviewedAt.toDate() : new Date(p.reviewedAt)) : null;
+              if (!rejectedDate || isNaN(rejectedDate.getTime())) return false;
               const today = new Date();
               return rejectedDate.toDateString() === today.toDateString();
             }).length}
@@ -492,7 +493,7 @@ Thank you!`,
 
       {/* Payments Table */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="max-h-[calc(100vh-340px)] overflow-y-auto">
+        <div className="max-h-[calc(100vh-180px)] overflow-y-auto">
         <table className="w-full text-sm">
           <thead className="sticky top-0 z-10">
             <tr className="gradient-bg border-b-2 border-red-900">

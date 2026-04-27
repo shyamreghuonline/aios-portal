@@ -214,7 +214,7 @@ export default function PaymentsPage() {
             </p>
           </div>
         ) : (
-          <div className="max-h-[calc(100vh-280px)] overflow-y-auto">
+          <div className="max-h-[calc(100vh-180px)] overflow-y-auto">
           <table className="w-full text-sm">
             <thead className="sticky top-0 z-10">
               <tr className="gradient-bg border-b-2 border-red-900">

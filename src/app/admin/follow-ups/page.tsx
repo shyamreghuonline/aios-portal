@@ -12,7 +12,8 @@ import {
   X,
   ArrowLeft,
   Save,
-  AlertTriangle
+  AlertTriangle,
+  ArrowRight
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -402,7 +403,7 @@ export default function FollowUpsPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-auto max-h-[calc(100vh-280px)]">
+              <div className="overflow-auto max-h-[calc(100vh-180px)]">
                 <table className="w-full">
                   <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
                     <tr>
@@ -471,16 +472,27 @@ export default function FollowUpsPage() {
                             >
                               <CheckCircle2 className="w-4 h-4" />
                             </button>
-                            <button
-                              onClick={() => {
-                                setSelectedStudent(item);
-                                setNoteModalOpen(true);
-                              }}
-                              className="p-1.5 rounded hover:bg-blue-100 text-blue-600 transition-colors"
-                              title="Add Note"
-                            >
-                              <Edit3 className="w-4 h-4" />
-                            </button>
+                            {item.status === "pending" && (
+                              <button
+                                onClick={() => handleStartFollowUp(item)}
+                                className="p-1.5 rounded hover:bg-blue-100 text-blue-600 transition-colors"
+                                title="Start Follow-up"
+                              >
+                                <ArrowRight className="w-4 h-4" />
+                              </button>
+                            )}
+                            {item.status === "inprogress" && (
+                              <button
+                                onClick={() => {
+                                  setSelectedStudent(item);
+                                  setNoteModalOpen(true);
+                                }}
+                                className="p-1.5 rounded hover:bg-blue-100 text-blue-600 transition-colors"
+                                title="Add Note"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                            )}
                             <button
                               onClick={() => handleDelete(item)}
                               className="p-1.5 rounded hover:bg-red-100 text-red-600 transition-colors"
@@ -548,15 +560,15 @@ export default function FollowUpsPage() {
               </button>
               <button
                 onClick={handleAddNote}
-                disabled={savingNote || !noteText.trim()}
-                className="flex-1 py-2 text-sm font-bold text-white gradient-bg rounded-lg hover:shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                disabled={!noteText.trim() || savingNote}
+                className="flex-1 bg-red-600 text-white px-4 py-2.5 rounded-xl hover:bg-red-700 active:bg-red-800 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50"
               >
                 {savingNote ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   <>
-                    <Save className="w-4 h-4" />
-                    Save & Move to In Progress
+                    <FileText className="w-4 h-4" />
+                    {selectedStudent?.status === "inprogress" ? "Save Note" : "Save & Move to In Progress"}
                   </>
                 )}
               </button>
