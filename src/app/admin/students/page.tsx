@@ -11,6 +11,7 @@ import {
   serverTimestamp,
   query,
   orderBy,
+  where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
@@ -85,8 +86,11 @@ interface Student {
   totalFee: number;
   discountAmount?: number;
   enrollmentDate: string;
+  admissionCenter?: string;
   profileEditEnabled?: boolean;
   createdAt?: unknown;
+  archived?: boolean;
+  archivedAt?: unknown;
   personalDetails?: {
     photo?: string;
     dob?: string;
@@ -195,6 +199,7 @@ export default function StudentsPage() {
     totalFee: "",
     discountAmount: "",
     enrollmentDate: new Date().toISOString().split("T")[0],
+    admissionCenter: "Bengaluru",
   });
 
   const availableCourses = formData.faculty ? getCourses(formData.faculty) : [];
@@ -297,7 +302,9 @@ export default function StudentsPage() {
         id: d.id,
         ...d.data(),
       })) as Student[];
-      setStudents(data.sort((a, b) => a.name.localeCompare(b.name)));
+      // Exclude archived (soft-deleted) students from active list
+      const active = data.filter((s) => !s.archived);
+      setStudents(active.sort((a, b) => a.name.localeCompare(b.name)));
     } catch (err) {
       console.error("Error fetching students:", err);
     } finally {
@@ -596,6 +603,7 @@ export default function StudentsPage() {
         totalFee: "",
         discountAmount: "",
         enrollmentDate: new Date().toISOString().split("T")[0],
+        admissionCenter: "Bengaluru",
       });
       setCustomUniversity(false);
       setCustomFaculty(false);
@@ -610,12 +618,33 @@ export default function StudentsPage() {
   }
 
   async function handleDelete(student: Student) {
-    if (!confirm(`Delete ${student.name}? This cannot be undone.`)) return;
+    if (!confirm(`Archive ${student.name}?\n\nThe student and all their payment receipts will be hidden from active lists, but kept for outreach (alumni promotions, new course offers). View them anytime under Follow-Ups → Alumni.`)) return;
     try {
-      await deleteDoc(doc(db, "students", student.id));
+      // Soft-archive the student
+      await setDoc(
+        doc(db, "students", student.id),
+        { archived: true, archivedAt: serverTimestamp() },
+        { merge: true }
+      );
+      // Cascade: also archive all payments tied to this student (by phone)
+      if (student.phone) {
+        const paySnap = await getDocs(
+          query(collection(db, "payments"), where("studentPhone", "==", student.phone))
+        );
+        await Promise.all(
+          paySnap.docs.map((p) =>
+            setDoc(
+              doc(db, "payments", p.id),
+              { archived: true, archivedAt: serverTimestamp() },
+              { merge: true }
+            )
+          )
+        );
+      }
       fetchStudents();
+      fetchPayments();
     } catch (err) {
-      console.error("Error deleting student:", err);
+      console.error("Error archiving student:", err);
     }
   }
 
@@ -1072,7 +1101,8 @@ export default function StudentsPage() {
                     { label: "Duration", value: detailStudent.duration || "—" },
                     { label: "University", value: detailStudent.university },
                     { label: "Academic Year", value: `${detailStudent.startYear}${detailStudent.endYear ? ` – ${detailStudent.endYear}` : ""}` },
-                    { label: "Enrolled On", value: detailStudent.enrollmentDate || "—" },
+                    { label: "Enrolled On", value: detailStudent.enrollmentDate ? (() => { const [y,m,d] = detailStudent.enrollmentDate.split("-"); return `${d}-${m}-${y}`; })() : "—" },
+                    { label: "Admission Center", value: detailStudent.admissionCenter || "Bengaluru" },
                   ].map(({ label, value }: any) => (
                     <div key={label} className="bg-gradient-to-br from-blue-50 to-white rounded-xl border border-blue-100 shadow-sm p-3">
                       <p className="text-xs text-blue-700 font-semibold mb-1">{label}</p>
@@ -1212,7 +1242,7 @@ export default function StudentsPage() {
                     { label: "Full Name", value: `${detailStudent.firstName || ""} ${detailStudent.lastName || ""}` },
                     { label: "Email", value: detailStudent.email },
                     { label: "Phone", value: detailStudent.phone || "—" },
-                    { label: "Date of Birth", value: detailStudent.personalDetails?.dateOfBirth || detailStudent.personalDetails?.dob || "—" },
+                    { label: "Date of Birth", value: (detailStudent.personalDetails?.dateOfBirth || detailStudent.personalDetails?.dob) ? (() => { const raw = detailStudent.personalDetails?.dateOfBirth || detailStudent.personalDetails?.dob || ""; if (!raw) return "—"; const [y,m,d] = raw.split("-"); return y && m && d ? `${d}-${m}-${y}` : raw; })() : "—" },
                     { label: "Gender", value: detailStudent.personalDetails?.gender || "—" },
                     { label: "Blood Group", value: detailStudent.personalDetails?.bloodGroup || "—" },
                     { label: "Father", value: detailStudent.personalDetails?.fatherName || "—" },
@@ -1344,7 +1374,7 @@ export default function StudentsPage() {
                   </tr>
                   <tr>
                     <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Date of Birth</td>
-                    <td style={{ width: "19%", padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.personalDetails?.dateOfBirth || detailStudent.personalDetails?.dob || "—"}</td>
+                    <td style={{ width: "19%", padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{(() => { const raw = detailStudent.personalDetails?.dateOfBirth || detailStudent.personalDetails?.dob || ""; if (!raw) return "—"; const [y,m,d] = raw.split("-"); return y && m && d ? `${d}-${m}-${y}` : raw; })()}</td>
                     <td style={{ width: "14%", padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Gender</td>
                     <td style={{ width: "19%", padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.personalDetails?.gender || "—"}</td>
                     <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Blood Group</td>
@@ -1478,7 +1508,7 @@ export default function StudentsPage() {
                     <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Course</td>
                     <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{detailStudent.course || ""}</td>
                     <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Date of Admission</td>
-                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{(() => { const d = detailStudent.enrollmentDate ? new Date(detailStudent.enrollmentDate) : (detailStudent.createdAt && typeof (detailStudent.createdAt as any).toDate === "function" ? (detailStudent.createdAt as any).toDate() : null); if (!d || isNaN(d.getTime())) return ""; const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; return `${String(d.getDate()).padStart(2,"0")}-${months[d.getMonth()]}-${d.getFullYear()}`; })()}</td>
+                    <td style={{ padding: "6px 10px", border: "1px solid #bbb", verticalAlign: "middle" }}>{(() => { const raw = detailStudent.enrollmentDate; if (!raw) return ""; const [y,m,d] = raw.split("-"); return y && m && d ? `${d}-${m}-${y}` : raw; })()}</td>
                   </tr>
                   <tr>
                     <td style={{ padding: "6px 10px", border: "1px solid #bbb", fontWeight: "bold", background: "#f7f7f7", verticalAlign: "middle" }}>Remarks</td>
@@ -1691,7 +1721,7 @@ export default function StudentsPage() {
                         <td className="px-4 lg:px-6 py-2 lg:py-3">
                           <Link href={`/admin/payments/${p.id}`} className="text-xs font-mono text-blue-600 hover:underline" target="_blank">{p.receiptNumber}</Link>
                         </td>
-                        <td className="px-4 lg:px-6 py-2 lg:py-3 text-xs text-slate-700">{p.paymentDate}</td>
+                        <td className="px-4 lg:px-6 py-2 lg:py-3 text-xs text-slate-700">{p.paymentDate ? (() => { const [y,m,d] = p.paymentDate.split("-"); return `${d}-${m}-${y}`; })() : "—"}</td>
                         <td className="px-4 lg:px-6 py-2 lg:py-3 text-xs text-slate-600">{p.paymentMode}</td>
                         <td className="px-4 lg:px-6 py-2 lg:py-3 text-right text-sm font-bold text-green-700">₹{(p.amountPaid || 0).toLocaleString("en-IN")}</td>
                       </tr>
@@ -2130,10 +2160,24 @@ export default function StudentsPage() {
                   <label className="block text-xs font-medium text-slate-700 mb-1">Enrollment Date</label>
                   <input
                     type="text"
-                    value={formData.enrollmentDate}
+                    value={formData.enrollmentDate ? (() => { const [y,m,d] = formData.enrollmentDate.split("-"); return `${d}-${m}-${y}`; })() : ""}
                     readOnly
                     className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-700"
                   />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Admission Center *</label>
+                  <select
+                    value={formData.admissionCenter}
+                    onChange={(e) => setFormData({ ...formData, admissionCenter: e.target.value })}
+                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none bg-white"
+                    required
+                  >
+                    <option value="Bengaluru">Bengaluru</option>
+                    <option value="Kochi">Kochi</option>
+                    <option value="Salem">Salem</option>
+                    <option value="Hyderabad">Hyderabad</option>
+                  </select>
                 </div>
               </div>
 

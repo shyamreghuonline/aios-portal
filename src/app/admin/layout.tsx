@@ -13,6 +13,7 @@ import {
   X,
   Phone,
   Clock,
+  BarChart3,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -23,6 +24,7 @@ const navItems = [
   { href: "/admin/payments", label: "Payments", icon: CreditCard, exact: true },
   { href: "/admin/payments/pending", label: "Pending Approvals", icon: Clock },
   { href: "/admin/follow-ups", label: "Follow-Ups", icon: Phone },
+  { href: "/admin/audit", label: "Audit", icon: BarChart3 },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -21,7 +21,9 @@ import {
   ChevronUp,
   MessageSquare,
   Mail,
-  GraduationCap
+  GraduationCap,
+  Archive,
+  Download
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -46,6 +48,8 @@ interface Student {
   enrollmentDate?: string;
   profileEditEnabled?: boolean;
   createdAt?: string;
+  archived?: boolean;
+  archivedAt?: { toDate?: () => Date } | string;
   personalDetails?: {
     photo?: string;
     dob?: string;
@@ -132,7 +136,8 @@ export default function FollowUpsPage() {
   const [followUpRecords, setFollowUpRecords] = useState<FollowUpRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<FollowUpTab>("pending");
-  const [viewMode, setViewMode] = useState<"dues" | "enquiries">("dues");
+  const [viewMode, setViewMode] = useState<"dues" | "enquiries" | "alumni">("dues");
+  const [alumniSearch, setAlumniSearch] = useState("");
   
   // Modal states
   const [noteModalOpen, setNoteModalOpen] = useState(false);
@@ -204,6 +209,8 @@ export default function FollowUpsPage() {
     const items: FollowUpRecord[] = [];
 
     students.forEach((student) => {
+      // Skip archived (alumni) students from active follow-up logic
+      if (student.archived) return;
       // Get all payments for this student (excluding discounts)
       const studentPayments = payments.filter(
         (p) => p.studentPhone === student.phone && 
@@ -376,7 +383,7 @@ export default function FollowUpsPage() {
     
     setSavingNote(true);
     try {
-      const updatedRemarks = [...selectedStudent.remarks, `${new Date().toLocaleDateString()}: ${noteText}`];
+      const updatedRemarks = [...selectedStudent.remarks, `${new Date().toLocaleDateString("en-GB").replace(/\//g, "-")}: ${noteText}`];
       const updatedRecord: FollowUpRecord = {
         ...selectedStudent,
         remarks: updatedRemarks,
@@ -419,7 +426,7 @@ export default function FollowUpsPage() {
       remindDate.setDate(remindDate.getDate() + scheduleDays);
       
       // Add note to remarks
-      const newRemark = `${new Date().toLocaleDateString()}: ${scheduleNote}`;
+      const newRemark = `${new Date().toLocaleDateString("en-GB").replace(/\//g, "-")}: ${scheduleNote}`;
       const updatedRemarks = [...schedulingItem.remarks, newRemark];
       
       const updatedRecord: FollowUpRecord = {
@@ -481,6 +488,78 @@ export default function FollowUpsPage() {
     }
   };
 
+  // ── Alumni (archived students) ─────────────────────────────────────
+  const alumniStudents = useMemo(() => {
+    const q = alumniSearch.trim().toLowerCase();
+    return students
+      .filter((s) => s.archived)
+      .filter((s) => {
+        if (!q) return true;
+        return (
+          (s.name || "").toLowerCase().includes(q) ||
+          (s.studentId || "").toLowerCase().includes(q) ||
+          (s.phone || "").toLowerCase().includes(q) ||
+          (s.email || "").toLowerCase().includes(q) ||
+          (s.course || "").toLowerCase().includes(q) ||
+          (s.university || "").toLowerCase().includes(q)
+        );
+      })
+      .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  }, [students, alumniSearch]);
+
+  const exportAlumniCSV = () => {
+    if (alumniStudents.length === 0) {
+      alert("No alumni records to export.");
+      return;
+    }
+    const csvEscape = (v: unknown) => {
+      if (v === null || v === undefined) return "";
+      const s = String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = alumniStudents.map((s) => ({
+      "Student ID": s.studentId || s.id,
+      Name: s.name || "",
+      Phone: s.phone || "",
+      Email: s.email || "",
+      Faculty: s.faculty || "",
+      Course: s.course || "",
+      Stream: s.stream || "",
+      Duration: s.duration || "",
+      University: s.university || "",
+      "Start Year": s.startYear || "",
+      "End Year": s.endYear || "",
+      "Enrollment Date": s.enrollmentDate || "",
+      "Archived On": formatArchivedDate(s.archivedAt),
+    }));
+    const headers = Object.keys(rows[0]);
+    const lines = [
+      headers.join(","),
+      ...rows.map((r) => headers.map((h) => csvEscape((r as Record<string, unknown>)[h])).join(",")),
+    ];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `alumni-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const formatArchivedDate = (a: Student["archivedAt"]) => {
+    if (!a) return "—";
+    let d: Date;
+    if (typeof a === "object" && a !== null && "toDate" in a && typeof (a as { toDate?: () => Date }).toDate === "function") {
+      d = (a as { toDate: () => Date }).toDate();
+    } else if (typeof a === "string") {
+      d = new Date(a);
+    } else {
+      return "—";
+    }
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("en-GB").replace(/\//g, "-");
+  };
+
   const tabs = [
     { key: "pending" as FollowUpTab, label: "Pending Follow-Up", count: tabCounts.pending },
     { key: "inprogress" as FollowUpTab, label: "In Progress", count: tabCounts.inprogress },
@@ -525,6 +604,17 @@ export default function FollowUpsPage() {
           >
             Website Enquiries
           </button>
+          <button
+            onClick={() => setViewMode("alumni")}
+            className={`px-5 py-2.5 text-sm font-medium rounded-lg transition-all flex items-center gap-1.5 ${
+              viewMode === "alumni"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <Archive className="w-4 h-4" />
+            Alumni
+          </button>
         </div>
       </div>
 
@@ -533,6 +623,115 @@ export default function FollowUpsPage() {
           <div className="text-center">
             <AlertTriangle className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <p className="text-slate-500">Website Enquiries coming soon</p>
+          </div>
+        </div>
+      ) : viewMode === "alumni" ? (
+        <div className="flex-1 flex flex-col gap-4 overflow-hidden">
+          {/* Alumni intro & search */}
+          <div className="bg-gradient-to-r from-amber-50 via-white to-rose-50 border border-amber-100 rounded-2xl p-4 flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-rose-500 flex items-center justify-center shadow-md">
+                <GraduationCap className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Alumni / Archived Students</h2>
+                <p className="text-xs text-slate-500">Past students kept for promotional outreach, course offers and enquiries.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
+                {alumniStudents.length} record{alumniStudents.length !== 1 ? "s" : ""}
+              </span>
+              <input
+                type="text"
+                placeholder="Search alumni…"
+                value={alumniSearch}
+                onChange={(e) => setAlumniSearch(e.target.value)}
+                className="px-3 py-2 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none bg-white min-w-[220px]"
+              />
+              <button
+                onClick={exportAlumniCSV}
+                disabled={alumniStudents.length === 0}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-emerald-600 to-emerald-700 rounded-lg shadow-sm hover:shadow-md hover:from-emerald-700 hover:to-emerald-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Export alumni list to CSV"
+              >
+                <Download className="w-4 h-4" />
+                Export CSV
+              </button>
+            </div>
+          </div>
+
+          {/* Alumni table */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex-1 overflow-hidden flex flex-col">
+            {loading ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="w-10 h-10 text-slate-400 animate-spin" />
+              </div>
+            ) : alumniStudents.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-center py-16 text-slate-500">
+                <Archive className="w-10 h-10 mb-2 text-slate-300" />
+                <p className="text-sm font-medium">No archived students yet.</p>
+                <p className="text-xs mt-1 text-slate-400">Archive a student from the Students page to see them here.</p>
+              </div>
+            ) : (
+              <div className="overflow-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gradient-to-r from-amber-700 to-rose-600 sticky top-0 z-10">
+                    <tr>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-white/90 uppercase tracking-wider">Student</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-white/90 uppercase tracking-wider">ID</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-white/90 uppercase tracking-wider">Course</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-white/90 uppercase tracking-wider">University</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-white/90 uppercase tracking-wider">Contact</th>
+                      <th className="text-left px-5 py-3 text-xs font-semibold text-white/90 uppercase tracking-wider">Archived</th>
+                      <th className="text-center px-5 py-3 text-xs font-semibold text-white/90 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {alumniStudents.map((s) => (
+                      <tr key={s.id} className="hover:bg-amber-50/40 transition-colors">
+                        <td className="px-5 py-3">
+                          <p className="font-semibold text-slate-900">{s.name || "—"}</p>
+                          <p className="text-xs text-slate-500">{s.faculty || ""}</p>
+                        </td>
+                        <td className="px-5 py-3 font-mono text-xs text-slate-700">{s.studentId || s.id}</td>
+                        <td className="px-5 py-3 text-slate-700">{s.course || "—"}</td>
+                        <td className="px-5 py-3 text-slate-700">{s.university || "—"}</td>
+                        <td className="px-5 py-3">
+                          <div className="text-xs text-slate-700">{s.phone || "—"}</div>
+                          <div className="text-xs text-slate-500 truncate max-w-[180px]">{s.email || ""}</div>
+                        </td>
+                        <td className="px-5 py-3 text-xs text-slate-600">{formatArchivedDate(s.archivedAt)}</td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center justify-center gap-1.5">
+                            {s.phone && (
+                              <a
+                                href={`https://wa.me/91${s.phone.replace(/\D/g, "")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                                title="WhatsApp"
+                              >
+                                <MessageSquare className="w-4 h-4" />
+                              </a>
+                            )}
+                            {s.email && (
+                              <a
+                                href={`mailto:${s.email}`}
+                                className="p-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
+                                title="Email"
+                              >
+                                <Mail className="w-4 h-4" />
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -871,7 +1070,7 @@ export default function FollowUpsPage() {
                 <span className="text-sm text-slate-600">days</span>
               </div>
               <p className="text-xs text-slate-500 mt-2">
-                This follow-up will reappear in Pending tab on {new Date(Date.now() + scheduleDays * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                This follow-up will reappear in Pending tab on {new Date(Date.now() + scheduleDays * 24 * 60 * 60 * 1000).toLocaleDateString("en-GB").replace(/\//g, "-")}
               </p>
             </div>
 
@@ -1132,7 +1331,7 @@ function StudentDetailModal({ student, onClose, payments }: { student: Student; 
                     <div key={payment.id || idx} className="bg-slate-50 rounded-lg p-3 flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-slate-900">Receipt #{payment.receiptNumber}</p>
-                        <p className="text-xs text-slate-500">{typeof payment.paymentDate === 'string' ? payment.paymentDate : parseLocalDate(payment.paymentDate).toLocaleDateString()}</p>
+                        <p className="text-xs text-slate-500">{typeof payment.paymentDate === 'string' ? (() => { const [y,m,d] = payment.paymentDate.split("-"); return y && m && d ? `${d}-${m}-${y}` : payment.paymentDate; })() : parseLocalDate(payment.paymentDate).toLocaleDateString("en-GB").replace(/\//g, "-")}</p>
                       </div>
                       <p className="text-sm font-bold text-green-700">₹{Number(payment.amountPaid).toLocaleString('en-IN')}</p>
                     </div>

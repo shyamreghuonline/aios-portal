@@ -382,7 +382,7 @@ export default function PaymentsHub() {
                       <tr key={p.id} className="bg-white hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-3 text-center"><span className="text-xs font-bold text-amber-700">{i + 1}</span></td>
                         <td className="px-4 py-3"><span className="font-mono text-xs text-slate-400">-</span></td>
-                        <td className="px-4 py-3"><span className="text-xs text-slate-600">{p.createdAt?.toDate?.().toISOString().split('T')[0] || "-"}</span></td>
+                        <td className="px-4 py-3"><span className="text-xs text-slate-600">{p.createdAt?.toDate?.().toLocaleDateString("en-GB").replace(/\//g, "-") || "-"}</span></td>
                         <td className="px-4 py-3"><span className="text-xs text-slate-600">{p.paymentMethod === "qr" || p.paymentMethod === "upi" ? "UPI" : p.paymentMethod === "bank" ? "Bank" : p.paymentMethod === "cash" ? "Cash" : "Card"}</span></td>
                         <td className="px-4 py-3"><span className={`font-bold text-xs ${p.status === "rejected" ? "text-red-700" : "text-amber-800"}`}>₹{p.amount.toLocaleString("en-IN")}</span></td>
                         <td className="px-4 py-3 text-center">
@@ -430,7 +430,7 @@ export default function PaymentsHub() {
                               {p.receiptNumber}
                             </Link>
                           </td>
-                          <td className="px-4 py-3"><span className="text-xs text-slate-700">{p.paymentDate}</span></td>
+                          <td className="px-4 py-3"><span className="text-xs text-slate-700">{p.paymentDate ? (() => { const [y,m,d] = p.paymentDate.split("-"); return `${d}-${m}-${y}`; })() : "—"}</span></td>
                           <td className="px-4 py-3"><span className="text-xs text-slate-600">{p.paymentMode}</span></td>
                           <td className="px-4 py-3"><span className="font-bold text-xs text-slate-900">₹{p.amountPaid.toLocaleString("en-IN")}</span></td>
                           <td className="px-4 py-3 text-center">

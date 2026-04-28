@@ -672,7 +672,7 @@ export default function StudentDashboard() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                     {[
-                      { icon: Calendar, label: "Date of Birth", value: personal.dob || "—", tint: "from-rose-50 to-white", iconColor: "text-rose-600", ring: "border-rose-100" },
+                      { icon: Calendar, label: "Date of Birth", value: personal.dob ? (() => { const [y,m,d] = personal.dob.split("-"); return `${d}-${m}-${y}`; })() : "—", tint: "from-rose-50 to-white", iconColor: "text-rose-600", ring: "border-rose-100" },
                       { icon: User, label: "Gender", value: personal.gender || "—", tint: "from-red-50 to-white", iconColor: "text-red-600", ring: "border-red-100" },
                       { icon: Award, label: "Blood Group", value: personal.bloodGroup || "—", tint: "from-amber-50 to-white", iconColor: "text-amber-600", ring: "border-amber-100" },
                       { icon: Users, label: "Father's Name", value: personal.fatherName || "—", tint: "from-blue-50 to-white", iconColor: "text-blue-600", ring: "border-blue-100" },
@@ -1275,7 +1275,7 @@ export default function StudentDashboard() {
                     <td style={{ width: '20%', padding: '4px 6px', backgroundColor: '#fee2e2', fontWeight: 700, color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '2px 0 0 2px' }}>Full Name</td>
                     <td style={{ width: '30%', padding: '4px 6px', backgroundColor: '#ffffff', fontWeight: 600, color: '#1a1a1a', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 2px 2px 0' }}>{(sd.name as string) || "—"}</td>
                     <td style={{ width: '20%', padding: '4px 6px', backgroundColor: '#fee2e2', fontWeight: 700, color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '2px 0 0 2px' }}>Date of Birth</td>
-                    <td style={{ width: '30%', padding: '4px 6px', backgroundColor: '#ffffff', fontWeight: 600, color: '#1a1a1a', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 2px 2px 0' }}>{personal.dob || "—"}</td>
+                    <td style={{ width: '30%', padding: '4px 6px', backgroundColor: '#ffffff', fontWeight: 600, color: '#1a1a1a', border: '1px solid #d1d5db', borderLeft: 'none', borderRadius: '0 2px 2px 0' }}>{personal.dob ? (() => { const [y,m,d] = personal.dob.split("-"); return `${d}-${m}-${y}`; })() : "—"}</td>
                   </tr>
                   <tr>
                     <td style={{ padding: '4px 6px', backgroundColor: '#fee2e2', fontWeight: 700, color: '#991b1b', border: '1px solid #fca5a5', borderRadius: '2px 0 0 2px' }}>Gender</td>

@@ -29,17 +29,11 @@ interface Payment {
 }
 
 function formatPaymentDate(dateString: string): string {
-  // Parse YYYY-MM-DD format without timezone issues
+  // Parse YYYY-MM-DD format without timezone issues → DD-MM-YYYY
   if (!dateString) return "—";
   const [year, month, day] = dateString.split("-");
   if (!year || !month || !day) return dateString;
-  
-  const monthNames = ["January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"];
-  const monthIndex = parseInt(month, 10) - 1;
-  const monthName = monthNames[monthIndex] || month;
-  
-  return `${day} ${monthName} ${year}`;
+  return `${day}-${month}-${year}`;
 }
 
 function numberToWords(num: number): string {
@@ -316,7 +310,7 @@ export default function ReceiptPage() {
         </Link>
         <button
           onClick={handlePrint}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 hover:shadow transition-all"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white rounded-lg border border-gray-200 hover:bg-gray-50 hover:shadow transition-all no-print"
         >
           <Printer className="w-4 h-4" />
           Print / PDF

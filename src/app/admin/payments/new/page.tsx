@@ -110,8 +110,10 @@ export default function NewPaymentPage() {
   useEffect(() => {
     async function fetchStudents() {
       const snap = await getDocs(collection(db, "students"));
-      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Student[];
-      setStudents(data.sort((a, b) => a.name.localeCompare(b.name)));
+      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as (Student & { archived?: boolean })[];
+      // Exclude archived (alumni) students from selection
+      const active = data.filter((s) => !s.archived);
+      setStudents(active.sort((a, b) => a.name.localeCompare(b.name)));
     }
     fetchStudents();
   }, []);

@@ -374,7 +374,7 @@ export default function StudentProfilePage() {
               {[
                 { label: "Duration", value: (sd.duration as string) || "" },
                 { label: "Academic Year", value: `${sd.startYear || ""}${sd.endYear ? ` – ${sd.endYear}` : ""}` },
-                { label: "Enrollment Date", value: (sd.enrollmentDate as string) || "" },
+                { label: "Enrollment Date", value: sd.enrollmentDate ? (() => { const [y,m,d] = (sd.enrollmentDate as string).split("-"); return `${d}-${m}-${y}`; })() : "" },
               ].map(({ label, value }) => (
                 <div key={label} className="px-4 py-2.5 cursor-not-allowed select-none" title="Managed by admin">
                   <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500 mb-0.5">{label}</p>

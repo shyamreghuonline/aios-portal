@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, deleteDoc, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { CreditCard, Search, Loader2, Receipt, Plus, Printer, Clock, ArrowRight, Calendar, X } from "lucide-react";
+import { CreditCard, Search, Loader2, Receipt, Plus, Printer, Clock, ArrowRight, Calendar, X, Trash2 } from "lucide-react";
 import Link from "next/link";
 
 interface Payment {
@@ -24,6 +24,7 @@ interface Payment {
   paymentMode: string;
   balanceAmount: number;
   createdAt?: unknown;
+  archived?: boolean;
 }
 
 type DatePreset = "all" | "today" | "week" | "month" | "custom";
@@ -35,6 +36,7 @@ export default function PaymentsPage() {
   const [datePreset, setDatePreset] = useState<DatePreset>("all");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchPayments() {
@@ -45,7 +47,8 @@ export default function PaymentsPage() {
           id: d.id,
           ...d.data(),
         })) as Payment[];
-        setPayments(data);
+        // Hide payments belonging to archived students
+        setPayments(data.filter((p) => !p.archived));
       } catch (err) {
         console.error("Error fetching payments:", err);
       } finally {
@@ -55,16 +58,36 @@ export default function PaymentsPage() {
     fetchPayments();
   }, []);
 
-  // Compute date range from preset
-  const today = new Date().toISOString().split("T")[0];
+  async function handleDeletePayment(p: Payment) {
+    if (
+      !confirm(
+        `Delete receipt ${p.receiptNumber}?\n\nThis permanently removes the payment record. This action cannot be undone.`
+      )
+    )
+      return;
+    setDeletingId(p.id);
+    try {
+      await deleteDoc(doc(db, "payments", p.id));
+      setPayments((prev) => prev.filter((x) => x.id !== p.id));
+    } catch (err) {
+      console.error("Error deleting payment:", err);
+      alert("Failed to delete payment. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  // Compute date range from preset (use local timezone, not UTC)
+  const fmt = (d: Date) => d.toLocaleDateString("en-CA");
+  const today = fmt(new Date());
   const now = new Date();
   const dayOfWeek = now.getDay();
   const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   const weekStart = new Date(now);
   weekStart.setDate(now.getDate() - daysSinceMonday);
   weekStart.setHours(0, 0, 0, 0);
-  const weekStartStr = weekStart.toISOString().split("T")[0];
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
+  const weekStartStr = fmt(weekStart);
+  const monthStart = fmt(new Date(now.getFullYear(), now.getMonth(), 1));
 
   function inDateRange(d: string): boolean {
     if (!d) return datePreset === "all";
@@ -225,6 +248,7 @@ export default function PaymentsPage() {
                 <th className="text-left px-3 py-2.5 text-xs font-semibold text-white uppercase tracking-widest">Amount</th>
                 <th className="text-left px-3 py-2.5 text-xs font-semibold text-white uppercase tracking-widest">Balance</th>
                 <th className="text-left px-3 py-2.5 text-xs font-semibold text-white uppercase tracking-widest whitespace-nowrap">Date</th>
+                <th className="text-center px-3 py-2.5 text-xs font-semibold text-white uppercase tracking-widest">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -258,7 +282,21 @@ export default function PaymentsPage() {
                       ₹{(payment.balanceAmount || 0).toLocaleString("en-IN")}
                     </span>
                   </td>
-                  <td className="px-3 py-2.5 text-slate-600 text-sm whitespace-nowrap">{payment.paymentDate}</td>
+                  <td className="px-3 py-2.5 text-slate-600 text-sm whitespace-nowrap">{payment.paymentDate ? (() => { const [y,m,d] = payment.paymentDate.split("-"); return `${d}-${m}-${y}`; })() : "—"}</td>
+                  <td className="px-3 py-2.5 text-center">
+                    <button
+                      onClick={() => handleDeletePayment(payment)}
+                      disabled={deletingId === payment.id}
+                      className="inline-flex items-center justify-center p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-rose-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Delete receipt"
+                    >
+                      {deletingId === payment.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

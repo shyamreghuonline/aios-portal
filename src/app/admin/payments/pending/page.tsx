@@ -391,7 +391,7 @@ Your payment of Rs.${amount} has been confirmed.
 
 Receipt Number: ${receiptNumber}
 Amount: Rs.${amount}
-Date: ${new Date().toLocaleDateString()}
+Date: ${new Date().toLocaleDateString("en-GB").replace(/\//g, "-")}
 
 View your receipt at: ${window.location.origin}/student/payments
 
@@ -596,7 +596,7 @@ Thank you!`,
                     </div>
                   </td>
                   <td className="px-3 py-2.5 text-slate-600 text-sm whitespace-nowrap">
-                    {payment.createdAt?.toDate?.().toLocaleDateString() || "Unknown"}
+                    {payment.createdAt?.toDate?.().toLocaleDateString("en-GB").replace(/\//g, "-") || "Unknown"}
                   </td>
                   <td className="px-3 py-2.5 text-center">
                     {payment.status === "pending" && (

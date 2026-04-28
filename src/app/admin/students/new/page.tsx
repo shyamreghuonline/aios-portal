@@ -121,6 +121,7 @@ export default function NewStudentPage() {
     totalFee: "",
     discountAmount: "",
     enrollmentDate: new Date().toISOString().split("T")[0],
+    admissionCenter: "Bengaluru",
   });
 
   const availableCourses = formData.faculty ? getCourses(formData.faculty) : [];
@@ -183,7 +184,7 @@ export default function NewStudentPage() {
     setSaving(true);
     try {
       const studentId = await generateStudentId();
-      const { name, email, phone, faculty, course, stream, duration, university, startYear, endYear, totalFee, discountAmount, enrollmentDate } = formData;
+      const { name, email, phone, faculty, course, stream, duration, university, startYear, endYear, totalFee, discountAmount, enrollmentDate, admissionCenter } = formData;
 
       if (!name || !email || !phone || !faculty || !course || !university || !totalFee) {
         alert("Please fill in all required fields");
@@ -207,6 +208,7 @@ export default function NewStudentPage() {
         totalFee: parseFloat(totalFee),
         discountAmount: parseFloat(discountAmount || "0"),
         enrollmentDate,
+        admissionCenter: admissionCenter || "Bengaluru",
         studentId,
         profileEditEnabled: true,
         createdAt: serverTimestamp(),
@@ -603,6 +605,20 @@ export default function NewStudentPage() {
                 className={inputClass}
               />
             </div>
+            <div>
+              <label className={labelClass}>Admission Center *</label>
+              <select
+                value={formData.admissionCenter}
+                onChange={(e) => setFormData({ ...formData, admissionCenter: e.target.value })}
+                className={inputClass}
+                required
+              >
+                <option value="Bengaluru">Bengaluru</option>
+                <option value="Kochi">Kochi</option>
+                <option value="Salem">Salem</option>
+                <option value="Hyderabad">Hyderabad</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -751,6 +767,7 @@ export default function NewStudentPage() {
                   totalFee: "",
                   discountAmount: "",
                   enrollmentDate: new Date().toISOString().split("T")[0],
+                  admissionCenter: "Bengaluru",
                 });
                 setCustomUniversity(false);
                 setCustomFaculty(false);

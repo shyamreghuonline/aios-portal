@@ -34,17 +34,11 @@ function cleanCourseName(name: string): string {
 }
 
 function formatPaymentDate(dateString: string): string {
-  // Parse YYYY-MM-DD format without timezone issues
+  // Parse YYYY-MM-DD format without timezone issues → DD-MM-YYYY
   if (!dateString) return "—";
   const [year, month, day] = dateString.split("-");
   if (!year || !month || !day) return dateString;
-  
-  const monthNames = ["January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"];
-  const monthIndex = parseInt(month, 10) - 1;
-  const monthName = monthNames[monthIndex] || month;
-  
-  return `${day} ${monthName} ${year}`;
+  return `${day}-${month}-${year}`;
 }
 
 function numberToWords(num: number): string {

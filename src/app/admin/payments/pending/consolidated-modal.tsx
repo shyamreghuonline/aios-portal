@@ -122,7 +122,7 @@ export default function ConsolidatedPaymentsModal({
                       </td>
                       <td className="px-3 py-2.5">
                         <span className="text-xs text-slate-600">
-                          {p.createdAt?.toDate?.().toISOString().split("T")[0] || "-"}
+                          {p.createdAt?.toDate?.().toLocaleDateString("en-GB").replace(/\//g, "-") || "-"}
                         </span>
                       </td>
                       <td className="px-3 py-2.5">
@@ -183,7 +183,7 @@ export default function ConsolidatedPaymentsModal({
                           </Link>
                         </td>
                         <td className="px-3 py-2.5">
-                          <span className="text-xs text-slate-700">{p.paymentDate}</span>
+                          <span className="text-xs text-slate-700">{p.paymentDate ? (() => { const [y,m,d] = p.paymentDate.split("-"); return `${d}-${m}-${y}`; })() : "—"}</span>
                         </td>
                         <td className="px-3 py-2.5">
                           <span className="text-xs text-slate-600">{p.paymentMode}</span>

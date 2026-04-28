@@ -47,15 +47,21 @@ export default function AdminDashboard() {
   useEffect(() => {
     async function fetchStats() {
       try {
-        // Get students
+        // Get students (exclude archived)
         const studentsSnap = await getDocs(collection(db, "students"));
-        const totalStudents = studentsSnap.size;
+        const activeStudents = studentsSnap.docs
+          .map((d) => ({ id: d.id, ...d.data() } as { id: string; [k: string]: unknown }))
+          .filter((s) => !(s as { archived?: boolean }).archived);
+        const totalStudents = activeStudents.length;
 
-        // Get payments
+        // Get payments (exclude archived)
         const paymentsSnap = await getDocs(collection(db, "payments"));
+        const activePayments = paymentsSnap.docs
+          .map((d) => ({ id: d.id, ...d.data() } as { id: string; [k: string]: unknown }))
+          .filter((p) => !(p as { archived?: boolean }).archived);
         let totalCollected = 0;
-        paymentsSnap.forEach((doc) => {
-          totalCollected += parseFloat(doc.data().amountPaid || "0");
+        activePayments.forEach((p) => {
+          totalCollected += parseFloat((p as { amountPaid?: string }).amountPaid || "0");
         });
 
         // Get pending payment count
@@ -64,29 +70,28 @@ export default function AdminDashboard() {
         );
         const pendingPaymentCount = pendingSnap.size;
 
-        // Calculate pending
+        // Calculate pending fees from active students only
         let totalFees = 0;
-        studentsSnap.forEach((doc) => {
-          totalFees += parseFloat(doc.data().totalFee || "0");
+        activeStudents.forEach((s) => {
+          totalFees += parseFloat((s as { totalFee?: string }).totalFee || "0");
         });
 
-        // All payments sorted
+        // All payments sorted (excluding archived)
         const allQuery = query(collection(db, "payments"), orderBy("createdAt", "desc"));
         const allSnap = await getDocs(allQuery);
-        const allPayments = allSnap.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Payment[];
-        
-        // Fetch students and payments for follow-ups
-        const studentsData = studentsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        const paymentsData = paymentsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        setStudents(studentsData);
-        setPayments(paymentsData);
+        const allPayments = (
+          allSnap.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as (Payment & { archived?: boolean })[]
+        ).filter((p) => !p.archived);
+
+        setStudents(activeStudents);
+        setPayments(activePayments);
 
         setStats({
           totalStudents,
-          totalPayments: paymentsSnap.size,
+          totalPayments: activePayments.length,
           totalCollected,
           totalPending: totalFees - totalCollected,
           pendingPaymentCount,
@@ -395,7 +400,7 @@ function StudentDetailModal({ student, onClose, payments }: { student: any; onCl
                     <div key={payment.id || idx} className="bg-slate-50 rounded-lg p-3 flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-slate-900">Receipt #{payment.receiptNumber}</p>
-                        <p className="text-xs text-slate-500">{payment.paymentDate}</p>
+                        <p className="text-xs text-slate-500">{payment.paymentDate ? (() => { const [y,m,d] = payment.paymentDate.split("-"); return `${d}-${m}-${y}`; })() : "—"}</p>
                       </div>
                       <p className="text-sm font-bold text-green-700">₹{parseFloat(payment.amountPaid || "0").toLocaleString('en-IN')}</p>
                     </div>
@@ -416,20 +421,17 @@ function PaymentReport({ stats, loading, periodTab, setPeriodTab }: {
   periodTab: PeriodTab;
   setPeriodTab: (t: PeriodTab) => void;
 }) {
-  const today = new Date().toISOString().split("T")[0];
-  
-  // Get start of current week (Monday)
+  // Use local timezone (not UTC) for date comparisons
+  const fmt = (d: Date) => d.toLocaleDateString("en-CA");
+  const today = fmt(new Date());
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
   const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   const weekStart = new Date(now);
   weekStart.setDate(now.getDate() - daysSinceMonday);
   weekStart.setHours(0, 0, 0, 0);
-  const weekStartStr = weekStart.toISOString().split("T")[0];
-  
-  // Get start of current month
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthStartStr = monthStart.toISOString().split("T")[0];
+  const weekStartStr = fmt(weekStart);
+  const monthStartStr = fmt(new Date(now.getFullYear(), now.getMonth(), 1));
 
   const filtered = useMemo(() => {
     return stats.allPayments.filter((p) => {
@@ -517,7 +519,7 @@ function PaymentReport({ stats, loading, periodTab, setPeriodTab }: {
                     {payment.studentName}
                   </p>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {payment.receiptNumber} &bull; {payment.paymentDate}
+                    {payment.receiptNumber} &bull; {payment.paymentDate ? (() => { const [y,m,d] = payment.paymentDate.split("-"); return `${d}-${m}-${y}`; })() : "—"}
                   </p>
                 </div>
                 <p className="text-sm font-bold text-green-600">
