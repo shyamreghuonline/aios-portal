@@ -1132,7 +1132,7 @@ function StudentDetailModal({ student, onClose, payments }: { student: Student; 
                     <div key={payment.id || idx} className="bg-slate-50 rounded-lg p-3 flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-slate-900">Receipt #{payment.receiptNumber}</p>
-                        <p className="text-xs text-slate-500">{payment.paymentDate}</p>
+                        <p className="text-xs text-slate-500">{typeof payment.paymentDate === 'string' ? payment.paymentDate : parseLocalDate(payment.paymentDate).toLocaleDateString()}</p>
                       </div>
                       <p className="text-sm font-bold text-green-700">₹{Number(payment.amountPaid).toLocaleString('en-IN')}</p>
                     </div>
