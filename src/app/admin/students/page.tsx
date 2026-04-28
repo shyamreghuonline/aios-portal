@@ -70,6 +70,8 @@ interface Payment {
 interface Student {
   id: string;
   studentId?: string;
+  firstName?: string;
+  lastName?: string;
   name: string;
   email: string;
   phone: string;
