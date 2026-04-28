@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, setPersistence, browserSessionPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -14,6 +14,12 @@ const firebaseConfig = {
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 export const auth = getAuth(app);
+
+// Set auth persistence to SESSION (clears when browser/tab closes)
+setPersistence(auth, browserSessionPersistence).catch((error) => {
+  console.error("Error setting auth persistence:", error);
+});
+
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export default app;
