@@ -66,7 +66,7 @@ interface Student {
 interface Payment {
   id: string;
   studentPhone: string;
-  studentName?: string;
+  studentName: string;
   receiptNumber?: string;
   amountPaid: number | string;
   paymentDate: string | { toDate: () => Date };
