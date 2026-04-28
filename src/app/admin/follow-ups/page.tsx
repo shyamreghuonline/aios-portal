@@ -26,7 +26,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-type FollowUpTab = "pending" | "inprogress" | "completed" | "archived";
+type FollowUpTab = "pending" | "inprogress" | "completed" | "archived" | "deleted";
 
 interface Student {
   id: string;
