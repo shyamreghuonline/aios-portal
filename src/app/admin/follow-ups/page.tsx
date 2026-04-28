@@ -282,7 +282,7 @@ export default function FollowUpsPage() {
           // Create new pending record
           items.push({
             id: `followup_${student.id}_${Date.now()}`,
-            studentId: student.studentId,
+            studentId: student.studentId || student.id,
             studentName: student.name,
             studentPhone: student.phone,
             studentEmail: student.email,
