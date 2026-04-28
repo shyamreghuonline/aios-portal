@@ -303,8 +303,10 @@ export default function ReceiptPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <>
+      <style>{`@media print { .no-print { display: none !important; } }`}</style>
+      <div className="max-w-2xl mx-auto">
+        <div className="flex items-center justify-between mb-6">
         <Link
           href="/admin/payments"
           className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-red-600 transition-colors"
@@ -452,5 +454,5 @@ export default function ReceiptPage() {
         </div>
       </div>
     </div>
-  );
+  </>);
 }
