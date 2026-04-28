@@ -26,6 +26,20 @@ body {
   background: linear-gradient(135deg, #a31d21, #c0392b);
 }
 
+/* Dropdown selected option - red theme */
+select option:checked,
+select option:focus,
+select option:hover,
+select option:active {
+  background-color: #dc2626 !important;
+  background: #dc2626 !important;
+  color: white !important;
+}
+
+select {
+  background-color: white;
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
