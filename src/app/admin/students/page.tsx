@@ -90,6 +90,7 @@ interface Student {
   personalDetails?: {
     photo?: string;
     dob?: string;
+    dateOfBirth?: string;
     gender?: string;
     bloodGroup?: string;
     aadhaarNumber?: string;
