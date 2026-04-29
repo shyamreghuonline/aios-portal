@@ -11,6 +11,16 @@ function SetPasswordForm() {
   const router = useRouter();
   const token = searchParams.get("token");
 
+  // Hostname detection - only allow on student subdomain
+  const [hostname, setHostname] = useState("");
+
+  useEffect(() => {
+    setHostname(window.location.hostname);
+  }, []);
+
+  const isStudentDomain = hostname.startsWith("student.") ||
+    (hostname === "localhost" && typeof window !== "undefined" && window.location.search.includes("student=1"));
+
   const [loading, setLoading] = useState(true);
   const [validating, setValidating] = useState(true);
   const [studentName, setStudentName] = useState("");
@@ -21,6 +31,29 @@ function SetPasswordForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // Block access if not on student domain
+  if (hostname && !isStudentDomain) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
+        <div className="w-full max-w-md text-center">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
+            <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">Access Denied</h2>
+            <p className="text-slate-600 mb-4">
+              This page is only accessible via the student portal.
+            </p>
+            <a
+              href="https://student.aiosedu.org"
+              className="inline-block py-2.5 px-6 text-sm text-white font-semibold rounded-lg gradient-bg hover:shadow-lg transition-all"
+            >
+              Go to Student Portal
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (!token) {
