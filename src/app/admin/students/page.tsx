@@ -32,6 +32,7 @@ import {
   Filter,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   FileText,
   Printer,
   CreditCard,
@@ -66,6 +67,79 @@ interface Payment {
   balanceAmount: number;
   transactionRef?: string;
   remarks?: string;
+}
+
+// Custom Select Component with styled dropdown (red hover, no black/white native styling)
+type SelectOption = { value: string; label: string };
+
+function CustomSelect({
+  value,
+  onChange,
+  options,
+  placeholder = "Select...",
+  disabled = false,
+  required = false,
+  className = "",
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: SelectOption[];
+  placeholder?: string;
+  disabled?: boolean;
+  required?: boolean;
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const selectedLabel = options.find((o) => o.value === value)?.label || placeholder;
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={containerRef} className={`relative ${className}`}>
+      <button
+        type="button"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        className={`w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none text-left flex items-center justify-between ${
+          disabled ? "bg-slate-50 text-slate-500 cursor-not-allowed" : "bg-white cursor-pointer hover:border-red-300"
+        }`}
+        disabled={disabled}
+      >
+        <span className={value ? "text-slate-900" : "text-slate-500"}>{selectedLabel}</span>
+        <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+      {isOpen && (
+        <div className="absolute z-50 w-full mt-1 bg-white rounded-lg border border-slate-200 shadow-lg max-h-60 overflow-auto">
+          <ul className="py-1">
+            {options.map((option) => (
+              <li
+                key={option.value}
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className={`px-3 py-2 text-sm cursor-pointer transition-colors ${
+                  value === option.value 
+                    ? "bg-red-100 text-red-700 font-medium" 
+                    : "text-slate-700 hover:bg-red-50 hover:text-red-600"
+                }`}
+              >
+                {option.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 }
 
 interface Student {
@@ -1889,10 +1963,10 @@ export default function StudentsPage() {
                         className="px-2 text-xs text-slate-600 hover:text-red-500 whitespace-nowrap">✕</button>
                     </div>
                   ) : (
-                    <select
+                    <CustomSelect
                       value={formData.faculty}
-                      onChange={(e) => {
-                        if (e.target.value === "__other__") {
+                      onChange={(val) => {
+                        if (val === "__other__") {
                           setCustomFaculty(true);
                           setCustomCourse(true);
                           setCustomStream(true);
@@ -1900,18 +1974,16 @@ export default function StudentsPage() {
                         } else {
                           setCustomCourse(false);
                           setCustomStream(false);
-                          setFormData({ ...formData, faculty: e.target.value, course: "", stream: "", duration: "", endYear: "" });
+                          setFormData({ ...formData, faculty: val, course: "", stream: "", duration: "", endYear: "" });
                         }
                       }}
+                      placeholder="Select Faculty"
                       required
-                      className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
-                    >
-                      <option value="">Select Faculty</option>
-                      {getFaculties().map((f) => (
-                        <option key={f} value={f}>{f}</option>
-                      ))}
-                      <option value="__other__">Other (Type custom)</option>
-                    </select>
+                      options={[
+                        ...getFaculties().map((f) => ({ value: f, label: f })),
+                        { value: "__other__", label: "Other (Type custom)" },
+                      ]}
+                    />
                   )}
                 </div>
                 <div>
@@ -1932,34 +2004,35 @@ export default function StudentsPage() {
                       )}
                     </div>
                   ) : formData.faculty ? (
-                    <select
+                    <CustomSelect
                       value={formData.course}
-                      onChange={(e) => {
-                        if (e.target.value === "__other__") {
+                      onChange={(val) => {
+                        if (val === "__other__") {
                           setCustomCourse(true);
                           setCustomStream(true);
                           setFormData({ ...formData, course: "", stream: "", duration: "", endYear: "" });
                         } else {
-                          const course = e.target.value;
-                          const dur = formData.faculty && course ? getDuration(formData.faculty, course) : "";
+                          const dur = formData.faculty && val ? getDuration(formData.faculty, val) : "";
                           const end = dur ? calcEndYear(dur, formData.startYear) : "";
                           setCustomStream(false);
-                          setFormData({ ...formData, course, stream: "", duration: dur, endYear: end });
+                          setFormData({ ...formData, course: val, stream: "", duration: dur, endYear: end });
                         }
                       }}
+                      placeholder="Select Course"
                       required
-                      className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
-                    >
-                      <option value="">Select Course</option>
-                      {availableCourses.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                      <option value="__other__">Other (Type custom)</option>
-                    </select>
+                      options={[
+                        ...availableCourses.map((c) => ({ value: c, label: c })),
+                        { value: "__other__", label: "Other (Type custom)" },
+                      ]}
+                    />
                   ) : (
-                    <select disabled className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-500 appearance-none">
-                      <option>Select faculty first</option>
-                    </select>
+                    <CustomSelect
+                      value=""
+                      onChange={() => {}}
+                      placeholder="Select faculty first"
+                      disabled
+                      options={[]}
+                    />
                   )}
                 </div>
               </div>
@@ -1984,29 +2057,31 @@ export default function StudentsPage() {
                       )}
                     </div>
                   ) : formData.course ? (
-                    <select
+                    <CustomSelect
                       value={formData.stream}
-                      onChange={(e) => {
-                        if (e.target.value === "__other__") {
+                      onChange={(val) => {
+                        if (val === "__other__") {
                           setCustomStream(true);
                           setFormData({ ...formData, stream: "" });
                         } else {
-                          setFormData({ ...formData, stream: e.target.value });
+                          setFormData({ ...formData, stream: val });
                         }
                       }}
+                      placeholder="Select Stream"
                       required
-                      className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
-                    >
-                      <option value="">Select Stream</option>
-                      {availableStreams.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
-                      <option value="__other__">Other (Type custom)</option>
-                    </select>
+                      options={[
+                        ...availableStreams.map((s) => ({ value: s, label: s })),
+                        { value: "__other__", label: "Other (Type custom)" },
+                      ]}
+                    />
                   ) : (
-                    <select disabled className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-500 appearance-none">
-                      <option>Select course first</option>
-                    </select>
+                    <CustomSelect
+                      value=""
+                      onChange={() => {}}
+                      placeholder="Select course first"
+                      disabled
+                      options={[]}
+                    />
                   )}
                 </div>
                 <div>
@@ -2026,26 +2101,27 @@ export default function StudentsPage() {
                         className="px-2 text-xs text-slate-600 hover:text-red-500 whitespace-nowrap">✕</button>
                     </div>
                   ) : (
-                    <select
+                    <CustomSelect
                       value={formData.university}
-                      onChange={(e) => {
-                        if (e.target.value === "__other__") {
+                      onChange={(val) => {
+                        if (val === "__other__") {
                           setCustomUniversity(true);
                           setFormData({ ...formData, university: "" });
                         } else {
-                          setFormData({ ...formData, university: e.target.value });
+                          setFormData({ ...formData, university: val });
                         }
                       }}
+                      placeholder="Select University"
                       required
-                      className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
-                    >
-                      <option value="">Select University</option>
-                      <option value="Capital University">Capital University</option>
-                      <option value="Asian International University">Asian International University</option>
-                      <option value="North East Frontier Technical University">North East Frontier Technical University</option>
-                      <option value="Niilm University">Niilm University</option>
-                      <option value="__other__">Other (Type custom)</option>
-                    </select>
+                      options={[
+                        { value: "", label: "Select University" },
+                        { value: "Capital University", label: "Capital University" },
+                        { value: "Asian International University", label: "Asian International University" },
+                        { value: "North East Frontier Technical University", label: "North East Frontier Technical University" },
+                        { value: "Niilm University", label: "Niilm University" },
+                        { value: "__other__", label: "Other (Type custom)" },
+                      ]}
+                    />
                   )}
                 </div>
               </div>
@@ -2055,21 +2131,16 @@ export default function StudentsPage() {
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Duration{customCourse ? " *" : ""}</label>
                   {customCourse ? (
-                    <select
+                    <CustomSelect
                       value={formData.duration}
-                      onChange={(e) => {
-                        const dur = e.target.value;
-                        const end = dur ? calcEndYear(dur, formData.startYear) : "";
-                        setFormData({ ...formData, duration: dur, endYear: end });
+                      onChange={(val) => {
+                        const end = val ? calcEndYear(val, formData.startYear) : "";
+                        setFormData({ ...formData, duration: val, endYear: end });
                       }}
+                      placeholder="Select duration"
                       required
-                      className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
-                    >
-                      <option value="">Select duration</option>
-                      {DURATION_OPTIONS.map((d) => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
+                      options={DURATION_OPTIONS.map((d) => ({ value: d, label: d }))}
+                    />
                   ) : (
                     <input
                       type="text"
@@ -2081,35 +2152,26 @@ export default function StudentsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Start Year *</label>
-                  <select
+                  <CustomSelect
                     value={formData.startYear}
-                    onChange={(e) => {
-                      const start = e.target.value;
+                    onChange={(val) => {
                       const dur = formData.duration || autoDuration;
-                      const end = calcEndYear(dur, start);
-                      setFormData({ ...formData, startYear: start, endYear: end || formData.endYear });
+                      const end = calcEndYear(dur, val);
+                      setFormData({ ...formData, startYear: val, endYear: end || formData.endYear });
                     }}
                     required
-                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
-                  >
-                    {yearOptions.map((y) => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
+                    options={yearOptions.map((y) => ({ value: String(y), label: String(y) }))}
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">End Year *</label>
-                  <select
+                  <CustomSelect
                     value={formData.endYear}
-                    onChange={(e) => setFormData({ ...formData, endYear: e.target.value })}
+                    onChange={(val) => setFormData({ ...formData, endYear: val })}
+                    placeholder="Select"
                     required
-                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
-                  >
-                    <option value="">Select</option>
-                    {yearOptions.map((y) => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
+                    options={yearOptions.map((y) => ({ value: String(y), label: String(y) }))}
+                  />
                 </div>
               </div>
 
@@ -2167,17 +2229,17 @@ export default function StudentsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Admission Center *</label>
-                  <select
+                  <CustomSelect
                     value={formData.admissionCenter}
-                    onChange={(e) => setFormData({ ...formData, admissionCenter: e.target.value })}
-                    className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none bg-white"
+                    onChange={(val) => setFormData({ ...formData, admissionCenter: val })}
+                    options={[
+                      { value: "Bengaluru", label: "Bengaluru" },
+                      { value: "Kochi", label: "Kochi" },
+                      { value: "Salem", label: "Salem" },
+                      { value: "Hyderabad", label: "Hyderabad" },
+                    ]}
                     required
-                  >
-                    <option value="Bengaluru">Bengaluru</option>
-                    <option value="Kochi">Kochi</option>
-                    <option value="Salem">Salem</option>
-                    <option value="Hyderabad">Hyderabad</option>
-                  </select>
+                  />
                 </div>
               </div>
 
