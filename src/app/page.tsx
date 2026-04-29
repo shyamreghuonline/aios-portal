@@ -206,8 +206,13 @@ export default function LoginPage() {
           {/* ─── STUDENT TAB ─── */}
           {tab === "student" && (
             <>
-              <h2 className="text-lg font-semibold text-slate-900 mb-1">Student Login</h2>
-              <p className="text-sm text-slate-600 mb-6">Enter your Enrollment ID and password</p>
+              {/* Only show heading if NOT on student domain (already shown in header above) */}
+              {!isStudentDomain && (
+                <>
+                  <h2 className="text-lg font-semibold text-slate-900 mb-1">Student Login</h2>
+                  <p className="text-sm text-slate-600 mb-6">Enter your Enrollment ID and password</p>
+                </>
+              )}
 
               <form onSubmit={handleStudentLogin} className="space-y-4">
                 <div>
