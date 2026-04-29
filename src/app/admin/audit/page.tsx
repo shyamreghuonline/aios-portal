@@ -42,6 +42,7 @@ interface Student {
   totalFee?: number;
   discountAmount?: number;
   enrollmentDate?: string;
+  admissionCenter?: string;
   archived?: boolean;
 }
 
