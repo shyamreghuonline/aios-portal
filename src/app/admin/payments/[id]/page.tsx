@@ -67,16 +67,11 @@ export default function ReceiptPage() {
           const p = snap.data() as Payment;
           setPayment(p);
           // Resolve actual enrollment ID from students collection
-          if (p.studentPhone) {
-            const studentQuery = query(
-              collection(db, "students"),
-              where("phone", "==", p.studentPhone)
-            );
-            const studentSnap = await getDocs(studentQuery);
-            if (!studentSnap.empty) {
-              const sData = studentSnap.docs[0].data();
-              const actualId = (sData.studentId as string) || "";
-              if (actualId) setResolvedStudentId(actualId);
+          if (p.studentId) {
+            const studentRef = doc(db, "students", p.studentId);
+            const studentSnap = await getDoc(studentRef);
+            if (studentSnap.exists()) {
+              setResolvedStudentId(p.studentId);
             }
           }
         }

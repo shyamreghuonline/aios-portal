@@ -28,8 +28,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "This link has expired" }, { status: 400 });
     }
 
-    // Fetch student data
-    const studentSnap = await adminDb.collection("students").doc(tokenData.phone).get();
+    // Fetch student data by studentId (new primary key)
+    const studentSnap = await adminDb.collection("students").doc(tokenData.studentId).get();
     if (!studentSnap.exists) {
       return NextResponse.json({ error: "Student not found" }, { status: 404 });
     }

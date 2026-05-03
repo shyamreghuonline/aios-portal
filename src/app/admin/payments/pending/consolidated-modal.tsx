@@ -29,7 +29,7 @@ interface Student {
 export default function ConsolidatedPaymentsModal({
   open,
   onClose,
-  studentPhone,
+  studentId,
   student,
   pending,
   confirmed,
@@ -37,7 +37,7 @@ export default function ConsolidatedPaymentsModal({
 }: {
   open: boolean;
   onClose: () => void;
-  studentPhone: string;
+  studentId: string;
   student: Student | undefined;
   pending: PendingPayment[];
   confirmed: ConfirmedPayment[];
@@ -57,7 +57,7 @@ export default function ConsolidatedPaymentsModal({
           <div>
             <h2 className="text-base font-bold text-slate-900">Transaction Statement</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              {student?.name || studentPhone} · {pending.length + confirmed.length} records
+              {student?.name || studentId} · {pending.length + confirmed.length} records
             </p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 transition-colors">

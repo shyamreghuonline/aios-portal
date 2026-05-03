@@ -124,7 +124,7 @@ export default function NewPaymentPage() {
 
     if (student) {
       // Fetch previous payments for this student
-      const q = query(collection(db, "payments"), where("studentPhone", "==", student.phone));
+      const q = query(collection(db, "payments"), where("studentId", "==", student.studentId || student.id));
       const snap = await getDocs(q);
       let totalPaid = 0;
       let maxInstallment = 0;
@@ -158,10 +158,10 @@ export default function NewPaymentPage() {
 
       await setDoc(doc(db, "payments", paymentId), {
         receiptNumber,
+        studentId: selectedStudent.studentId || selectedStudent.id,
         studentName: selectedStudent.name,
         studentEmail: selectedStudent.email,
         studentPhone: selectedStudent.phone,
-        studentId: selectedStudent.studentId || "",
         phone: selectedStudent.phone,
         program: selectedStudent.course || selectedStudent.program || "",
         university: selectedStudent.university || "",

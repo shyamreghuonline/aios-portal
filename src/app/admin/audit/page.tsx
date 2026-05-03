@@ -146,7 +146,7 @@ export default function AuditPage() {
           // Exclude discount vouchers and archived payments from "collected" revenue
           if (p.archived) return;
           if (p.isDiscount || (p.paymentMode || "").toLowerCase() === "discount") return;
-          const key = (p.studentPhone || p.studentId || "").toString();
+          const key = (p.studentId || p.studentPhone || "").toString();
           if (!key) return;
           items.push({
             key,
