@@ -727,8 +727,8 @@ export default function PaymentsHub() {
                 <FileUp className="w-4.5 h-4.5 text-white" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-white">Upload Payment Receipt</h3>
-                <p className="text-[10px] text-purple-200">Submit your external payment proof for verification</p>
+                <h3 className="text-base font-bold text-white">Upload Payment Receipt</h3>
+                <p className="text-sm text-white/90">Submit your external payment proof for verification</p>
               </div>
             </div>
             <button onClick={() => setActiveAction("none")} className="p-1.5 rounded-lg hover:bg-white/20 text-white/80 hover:text-white transition-colors">
@@ -776,51 +776,57 @@ export default function PaymentsHub() {
                 )}
               </div>
 
-              {/* Transaction ID */}
-              <div>
-                <label className="text-xs font-bold text-blue-700 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center"><Receipt className="w-3 h-3 text-blue-600" /></span>
-                  Transaction / Reference ID
-                </label>
-                <input type="text" value={transactionId} onChange={e => setTransactionId(e.target.value)}
-                  placeholder="e.g. TXN12345678" className="w-full px-4 py-3 border-2 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-xl text-sm outline-none transition-all bg-blue-50/30" />
-              </div>
-
-              {/* Upload */}
-              <div>
-                <label className="text-xs font-bold text-emerald-700 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-md bg-emerald-100 flex items-center justify-center"><ImageIcon className="w-3 h-3 text-emerald-600" /></span>
-                  Upload Receipt Screenshot <span className="text-red-500">*</span>
-                </label>
-                <div onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
-                    screenshotPreview ? "border-emerald-400 bg-emerald-50 shadow-inner" : "border-purple-300 hover:border-purple-500 hover:bg-gradient-to-br hover:from-purple-50 hover:to-indigo-50 bg-slate-50/50"
-                  }`}>
-                  {screenshotPreview ? (
-                    <img src={screenshotPreview} alt="Preview" className="mx-auto max-h-40 rounded-lg shadow-md ring-1 ring-emerald-200" />
-                  ) : (
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
-                        <ImageIcon className="w-6 h-6 text-purple-500" />
-                      </div>
-                      <p className="text-xs font-bold text-slate-700">Click to upload receipt</p>
-                      <p className="text-[10px] text-slate-400">JPEG, PNG (max 4MB)</p>
-                    </div>
-                  )}
+              {/* Transaction ID - Hidden for Card payments */}
+              {paymentMethod !== "card" && (
+                <div>
+                  <label className="text-xs font-bold text-blue-700 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center"><Receipt className="w-3 h-3 text-blue-600" /></span>
+                    Transaction / Reference ID
+                  </label>
+                  <input type="text" value={transactionId} onChange={e => setTransactionId(e.target.value)}
+                    placeholder="e.g. TXN12345678" className="w-full px-4 py-3 border-2 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-xl text-sm outline-none transition-all bg-blue-50/30" />
                 </div>
-                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
-              </div>
+              )}
 
-              {/* Actions */}
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => setActiveAction("none")}
-                  className="flex-1 py-3 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors border border-slate-200">Cancel</button>
-                <button onClick={handleSubmitPayment}
-                  disabled={submitting || !amount || parseFloat(amount) <= 0 || !screenshot}
-                  className="flex-1 py-3 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 transition-all shadow-md shadow-purple-200 hover:shadow-lg hover:shadow-purple-300">
-                  {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : "Submit Receipt"}
-                </button>
-              </div>
+              {/* Upload - Hidden for Card payments */}
+              {paymentMethod !== "card" && (
+                <div>
+                  <label className="text-xs font-bold text-emerald-700 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-md bg-emerald-100 flex items-center justify-center"><ImageIcon className="w-3 h-3 text-emerald-600" /></span>
+                    Upload Receipt Screenshot <span className="text-red-500">*</span>
+                  </label>
+                  <div onClick={() => fileInputRef.current?.click()}
+                    className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+                      screenshotPreview ? "border-emerald-400 bg-emerald-50 shadow-inner" : "border-purple-300 hover:border-purple-500 hover:bg-gradient-to-br hover:from-purple-50 hover:to-indigo-50 bg-slate-50/50"
+                    }`}>
+                    {screenshotPreview ? (
+                      <img src={screenshotPreview} alt="Preview" className="mx-auto max-h-40 rounded-lg shadow-md ring-1 ring-emerald-200" />
+                    ) : (
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
+                          <ImageIcon className="w-6 h-6 text-purple-500" />
+                        </div>
+                        <p className="text-xs font-bold text-slate-700">Click to upload receipt</p>
+                        <p className="text-[10px] text-slate-400">JPEG, PNG (max 4MB)</p>
+                      </div>
+                    )}
+                  </div>
+                  <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
+                </div>
+              )}
+
+              {/* Actions - Hidden for Card payments */}
+              {paymentMethod !== "card" && (
+                <div className="flex gap-3 pt-2">
+                  <button onClick={() => setActiveAction("none")}
+                    className="flex-1 py-3 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors border border-slate-200">Cancel</button>
+                  <button onClick={handleSubmitPayment}
+                    disabled={submitting || !amount || parseFloat(amount) <= 0 || !screenshot}
+                    className="flex-1 py-3 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 transition-all shadow-md shadow-purple-200 hover:shadow-lg hover:shadow-purple-300">
+                    {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : "Submit Receipt"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
