@@ -721,8 +721,8 @@ export default function PaymentsHub() {
 
       {/* ── UPLOAD RECEIPT PANEL ──────────────────────────────────────────── */}
       {activeAction === "upload" && (
-        <div className="bg-white border border-purple-200 rounded-2xl overflow-hidden shadow-lg ring-1 ring-purple-100">
-          <div className="px-5 py-4 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 flex items-center justify-between">
+        <div className="bg-white border border-red-200 rounded-2xl overflow-hidden shadow-lg ring-1 ring-red-100">
+          <div className="px-5 py-4 gradient-bg flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
                 <FileUp className="w-4.5 h-4.5 text-white" />
@@ -740,19 +740,19 @@ export default function PaymentsHub() {
             <div className="space-y-5">
               {/* Amount */}
               <div>
-                <label className="text-xs font-bold text-purple-700 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-md bg-purple-100 flex items-center justify-center text-[10px] font-black text-purple-600">₹</span>
+                <label className="text-xs font-bold text-slate-900 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-md bg-red-100 flex items-center justify-center text-[10px] font-black text-red-600">₹</span>
                   Amount Paid <span className="text-red-500">*</span>
                 </label>
                 <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
                   placeholder="Enter amount" min={1}
-                  className="w-full px-4 py-3 border-2 border-purple-200 focus:border-purple-500 focus:ring-2 focus:ring-purple-100 rounded-xl text-sm font-bold text-slate-900 outline-none transition-all bg-purple-50/30" />
+                  className="w-full px-4 py-3 border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 rounded-xl text-sm font-bold text-slate-900 outline-none transition-all bg-red-50/30" />
               </div>
 
               {/* Method */}
               <div>
-                <label className="text-xs font-bold text-indigo-700 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
-                  <span className="w-5 h-5 rounded-md bg-indigo-100 flex items-center justify-center"><CreditCard className="w-3 h-3 text-indigo-600" /></span>
+                <label className="text-xs font-bold text-slate-900 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-md bg-red-100 flex items-center justify-center"><CreditCard className="w-3 h-3 text-red-600" /></span>
                   Payment Method <span className="text-red-500">*</span>
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -760,8 +760,8 @@ export default function PaymentsHub() {
                     <button key={m} onClick={() => setPaymentMethod(m.toLowerCase() as any)}
                       className={`px-3 py-2.5 text-xs font-bold rounded-xl border-2 transition-all ${
                         paymentMethod === m.toLowerCase()
-                          ? "bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-transparent shadow-md shadow-purple-200"
-                          : "bg-white text-slate-700 border-slate-200 hover:border-purple-300 hover:bg-purple-50"
+                          ? "gradient-bg text-white border-transparent shadow-md shadow-red-200"
+                          : "bg-white text-slate-700 border-slate-200 hover:border-red-300 hover:bg-red-50"
                       }`}>
                       {m}
                     </button>
@@ -771,41 +771,49 @@ export default function PaymentsHub() {
                   <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
                     <Landmark className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-slate-600 leading-relaxed">
-                      <strong>In-person payment required.</strong> Card payments must be completed directly at the admission center. If you have already paid in person, please upload your receipt below.
+                      <strong>In-person payment required.</strong> Card payments must be completed directly at the admission center.
+                    </p>
+                  </div>
+                )}
+                {paymentMethod === "cash" && (
+                  <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
+                    <Landmark className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-slate-600 leading-relaxed">
+                      <strong>In-person payment required.</strong> Cash payments must be completed directly at the admission center.
                     </p>
                   </div>
                 )}
               </div>
 
-              {/* Transaction ID - Hidden for Card payments */}
-              {paymentMethod !== "card" && (
+              {/* Transaction ID - Hidden for Card and Cash payments */}
+              {paymentMethod !== "card" && paymentMethod !== "cash" && (
                 <div>
-                  <label className="text-xs font-bold text-blue-700 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-md bg-blue-100 flex items-center justify-center"><Receipt className="w-3 h-3 text-blue-600" /></span>
+                  <label className="text-xs font-bold text-slate-900 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-md bg-red-100 flex items-center justify-center"><Receipt className="w-3 h-3 text-red-600" /></span>
                     Transaction / Reference ID
                   </label>
                   <input type="text" value={transactionId} onChange={e => setTransactionId(e.target.value)}
-                    placeholder="e.g. TXN12345678" className="w-full px-4 py-3 border-2 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 rounded-xl text-sm outline-none transition-all bg-blue-50/30" />
+                    placeholder="e.g. TXN12345678" className="w-full px-4 py-3 border-2 border-red-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 rounded-xl text-sm outline-none transition-all bg-red-50/30" />
                 </div>
               )}
 
-              {/* Upload - Hidden for Card payments */}
-              {paymentMethod !== "card" && (
+              {/* Upload - Hidden for Card and Cash payments */}
+              {paymentMethod !== "card" && paymentMethod !== "cash" && (
                 <div>
-                  <label className="text-xs font-bold text-emerald-700 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
-                    <span className="w-5 h-5 rounded-md bg-emerald-100 flex items-center justify-center"><ImageIcon className="w-3 h-3 text-emerald-600" /></span>
+                  <label className="text-xs font-bold text-slate-900 mb-2 block uppercase tracking-wide flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-md bg-red-100 flex items-center justify-center"><ImageIcon className="w-3 h-3 text-red-600" /></span>
                     Upload Receipt Screenshot <span className="text-red-500">*</span>
                   </label>
                   <div onClick={() => fileInputRef.current?.click()}
                     className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
-                      screenshotPreview ? "border-emerald-400 bg-emerald-50 shadow-inner" : "border-purple-300 hover:border-purple-500 hover:bg-gradient-to-br hover:from-purple-50 hover:to-indigo-50 bg-slate-50/50"
+                      screenshotPreview ? "border-red-400 bg-red-50 shadow-inner" : "border-red-300 hover:border-red-500 hover:bg-red-50 bg-slate-50/50"
                     }`}>
                     {screenshotPreview ? (
-                      <img src={screenshotPreview} alt="Preview" className="mx-auto max-h-40 rounded-lg shadow-md ring-1 ring-emerald-200" />
+                      <img src={screenshotPreview} alt="Preview" className="mx-auto max-h-40 rounded-lg shadow-md ring-1 ring-red-200" />
                     ) : (
                       <div className="flex flex-col items-center gap-2">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center">
-                          <ImageIcon className="w-6 h-6 text-purple-500" />
+                        <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                          <ImageIcon className="w-6 h-6 text-red-500" />
                         </div>
                         <p className="text-xs font-bold text-slate-700">Click to upload receipt</p>
                         <p className="text-[10px] text-slate-400">JPEG, PNG (max 4MB)</p>
@@ -816,14 +824,14 @@ export default function PaymentsHub() {
                 </div>
               )}
 
-              {/* Actions - Hidden for Card payments */}
-              {paymentMethod !== "card" && (
+              {/* Actions - Hidden for Card and Cash payments */}
+              {paymentMethod !== "card" && paymentMethod !== "cash" && (
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => setActiveAction("none")}
                     className="flex-1 py-3 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors border border-slate-200">Cancel</button>
                   <button onClick={handleSubmitPayment}
                     disabled={submitting || !amount || parseFloat(amount) <= 0 || !screenshot}
-                    className="flex-1 py-3 text-xs font-bold text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 transition-all shadow-md shadow-purple-200 hover:shadow-lg hover:shadow-purple-300">
+                    className="flex-1 py-3 text-xs font-bold text-white gradient-bg rounded-xl disabled:opacity-40 flex items-center justify-center gap-2 transition-all shadow-md shadow-red-200 hover:shadow-lg hover:shadow-red-300">
                     {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</> : "Submit Receipt"}
                   </button>
                 </div>
