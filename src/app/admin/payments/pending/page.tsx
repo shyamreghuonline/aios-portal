@@ -43,6 +43,7 @@ interface PendingPayment {
   installmentNumber?: number;
   totalInstallments?: number;
   paymentDate?: string;
+  status?: "pending" | "approved" | "rejected";
   createdAt?: unknown;
   reviewedAt?: any;
   reviewedBy?: string;
