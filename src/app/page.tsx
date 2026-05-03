@@ -12,6 +12,15 @@ export default function LoginPage() {
   const router = useRouter();
   const [tab, setTab] = useState<"admin" | "student">("student");
 
+  // Hostname detection for subdomain-based login
+  const [hostname, setHostname] = useState("");
+
+  useEffect(() => {
+    setHostname(window.location.hostname);
+  }, []);
+
+  const isStudentDomain = hostname.startsWith("student.");
+
   // Admin state
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
@@ -82,6 +91,13 @@ export default function LoginPage() {
     setError("");
   }
 
+  // Force student tab on student subdomain
+  useEffect(() => {
+    if (isStudentDomain) {
+      setTab("student");
+    }
+  }, [isStudentDomain]);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -98,30 +114,40 @@ export default function LoginPage() {
           <img src="/login-page.jpeg" alt="AIOS EDU" className="mx-auto w-[440px] h-auto object-contain mb-4" />
         </div>
 
-        {/* Tabs */}
-        <div className="flex bg-slate-200 rounded-xl p-1 mb-4 border border-slate-300">
-          <button
-            onClick={() => switchTab("student")}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-lg transition-all ${
-              tab === "student" ? "gradient-bg text-white shadow" : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <GraduationCap className="w-4 h-4" />
-            Student
-          </button>
-          <button
-            onClick={() => switchTab("admin")}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-lg transition-all ${
-              tab === "admin" ? "gradient-bg text-white shadow" : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            <UserCog className="w-4 h-4" />
-            Admin
-          </button>
-        </div>
+        {/* Tabs - Hidden on student subdomain */}
+        {!isStudentDomain && (
+          <div className="flex bg-slate-200 rounded-xl p-1 mb-4 border border-slate-300">
+            <button
+              onClick={() => switchTab("student")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                tab === "student" ? "gradient-bg text-white shadow" : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <GraduationCap className="w-4 h-4" />
+              Student
+            </button>
+            <button
+              onClick={() => switchTab("admin")}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-lg transition-all ${
+                tab === "admin" ? "gradient-bg text-white shadow" : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              <UserCog className="w-4 h-4" />
+              Admin
+            </button>
+          </div>
+        )}
 
         {/* Card */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          {/* ─── STUDENT-ONLY HEADER ─── */}
+          {isStudentDomain && (
+            <div className="text-center mb-6">
+              <h2 className="text-xl font-semibold text-slate-900">Student Login</h2>
+              <p className="text-sm text-slate-600">Enter your Enrollment ID and password</p>
+            </div>
+          )}
+
           {/* ─── ADMIN TAB ─── */}
           {tab === "admin" && (
             <>
@@ -180,8 +206,13 @@ export default function LoginPage() {
           {/* ─── STUDENT TAB ─── */}
           {tab === "student" && (
             <>
-              <h2 className="text-lg font-semibold text-slate-900 mb-1">Student Login</h2>
-              <p className="text-sm text-slate-600 mb-6">Enter your Enrollment ID and password</p>
+              {/* Only show heading if NOT on student domain (already shown in header above) */}
+              {!isStudentDomain && (
+                <>
+                  <h2 className="text-lg font-semibold text-slate-900 mb-1">Student Login</h2>
+                  <p className="text-sm text-slate-600 mb-6">Enter your Enrollment ID and password</p>
+                </>
+              )}
 
               <form onSubmit={handleStudentLogin} className="space-y-4">
                 <div>
