@@ -5,11 +5,14 @@ import Link from "next/link";
 
 interface PendingPayment {
   id: string;
-  status: "pending" | "approved" | "rejected";
+  status?: "pending" | "approved" | "rejected";
   amount: number;
-  paymentMethod: string;
+  paymentMode: string;
+  transactionRef?: string;
+  transactionId?: string;
   rejectionReason?: string;
-  createdAt: any;
+  createdAt?: any;
+  studentId?: string;
 }
 
 interface ConfirmedPayment {
@@ -127,11 +130,11 @@ export default function ConsolidatedPaymentsModal({
                       </td>
                       <td className="px-3 py-2.5">
                         <span className="text-xs text-slate-600">
-                          {p.paymentMethod === "qr" || p.paymentMethod === "upi"
+                          {p.paymentMode === "qr" || p.paymentMode === "upi"
                             ? "UPI"
-                            : p.paymentMethod === "bank"
+                            : p.paymentMode === "bank"
                             ? "Bank"
-                            : p.paymentMethod === "cash"
+                            : p.paymentMode === "cash"
                             ? "Cash"
                             : "Card"}
                         </span>

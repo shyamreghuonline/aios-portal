@@ -93,6 +93,7 @@ export default function PaymentsHub() {
   const studentId = user?.studentData
     ? (user.studentData.studentId as string) || (user.studentData.id as string) || (user.studentData.phone as string)
     : undefined;
+  const studentPhone = (user?.phone as string) || (user?.studentData?.phone as string) || undefined;
 
   const [confirmedPayments, setConfirmedPayments] = useState<ConfirmedPayment[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);

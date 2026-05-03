@@ -39,7 +39,9 @@ interface PendingPayment {
   amount: number;
   paymentMode: string;
   transactionRef?: string;
+  transactionId?: string;
   remarks?: string;
+  screenshotUrl?: string;
   installmentNumber?: number;
   totalInstallments?: number;
   paymentDate?: string;
@@ -584,7 +586,7 @@ Thank you!`,
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1 text-sm text-slate-700">
-                      {payment.paymentMethod === "qr" ? (
+                      {payment.paymentMode === "qr" ? (
                         <>
                           <QrCode className="w-3.5 h-3.5 text-blue-600" />
                           <span>UPI/QR</span>
@@ -598,7 +600,7 @@ Thank you!`,
                     </div>
                   </td>
                   <td className="px-3 py-2.5 text-slate-600 text-sm whitespace-nowrap">
-                    {payment.createdAt?.toDate?.().toLocaleDateString("en-GB").replace(/\//g, "-") || "Unknown"}
+                    {payment.createdAt ? (payment.createdAt as any).toDate?.().toLocaleDateString("en-GB").replace(/\//g, "-") : "Unknown"}
                   </td>
                   <td className="px-3 py-2.5 text-center">
                     {payment.status === "pending" && (
@@ -719,7 +721,7 @@ Thank you!`,
                 </div>
                 <div>
                   <label className="text-xs text-slate-500">Payment Method</label>
-                  <p className="font-medium">{selectedPayment.paymentMethod === "qr" ? "UPI/QR" : "Card"}</p>
+                  <p className="font-medium">{selectedPayment.paymentMode === "qr" ? "UPI/QR" : "Card"}</p>
                 </div>
               </div>
               

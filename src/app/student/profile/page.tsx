@@ -412,7 +412,7 @@ export default function StudentProfilePage() {
           </div>
           <div className="grid grid-cols-3 divide-x divide-slate-100">
             {[
-              { label: "Registered Mobile", value: sd.phone || "", span: "" },
+              { label: "Registered Mobile", value: (sd.phone as string) || "", span: "" },
               { label: "Email Address", value: (sd.email as string) || "", span: "col-span-2" },
             ].map(({ label, value, span }) => (
               <div key={label} className={`${span} px-4 py-2.5 cursor-not-allowed select-none`} title="Managed by admin">
