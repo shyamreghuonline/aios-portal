@@ -234,6 +234,27 @@ export default function ReceiptPage() {
                   text-align: center !important;
                   margin-top: 4px !important;
                 }
+                .print-contact-info h2 {
+                  font-size: 10px !important;
+                  font-weight: bold !important;
+                  color: #8B0000 !important;
+                  text-transform: uppercase !important;
+                  letter-spacing: 0.05em !important;
+                  margin-bottom: 8px !important;
+                }
+                .print-contact-info > div {
+                  border-left: 4px solid #8B0000 !important;
+                  padding-left: 12px !important;
+                  padding-top: 8px !important;
+                  padding-bottom: 8px !important;
+                  background-color: #fef2f2 !important;
+                  border-radius: 0 8px 8px 0 !important;
+                }
+                .print-contact-info p {
+                  font-size: 10px !important;
+                  color: #374151 !important;
+                  margin: 2px 0 !important;
+                }
                 table {
                   border: 2px solid #8B0000 !important;
                   border-radius: 8px !important;
@@ -432,6 +453,16 @@ export default function ReceiptPage() {
                     <p className="text-xs text-center text-gray-500 mt-1">AIOS EDU</p>
                   </div>
                 </div>
+              </div>
+            </section>
+
+            {/* Branch & Contact Info */}
+            <section className="mb-6 print-contact-info">
+              <h2 className="text-[10px] font-bold text-red-800 uppercase tracking-wider mb-2">Branch & Contact Information</h2>
+              <div className="text-xs text-gray-700 font-medium leading-relaxed border-l-4 border-red-800 pl-3 py-2 bg-red-50 rounded-r-lg">
+                <p>ADMISSION SUPPORTING BRANCH : THALASSERY</p>
+                <p>WHATSAPP HELPLINE: +91-7411133333</p>
+                <p>BENGALURU OFFICE : 22222228 (MON TO SAT 10am to 5pm)</p>
               </div>
             </section>
           </div>

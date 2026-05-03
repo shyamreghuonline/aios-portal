@@ -109,6 +109,7 @@ import html2canvas from "html2canvas";
 import Link from "next/link";
 
 import { getFaculties, getCourses, getStreams, getDuration } from "@/lib/courses-data";
+import { getSemesterCount, groupSemestersByYear } from "@/lib/semester-utils";
 
 
 
@@ -318,13 +319,27 @@ interface Student {
 
     certificateStatus?: "Not Issued" | "Issued from University" | "Sent" | "Received";
 
+    certificateIssuedAt?: string;
+
+    certificateSentAt?: string;
+
+    certificateReceivedAt?: string;
+
     semesters?: {
 
       semester: number;
 
       status: "Pass" | "Fail" | "Not Declared";
 
+      statusChangedAt?: string;
+
       certificateStatus?: "Not Issued" | "Issued from University" | "Sent" | "Received";
+
+      certificateIssuedAt?: string;
+
+      certificateSentAt?: string;
+
+      certificateReceivedAt?: string;
 
     }[];
 
@@ -355,6 +370,17 @@ interface Student {
 }
 
 
+
+// Format ISO date to readable string: 03 May 2026, 02:30 PM
+function formatDateTime(isoString?: string): string {
+  if (!isoString) return "";
+  try {
+    const d = new Date(isoString);
+    return d.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
+  } catch {
+    return "";
+  }
+}
 
 export default function StudentsPage() {
 
@@ -405,6 +431,7 @@ export default function StudentsPage() {
   const [newStudentCopied, setNewStudentCopied] = useState(false);
 
   const [detailStudent, setDetailStudent] = useState<Student | null>(null);
+  const [detailExpandedYear, setDetailExpandedYear] = useState<number | null>(null);
 
   const [showDiscountModal, setShowDiscountModal] = useState(false);
 
@@ -826,6 +853,7 @@ export default function StudentsPage() {
       if (e.key === "Escape") {
 
         setDetailStudent(null);
+        setDetailExpandedYear(null);
 
         setPaymentsModal(null);
 
@@ -1757,7 +1785,7 @@ export default function StudentsPage() {
 
                       <td className="px-2 lg:px-3 py-2 lg:py-3">
 
-                        <button onClick={() => setDetailStudent(student)} className="text-left flex items-center gap-2 lg:gap-3 group/name">
+                        <button onClick={() => { setDetailStudent(student); setDetailExpandedYear(null); }} className="text-left flex items-center gap-2 lg:gap-3 group/name">
 
                           <div className="w-8 h-8 lg:w-9 lg:h-9 rounded-full gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm overflow-hidden">
 
@@ -1789,7 +1817,7 @@ export default function StudentsPage() {
 
                       <td className="px-2 lg:px-3 py-2 lg:py-3 whitespace-nowrap hidden sm:table-cell">
 
-                        <button onClick={() => setDetailStudent(student)} className="text-sm text-blue-700 hover:text-blue-900 hover:underline transition-colors">
+                        <button onClick={() => { setDetailStudent(student); setDetailExpandedYear(null); }} className="text-sm text-blue-700 hover:text-blue-900 hover:underline transition-colors">
 
                           {student.studentId || student.id}
 
@@ -2015,7 +2043,7 @@ export default function StudentsPage() {
 
                   </button>
 
-                  <button onClick={() => setDetailStudent(null)} className="text-white/60 hover:text-white transition-colors p-1">
+                  <button onClick={() => { setDetailStudent(null); setDetailExpandedYear(null); }} className="text-white/60 hover:text-white transition-colors p-1">
 
                     <X className="w-5 h-5" />
 
@@ -2493,6 +2521,141 @@ export default function StudentsPage() {
 
 
 
+              {/* ── Course Results ── */}
+              {detailStudent.duration && (
+                <div className="bg-white border border-cyan-200 rounded-2xl shadow-sm overflow-hidden">
+                  <div className="bg-gradient-to-r from-cyan-50 via-teal-50/50 to-white border-b border-slate-200 p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <BookOpen className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-slate-900">Course Results</h3>
+                        <p className="text-xs text-slate-500">Pass / fail status by year</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-3 space-y-2">
+                    {groupSemestersByYear(getSemesterCount(detailStudent.duration)).map((yearGroup) => {
+                      const yearResult = detailStudent.semesterResults?.find((r) => r.year === yearGroup.year);
+                      const status = yearResult?.status || "Not Declared";
+                      const certificateStatus = yearResult?.certificateStatus || "Not Issued";
+                      const isExpanded = detailExpandedYear === yearGroup.year;
+                      return (
+                        <div key={yearGroup.year} className="bg-gradient-to-br from-cyan-50 to-white rounded-xl border border-cyan-100 shadow-sm overflow-hidden">
+                          <div
+                            className="flex items-center justify-between p-3 cursor-pointer hover:bg-cyan-100/40 transition-colors"
+                            onClick={() => setDetailExpandedYear(isExpanded ? null : yearGroup.year)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${status === "Pass" ? "bg-emerald-100 text-emerald-700" : status === "Fail" ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-500"}`}>
+                                <span className="text-[10px] font-bold">Y{yearGroup.year}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs font-bold ${status === "Pass" ? "text-emerald-700" : status === "Fail" ? "text-red-700" : "text-slate-500"}`}>{status}</span>
+                                {certificateStatus !== "Not Issued" && (
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${certificateStatus === "Received" ? "bg-emerald-100 text-emerald-700" : certificateStatus === "Sent" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>{certificateStatus}</span>
+                                )}
+                                {yearResult?.certificateReceivedAt && (
+                                  <span className="text-[10px] text-slate-400">Received {formatDateTime(yearResult.certificateReceivedAt)}</span>
+                                )}
+                              </div>
+                            </div>
+                            {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+                          </div>
+                          {isExpanded && (
+                            <div className="px-3 pb-3 space-y-2">
+                              <div className="flex flex-wrap gap-2">
+                                {yearGroup.semesters.map((sem) => {
+                                  const semResult = yearResult?.semesters?.find(s => s.semester === sem);
+                                  const semStatus = semResult?.status || "Not Declared";
+                                  const semCertificateStatus = semResult?.certificateStatus || "Not Issued";
+                                  return (
+                                    <div key={sem} className="flex-1 min-w-[160px] bg-white rounded-lg border border-cyan-200 p-3">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs font-bold text-cyan-700">Sem {sem}</span>
+                                      </div>
+                                      <div className="space-y-1.5">
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-[10px] text-slate-500 uppercase tracking-wider">Status</span>
+                                          <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${semStatus === "Pass" ? "bg-emerald-50 text-emerald-700" : semStatus === "Fail" ? "bg-red-50 text-red-700" : "bg-slate-50 text-slate-500"}`}>{semStatus}</span>
+                                        </div>
+                                        {semStatus === "Pass" && (
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[10px] text-slate-500 uppercase tracking-wider">Certificate</span>
+                                            <span className={`text-xs font-bold px-2 py-0.5 rounded-md ${semCertificateStatus === "Received" ? "bg-emerald-50 text-emerald-700" : semCertificateStatus === "Sent" ? "bg-blue-50 text-blue-700" : semCertificateStatus === "Issued from University" ? "bg-purple-50 text-purple-700" : "bg-slate-50 text-slate-500"}`}>{semCertificateStatus}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                      {/* Semester timestamps */}
+                                      <div className="mt-2 pt-2 border-t border-slate-100 space-y-1">
+                                        {semResult?.statusChangedAt && (
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[9px] text-slate-400 uppercase tracking-wider">Result updated</span>
+                                            <span className="text-[10px] text-slate-600 font-medium">{formatDateTime(semResult.statusChangedAt)}</span>
+                                          </div>
+                                        )}
+                                        {semResult?.certificateIssuedAt && (
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[9px] text-slate-400 uppercase tracking-wider">Certificate issued</span>
+                                            <span className="text-[10px] text-purple-700 font-medium">{formatDateTime(semResult.certificateIssuedAt)}</span>
+                                          </div>
+                                        )}
+                                        {semResult?.certificateSentAt && (
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[9px] text-slate-400 uppercase tracking-wider">Certificate sent</span>
+                                            <span className="text-[10px] text-blue-700 font-medium">{formatDateTime(semResult.certificateSentAt)}</span>
+                                          </div>
+                                        )}
+                                        {semResult?.certificateReceivedAt && (
+                                          <div className="flex items-center justify-between">
+                                            <span className="text-[9px] text-slate-400 uppercase tracking-wider">Certificate received</span>
+                                            <span className="text-[10px] text-emerald-700 font-medium">{formatDateTime(semResult.certificateReceivedAt)}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              {/* Year-level timestamps */}
+                              <div className="mt-2 pt-2 border-t border-slate-100 space-y-1">
+                                {yearResult?.date && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[9px] text-slate-400 uppercase tracking-wider">Year result updated</span>
+                                    <span className="text-[10px] text-slate-600 font-medium">{yearResult.date}</span>
+                                  </div>
+                                )}
+                                {yearResult?.certificateIssuedAt && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[9px] text-slate-400 uppercase tracking-wider">Year certificate issued</span>
+                                    <span className="text-[10px] text-purple-700 font-medium">{formatDateTime(yearResult.certificateIssuedAt)}</span>
+                                  </div>
+                                )}
+                                {yearResult?.certificateSentAt && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[9px] text-slate-400 uppercase tracking-wider">Year certificate sent</span>
+                                    <span className="text-[10px] text-blue-700 font-medium">{formatDateTime(yearResult.certificateSentAt)}</span>
+                                  </div>
+                                )}
+                                {yearResult?.certificateReceivedAt && (
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[9px] text-slate-400 uppercase tracking-wider">Year certificate received</span>
+                                    <span className="text-[10px] text-emerald-700 font-medium">{formatDateTime(yearResult.certificateReceivedAt)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+
+
               {/* ── Personal & Family ── */}
 
               <div className="bg-white border border-rose-200 rounded-2xl shadow-sm overflow-hidden">
@@ -2611,7 +2774,7 @@ export default function StudentsPage() {
 
             <div className="px-4 sm:px-5 py-3 border-t border-red-100 bg-white flex items-center justify-end">
 
-              <button onClick={() => setDetailStudent(null)} className="px-4 py-1.5 text-sm font-bold text-white gradient-bg rounded-lg hover:shadow-md transition-all">Close</button>
+              <button onClick={() => { setDetailStudent(null); setDetailExpandedYear(null); }} className="px-4 py-1.5 text-sm font-bold text-white gradient-bg rounded-lg hover:shadow-md transition-all">Close</button>
 
             </div>
 
