@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
   User,
@@ -29,6 +29,8 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
+  Receipt,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import jsPDF from "jspdf";
@@ -180,6 +182,19 @@ type ConsignmentItem = {
   deliveredOn?: string;
 };
 
+interface Payment {
+  id: string;
+  receiptNumber: string;
+  amountPaid: number;
+  paymentDate: string;
+  paymentMode: string;
+  installmentNumber?: number;
+  totalInstallments?: number;
+  transactionRef?: string;
+  balanceAmount?: number;
+  createdAt?: any;
+}
+
 export default function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [student, setStudent] = useState<Student | null>(null);
@@ -215,6 +230,11 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const [confirmCallback, setConfirmCallback] = useState<(() => void) | null>(null);
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  // Payments / receipts modal
+  const [paymentsModalOpen, setPaymentsModalOpen] = useState(false);
+  const [paymentsData, setPaymentsData] = useState<Payment[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
 
   // Section collapse states
   const [collapsedSections, setCollapsedSections] = useState({
@@ -297,6 +317,26 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       setErrorMessage("Error generating password reset link.");
     } finally {
       setResettingPassword(false);
+    }
+  }
+
+  async function openPaymentsModal() {
+    if (!student) return;
+    setPaymentsModalOpen(true);
+    setLoadingPayments(true);
+    try {
+      const snap = await getDocs(query(
+        collection(db, "payments"),
+        orderBy("createdAt", "desc")
+      ));
+      const payments = snap.docs
+        .map(d => ({ id: d.id, ...d.data() } as Payment))
+        .filter(p => (p as unknown as Record<string, string>).studentId === student.studentId || (p as unknown as Record<string, string>).studentId === student.id);
+      setPaymentsData(payments);
+    } catch (err) {
+      console.error("Error fetching payments:", err);
+    } finally {
+      setLoadingPayments(false);
     }
   }
 
@@ -706,6 +746,33 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
+          {/* Fee Summary */}
+          <div className="px-4 sm:px-6 py-2.5 border-t border-slate-100 bg-gradient-to-r from-slate-50 via-white to-slate-50">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
+                <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                  <IndianRupee className="w-3 h-3 text-amber-600" />
+                  <span className="text-[10px] text-amber-700 font-semibold uppercase tracking-wider">Total</span>
+                  <span className="text-xs font-bold text-amber-800">₹{(student.totalFee || 0).toLocaleString("en-IN")}</span>
+                </div>
+                {(student.discountAmount || 0) > 0 && (
+                  <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-full px-3 py-1">
+                    <span className="text-[10px] text-emerald-700 font-semibold uppercase tracking-wider">Discount</span>
+                    <span className="text-xs font-bold text-emerald-800">₹{(student.discountAmount || 0).toLocaleString("en-IN")}</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 rounded-full px-3 py-1">
+                  <span className="text-[10px] text-rose-700 font-semibold uppercase tracking-wider">Effective</span>
+                  <span className="text-xs font-bold text-rose-800">₹{((student.totalFee || 0) - (student.discountAmount || 0)).toLocaleString("en-IN")}</span>
+                </div>
+              </div>
+              <button onClick={openPaymentsModal} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors shadow-sm">
+                <Receipt className="w-3.5 h-3.5" />
+                View Receipts
+              </button>
+            </div>
+          </div>
+
           {/* Reset Link Banner */}
           {resetLink && (
             <div className="mx-4 sm:mx-5 mt-3">
@@ -742,32 +809,6 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
           )}
         </div>
 
-        {/* Fee Summary */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-4">
-          <div className="flex items-center gap-3 px-4 py-2.5 bg-gradient-to-r from-amber-50 via-orange-50/50 to-white border-b border-slate-200">
-            <div className="w-7 h-7 rounded-lg gradient-bg flex items-center justify-center flex-shrink-0">
-              <IndianRupee className="w-3.5 h-3.5 text-white" />
-            </div>
-            <h3 className="text-sm font-bold text-slate-900">Fee Summary</h3>
-          </div>
-          <div className="flex items-center divide-x divide-slate-200">
-            <div className="flex-1 px-4 py-3 text-center">
-              <p className="text-[10px] text-amber-600 font-semibold uppercase tracking-wider">Total</p>
-              <p className="text-sm font-bold text-slate-800">₹{(student.totalFee || 0).toLocaleString("en-IN")}</p>
-            </div>
-            {(student.discountAmount || 0) > 0 && (
-              <div className="flex-1 px-4 py-3 text-center">
-                <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider">Discount</p>
-                <p className="text-sm font-bold text-emerald-700">₹{(student.discountAmount || 0).toLocaleString("en-IN")}</p>
-              </div>
-            )}
-            <div className="flex-1 px-4 py-3 text-center">
-              <p className="text-[10px] text-rose-600 font-semibold uppercase tracking-wider">Effective</p>
-              <p className="text-sm font-bold text-slate-800">₹{((student.totalFee || 0) - (student.discountAmount || 0)).toLocaleString("en-IN")}</p>
-            </div>
-          </div>
-        </div>
-
         {/* Enrollment Details */}
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-4">
           <div className="bg-gradient-to-r from-blue-50 via-sky-50/50 to-white border-b border-slate-200 p-3">
@@ -798,46 +839,32 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                 <p className="text-sm font-medium text-slate-700 leading-tight">{value}</p>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Admission Status */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-4">
-          <div className="bg-gradient-to-r from-purple-50 via-violet-50/50 to-white border-b border-slate-200 p-3">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center flex-shrink-0 shadow-sm">
-                <CheckCircle2 className="w-4 h-4 text-white" />
+            <div className="bg-gradient-to-br from-purple-50 to-white rounded-xl border border-purple-100 shadow-sm p-3 flex flex-col justify-between">
+              <p className="text-xs text-purple-700 font-semibold mb-1">Admission Status</p>
+              <div className="flex items-center gap-2">
+                <select
+                  value={admissionStatus}
+                  onChange={(e) => updateAdmissionStatus(e.target.value as Student["admissionStatus"])}
+                  disabled={savingTracking}
+                  className={`w-full px-2 py-1.5 text-xs font-medium rounded-lg border-2 outline-none transition-colors ${
+                    admissionStatus === "Confirmed"
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                      : admissionStatus === "Rejected"
+                      ? "bg-red-50 border-red-200 text-red-800"
+                      : admissionStatus === "In Progress"
+                      ? "bg-amber-50 border-amber-200 text-amber-800"
+                      : "bg-slate-50 border-slate-200 text-slate-800"
+                  }`}
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Confirmed">Confirmed</option>
+                  <option value="Rejected">Rejected</option>
+                </select>
+                {savingTracking && (
+                  <div className="w-4 h-4 border-2 border-slate-300 border-t-red-600 rounded-full animate-spin flex-shrink-0" />
+                )}
               </div>
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Admission Status</h3>
-                <p className="text-xs text-slate-500">Track university admission progress</p>
-              </div>
-            </div>
-          </div>
-          <div className="p-4">
-            <div className="flex items-center gap-3">
-              <select
-                value={admissionStatus}
-                onChange={(e) => updateAdmissionStatus(e.target.value as Student["admissionStatus"])}
-                disabled={savingTracking}
-                className={`flex-1 px-4 py-2.5 text-sm font-medium rounded-xl border-2 outline-none transition-colors ${
-                  admissionStatus === "Confirmed"
-                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                    : admissionStatus === "Rejected"
-                    ? "bg-red-50 border-red-200 text-red-800"
-                    : admissionStatus === "In Progress"
-                    ? "bg-amber-50 border-amber-200 text-amber-800"
-                    : "bg-slate-50 border-slate-200 text-slate-800"
-                }`}
-              >
-                <option value="Pending">Pending</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Confirmed">Confirmed</option>
-                <option value="Rejected">Rejected</option>
-              </select>
-              {savingTracking && (
-                <div className="w-5 h-5 border-2 border-slate-300 border-t-red-600 rounded-full animate-spin" />
-              )}
             </div>
           </div>
         </div>
@@ -1667,6 +1694,77 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
               >
                 OK
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Payments / Receipts Modal */}
+        {paymentsModalOpen && student && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6 overflow-auto">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+              <div className="p-5 border-b border-slate-200 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white rounded-t-2xl">
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">Payment Receipts</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">{student.name} · {student.phone}</p>
+                </div>
+                <button onClick={() => setPaymentsModalOpen(false)} className="text-slate-400 hover:text-slate-700 p-1">
+                  <XIcon className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto min-h-0 p-4">
+                {loadingPayments ? (
+                  <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-red-600" /></div>
+                ) : paymentsData.length === 0 ? (
+                  <div className="text-center py-10">
+                    <Receipt className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                    <p className="text-sm text-slate-500">No payments recorded yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {paymentsData.map(payment => (
+                      <div key={payment.id} className="bg-slate-50 rounded-xl border border-slate-200 p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Receipt className="w-4 h-4 text-slate-500" />
+                            <span className="text-xs font-mono font-semibold text-slate-700">{payment.receiptNumber}</span>
+                          </div>
+                          <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">₹{(payment.amountPaid || 0).toLocaleString("en-IN")}</span>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-slate-600">
+                          <div>
+                            <p className="text-[10px] text-slate-400 uppercase tracking-wider">Date</p>
+                            <p className="font-medium">{payment.paymentDate || "—"}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-slate-400 uppercase tracking-wider">Mode</p>
+                            <p className="font-medium">{payment.paymentMode || "—"}</p>
+                          </div>
+                          {payment.installmentNumber !== undefined && (
+                            <div>
+                              <p className="text-[10px] text-slate-400 uppercase tracking-wider">Installment</p>
+                              <p className="font-medium">{payment.installmentNumber} / {payment.totalInstallments || "—"}</p>
+                            </div>
+                          )}
+                          {payment.transactionRef && (
+                            <div className="col-span-2 sm:col-span-1">
+                              <p className="text-[10px] text-slate-400 uppercase tracking-wider">Ref</p>
+                              <p className="font-medium font-mono">{payment.transactionRef}</p>
+                            </div>
+                          )}
+                          {payment.balanceAmount !== undefined && (
+                            <div>
+                              <p className="text-[10px] text-slate-400 uppercase tracking-wider">Balance</p>
+                              <p className={`font-medium ${payment.balanceAmount <= 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                                {payment.balanceAmount <= 0 ? "Cleared" : `₹${payment.balanceAmount.toLocaleString("en-IN")}`}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
