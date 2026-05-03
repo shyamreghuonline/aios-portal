@@ -179,11 +179,11 @@ export default function StudentProfilePage() {
   const photoRef = useRef<HTMLInputElement>(null);
   const aadhaarRef = useRef<HTMLInputElement>(null);
 
-  const studentPhone = user?.studentData ? (user.studentData.id as string) || (user.studentData.phone as string) : undefined;
+  const studentId = user?.studentData ? (user.studentData.studentId as string) || (user.studentData.id as string) || (user.studentData.phone as string) : undefined;
 
   useEffect(() => {
-    if (!studentPhone) return;
-    getDoc(doc(db, "students", studentPhone)).then(snap => {
+    if (!studentId) return;
+    getDoc(doc(db, "students", studentId)).then(snap => {
       if (!snap.exists()) return;
       const d = snap.data();
       if (d.personalDetails) setPersonal(d.personalDetails as PersonalDetails);
@@ -192,10 +192,10 @@ export default function StudentProfilePage() {
   }, [user]);
 
   async function handlePhotoUpload(file: File) {
-    if (!studentPhone) return;
+    if (!studentId) return;
     setUploadingPhoto(true);
     try {
-      const r = storageRef(storage, `students/${studentPhone}/photo`);
+      const r = storageRef(storage, `students/${studentId}/photo`);
       await uploadBytes(r, file);
       const url = await getDownloadURL(r);
       setPersonal(p => ({ ...p, photo: url }));
@@ -203,10 +203,10 @@ export default function StudentProfilePage() {
   }
 
   async function handleAadhaarUpload(file: File) {
-    if (!studentPhone) return;
+    if (!studentId) return;
     setUploadingAadhaar(true);
     try {
-      const r = storageRef(storage, `students/${studentPhone}/aadhaar`);
+      const r = storageRef(storage, `students/${studentId}/aadhaar`);
       await uploadBytes(r, file);
       const url = await getDownloadURL(r);
       setPersonal(p => ({ ...p, aadhaarUrl: url }));
@@ -219,20 +219,20 @@ export default function StudentProfilePage() {
   }
 
   async function savePersonal() {
-    if (!studentPhone) return;
+    if (!studentId) return;
     setSavingPersonal(true);
     try {
-      await setDoc(doc(db, "students", studentPhone), { personalDetails: cleanObject(personal) }, { merge: true });
+      await setDoc(doc(db, "students", studentId), { personalDetails: cleanObject(personal) }, { merge: true });
       setSavedPersonal(true);
       setTimeout(() => setSavedPersonal(false), 2500);
     } finally { setSavingPersonal(false); }
   }
 
   async function saveAcademic() {
-    if (!studentPhone) return;
+    if (!studentId) return;
     setSavingAcademic(true);
     try {
-      await setDoc(doc(db, "students", studentPhone), { academicDetails: cleanObject(academic) }, { merge: true });
+      await setDoc(doc(db, "students", studentId), { academicDetails: cleanObject(academic) }, { merge: true });
       setSavedAcademic(true);
       setTimeout(() => setSavedAcademic(false), 2500);
     } finally { setSavingAcademic(false); }
@@ -412,7 +412,7 @@ export default function StudentProfilePage() {
           </div>
           <div className="grid grid-cols-3 divide-x divide-slate-100">
             {[
-              { label: "Registered Mobile", value: studentPhone || "", span: "" },
+              { label: "Registered Mobile", value: (sd.phone as string) || "", span: "" },
               { label: "Email Address", value: (sd.email as string) || "", span: "col-span-2" },
             ].map(({ label, value, span }) => (
               <div key={label} className={`${span} px-4 py-2.5 cursor-not-allowed select-none`} title="Managed by admin">

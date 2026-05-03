@@ -5,11 +5,14 @@ import Link from "next/link";
 
 interface PendingPayment {
   id: string;
-  status: "pending" | "approved" | "rejected";
+  status?: "pending" | "approved" | "rejected";
   amount: number;
-  paymentMethod: string;
+  paymentMode: string;
+  transactionRef?: string;
+  transactionId?: string;
   rejectionReason?: string;
-  createdAt: any;
+  createdAt?: any;
+  studentId?: string;
 }
 
 interface ConfirmedPayment {
@@ -29,7 +32,7 @@ interface Student {
 export default function ConsolidatedPaymentsModal({
   open,
   onClose,
-  studentPhone,
+  studentId,
   student,
   pending,
   confirmed,
@@ -37,7 +40,7 @@ export default function ConsolidatedPaymentsModal({
 }: {
   open: boolean;
   onClose: () => void;
-  studentPhone: string;
+  studentId: string;
   student: Student | undefined;
   pending: PendingPayment[];
   confirmed: ConfirmedPayment[];
@@ -57,7 +60,7 @@ export default function ConsolidatedPaymentsModal({
           <div>
             <h2 className="text-base font-bold text-slate-900">Transaction Statement</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              {student?.name || studentPhone} · {pending.length + confirmed.length} records
+              {student?.name || studentId} · {pending.length + confirmed.length} records
             </p>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-500 transition-colors">
@@ -127,11 +130,11 @@ export default function ConsolidatedPaymentsModal({
                       </td>
                       <td className="px-3 py-2.5">
                         <span className="text-xs text-slate-600">
-                          {p.paymentMethod === "qr" || p.paymentMethod === "upi"
+                          {p.paymentMode === "qr" || p.paymentMode === "upi"
                             ? "UPI"
-                            : p.paymentMethod === "bank"
+                            : p.paymentMode === "bank"
                             ? "Bank"
-                            : p.paymentMethod === "cash"
+                            : p.paymentMode === "cash"
                             ? "Cash"
                             : "Card"}
                         </span>

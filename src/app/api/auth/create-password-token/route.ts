@@ -20,16 +20,16 @@ export async function POST(request: NextRequest) {
 
     const fullPhone = normalizePhone(phone);
 
-    // Verify student exists
-    const studentSnap = await adminDb.collection("students").doc(fullPhone).get();
+    // Verify student exists by studentId (new primary key)
+    const studentSnap = await adminDb.collection("students").doc(studentId).get();
     if (!studentSnap.exists) {
       return NextResponse.json({ error: "Student not found" }, { status: 404 });
     }
 
     const studentData = studentSnap.data()!;
-    if (studentData.studentId !== studentId) {
+    if (studentData.phone !== fullPhone) {
       return NextResponse.json(
-        { error: "Student ID mismatch" },
+        { error: "Phone number mismatch" },
         { status: 400 }
       );
     }

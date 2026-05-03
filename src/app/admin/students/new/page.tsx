@@ -194,7 +194,7 @@ export default function NewStudentPage() {
 
       const phoneKey = "+91" + phone.replace(/\D/g, "");
 
-      await setDoc(doc(db, "students", phoneKey), {
+      await setDoc(doc(db, "students", studentId), {
         name,
         email,
         phone: phoneKey,
@@ -228,10 +228,10 @@ export default function NewStudentPage() {
           balanceAmount: parseFloat(totalFee) - discountAmt,
           transactionRef: "Administrative Discount",
           remarks: `Discount given to ${name}`,
+          studentId,
           studentPhone: phoneKey,
           studentName: name,
           studentEmail: email,
-          studentId,
           university,
           course,
           stream: stream || "",

@@ -90,9 +90,10 @@ type Action = "none" | "custom" | "upload";
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function PaymentsHub() {
   const { user } = useAuth();
-  const studentPhone = user?.studentData
-    ? (user.studentData.id as string) || (user.studentData.phone as string)
+  const studentId = user?.studentData
+    ? (user.studentData.studentId as string) || (user.studentData.id as string) || (user.studentData.phone as string)
     : undefined;
+  const studentPhone = (user?.phone as string) || (user?.studentData?.phone as string) || undefined;
 
   const [confirmedPayments, setConfirmedPayments] = useState<ConfirmedPayment[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PendingPayment[]>([]);
@@ -124,12 +125,12 @@ export default function PaymentsHub() {
 
   // Fetch payments data
   const fetchAll = async () => {
-    if (!studentPhone) { setLoading(false); return; }
+    if (!studentId) { setLoading(false); return; }
     try {
       const [pSnap, pendSnap, sDoc] = await Promise.all([
-        getDocs(query(collection(db, "payments"), where("studentPhone", "==", studentPhone))),
-        getDocs(query(collection(db, "pendingPayments"), where("studentPhone", "==", studentPhone))),
-        getDoc(doc(db, "students", studentPhone)),
+        getDocs(query(collection(db, "payments"), where("studentId", "==", studentId))),
+        getDocs(query(collection(db, "pendingPayments"), where("studentId", "==", studentId))),
+        getDoc(doc(db, "students", studentId)),
       ]);
       setConfirmedPayments(pSnap.docs.map(d => ({ id: d.id, ...d.data() } as ConfirmedPayment)));
       setPendingPayments(
@@ -154,19 +155,19 @@ export default function PaymentsHub() {
     }
   };
 
-  // Initial fetch when studentPhone changes
+  // Initial fetch when studentId changes
   useEffect(() => {
     fetchAll();
-  }, [studentPhone]);
+  }, [studentId]);
 
   // Refresh data when window gains focus (user returns to tab)
   useEffect(() => {
     const handleFocus = () => {
-      if (studentPhone) fetchAll();
+      if (studentId) fetchAll();
     };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [studentPhone]);
+  }, [studentId]);
 
   // Totals
   const totalPaid = confirmedPayments.reduce((s, p) => s + (p.amountPaid || 0), 0);

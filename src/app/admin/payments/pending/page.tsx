@@ -33,14 +33,20 @@ import ConsolidatedPaymentsModal from "./consolidated-modal";
 interface PendingPayment {
   id: string;
   studentId: string;
-  studentPhone: string;
   studentName: string;
+  studentEmail: string;
+  studentPhone: string;
   amount: number;
-  paymentMethod: "qr" | "card";
-  status: "pending" | "approved" | "rejected";
-  screenshotUrl?: string;
+  paymentMode: string;
+  transactionRef?: string;
   transactionId?: string;
-  createdAt: any;
+  remarks?: string;
+  screenshotUrl?: string;
+  installmentNumber?: number;
+  totalInstallments?: number;
+  paymentDate?: string;
+  status?: "pending" | "approved" | "rejected";
+  createdAt?: unknown;
   reviewedAt?: any;
   reviewedBy?: string;
   rejectionReason?: string;
@@ -65,6 +71,7 @@ interface ConfirmedPayment {
   amountPaid: number;
   paymentDate: string;
   paymentMode: string;
+  studentId: string;
   studentPhone: string;
 }
 
@@ -129,16 +136,16 @@ export default function PendingPaymentsPage() {
 
   // Consolidated view states
   const [consolidatedModalOpen, setConsolidatedModalOpen] = useState(false);
-  const [consolidatedStudentPhone, setConsolidatedStudentPhone] = useState<string | null>(null);
+  const [consolidatedStudentId, setConsolidatedStudentId] = useState<string | null>(null);
   const [consolidatedConfirmed, setConsolidatedConfirmed] = useState<ConfirmedPayment[]>([]);
   const [consolidatedLoading, setConsolidatedLoading] = useState(false);
 
-  async function openConsolidatedView(phone: string) {
-    setConsolidatedStudentPhone(phone);
+  async function openConsolidatedView(studentId: string) {
+    setConsolidatedStudentId(studentId);
     setConsolidatedModalOpen(true);
     setConsolidatedLoading(true);
     try {
-      const pq = query(collection(db, "payments"), where("studentPhone", "==", phone), orderBy("paymentDate", "desc"));
+      const pq = query(collection(db, "payments"), where("studentId", "==", studentId), orderBy("paymentDate", "desc"));
       const ps = await getDocs(pq);
       const confirmed = ps.docs.map(d => ({ id: d.id, ...d.data() } as ConfirmedPayment));
       setConsolidatedConfirmed(confirmed);
@@ -164,20 +171,17 @@ export default function PendingPaymentsPage() {
         })) as PendingPayment[];
         setPendingPayments(paymentsData);
 
-        // Fetch student details for each unique phone
-        const uniquePhones = [...new Set(paymentsData.map(p => p.studentPhone))];
+        // Fetch student details for each unique studentId
+        const uniqueStudentIds = [...new Set(paymentsData.map(p => p.studentId).filter(Boolean))];
         const studentsMap: Record<string, Student> = {};
-        
-        for (const phone of uniquePhones) {
-          const studentQuery = query(
-            collection(db, "students"),
-            where("phone", "==", phone)
-          );
-          const studentSnap = await getDocs(studentQuery);
-          if (!studentSnap.empty) {
-            const sData = studentSnap.docs[0].data();
-            studentsMap[phone] = {
-              id: studentSnap.docs[0].id,
+
+        for (const studentId of uniqueStudentIds) {
+          const studentRef = doc(db, "students", studentId);
+          const studentSnap = await getDoc(studentRef);
+          if (studentSnap.exists()) {
+            const sData = studentSnap.data();
+            studentsMap[studentId] = {
+              id: studentSnap.id,
               name: sData.name,
               phone: sData.phone,
               email: sData.email,
@@ -202,10 +206,10 @@ export default function PendingPaymentsPage() {
 
   async function handleApprove() {
     if (!selectedPayment || !user) return;
-    
+
     setProcessing(true);
     try {
-      const student = students[selectedPayment.studentPhone];
+      const student = students[selectedPayment.studentId];
       if (!student) {
         alert("Student data not found!");
         return;
@@ -214,7 +218,7 @@ export default function PendingPaymentsPage() {
       // Get existing payments to calculate balance
       const paymentsQuery = query(
         collection(db, "payments"),
-        where("studentPhone", "==", selectedPayment.studentPhone)
+        where("studentId", "==", selectedPayment.studentId)
       );
       const paymentsSnap = await getDocs(paymentsQuery);
       const existingPayments = paymentsSnap.docs.map(d => d.data());
@@ -231,11 +235,11 @@ export default function PendingPaymentsPage() {
       const paymentRef = doc(collection(db, "payments"));
       batch.set(paymentRef, {
         receiptNumber,
+        studentId: student.studentId || student.id,
         studentName: student.name,
         studentEmail: student.email,
         studentPhone: student.phone,
         phone: student.phone,
-        studentId: student.studentId || "",
         program: student.course,
         university: student.university,
         course: student.course,
@@ -246,7 +250,7 @@ export default function PendingPaymentsPage() {
         totalInstallments: parseInt(totalInstallments.toString()),
         paymentDate: paymentDate,
         paymentMode: paymentMode,
-        transactionRef: transactionRef || selectedPayment.transactionId || `QR-${selectedPayment.id.slice(-6)}`,
+        transactionRef: transactionRef || selectedPayment.transactionRef || `QR-${selectedPayment.id.slice(-6)}`,
         balanceAmount: newBalance,
         previouslyPaid: totalPaid,
         remarks: remarks || `Approved from pending payment ${selectedPayment.id}`,
@@ -546,7 +550,7 @@ Thank you!`,
           </thead>
           <tbody>
             {filteredPayments.map((payment) => {
-              const student = students[payment.studentPhone];
+              const student = students[payment.studentId];
               return (
                 <tr key={payment.id} className="border-b border-red-100 hover:bg-slate-50/50 transition-colors">
                   <td className="px-3 py-2.5">
@@ -566,7 +570,7 @@ Thank you!`,
                   <td className="px-3 py-2.5 text-sm text-slate-900 font-mono">
                     {student?.studentId ? (
                       <button
-                        onClick={() => openConsolidatedView(payment.studentPhone)}
+                        onClick={() => openConsolidatedView(payment.studentId)}
                         className="text-blue-700 hover:underline hover:text-blue-900 transition-colors cursor-pointer"
                         title="View consolidated transaction statement"
                       >
@@ -582,7 +586,7 @@ Thank you!`,
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-1 text-sm text-slate-700">
-                      {payment.paymentMethod === "qr" ? (
+                      {payment.paymentMode === "qr" ? (
                         <>
                           <QrCode className="w-3.5 h-3.5 text-blue-600" />
                           <span>UPI/QR</span>
@@ -596,7 +600,7 @@ Thank you!`,
                     </div>
                   </td>
                   <td className="px-3 py-2.5 text-slate-600 text-sm whitespace-nowrap">
-                    {payment.createdAt?.toDate?.().toLocaleDateString("en-GB").replace(/\//g, "-") || "Unknown"}
+                    {payment.createdAt ? (payment.createdAt as any).toDate?.().toLocaleDateString("en-GB").replace(/\//g, "-") : "Unknown"}
                   </td>
                   <td className="px-3 py-2.5 text-center">
                     {payment.status === "pending" && (
@@ -633,7 +637,7 @@ Thank you!`,
                             onClick={async () => {
                               setSelectedPayment(payment);
                               // Fetch previous payments for balance calculation
-                              const pq = query(collection(db, "payments"), where("studentPhone", "==", payment.studentPhone));
+                              const pq = query(collection(db, "payments"), where("studentId", "==", payment.studentId));
                               const ps = await getDocs(pq);
                               let totalPaid = 0;
                               let maxInst = 0;
@@ -645,8 +649,8 @@ Thank you!`,
                               setPreviousPayments(totalPaid);
                               setInstallmentNumber(maxInst + 1);
                               setPaymentDate(new Date().toISOString().split("T")[0]);
-                              setPaymentMode(payment.paymentMethod === "qr" ? "UPI / QR Code" : payment.paymentMethod === "card" ? "Credit/Debit Card" : "");
-                              setTransactionRef(payment.transactionId || "");
+                              setPaymentMode(payment.paymentMode === "qr" ? "UPI / QR Code" : payment.paymentMode === "card" ? "Credit/Debit Card" : "");
+                              setTransactionRef(payment.transactionRef || "");
                               setRemarks("");
                               setApproveModalOpen(true);
                             }}
@@ -717,7 +721,7 @@ Thank you!`,
                 </div>
                 <div>
                   <label className="text-xs text-slate-500">Payment Method</label>
-                  <p className="font-medium">{selectedPayment.paymentMethod === "qr" ? "UPI/QR" : "Card"}</p>
+                  <p className="font-medium">{selectedPayment.paymentMode === "qr" ? "UPI/QR" : "Card"}</p>
                 </div>
               </div>
               
@@ -758,7 +762,7 @@ Thank you!`,
 
       {/* Approve Modal */}
       {approveModalOpen && selectedPayment && (() => {
-        const student = students[selectedPayment.studentPhone];
+        const student = students[selectedPayment.studentId];
         const approveBalance = student
           ? Math.max(0, (student.totalFee - student.discountAmount) - previousPayments - selectedPayment.amount)
           : 0;
@@ -968,9 +972,9 @@ Thank you!`,
       <ConsolidatedPaymentsModal
         open={consolidatedModalOpen}
         onClose={() => setConsolidatedModalOpen(false)}
-        studentPhone={consolidatedStudentPhone || ""}
-        student={consolidatedStudentPhone ? students[consolidatedStudentPhone] : undefined}
-        pending={consolidatedStudentPhone ? pendingPayments.filter(p => p.studentPhone === consolidatedStudentPhone) : []}
+        studentId={consolidatedStudentId || ""}
+        student={consolidatedStudentId ? students[consolidatedStudentId] : undefined}
+        pending={consolidatedStudentId ? pendingPayments.filter(p => p.studentId === consolidatedStudentId) : []}
         confirmed={consolidatedConfirmed}
         loading={consolidatedLoading}
       />

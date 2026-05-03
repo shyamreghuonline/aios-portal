@@ -69,6 +69,7 @@ interface Student {
 
 interface Payment {
   id: string;
+  studentId: string;
   studentPhone: string;
   studentName: string;
   receiptNumber?: string;
@@ -213,15 +214,15 @@ export default function FollowUpsPage() {
       if (student.archived) return;
       // Get all payments for this student (excluding discounts)
       const studentPayments = payments.filter(
-        (p) => p.studentPhone === student.phone && 
-               !p.isDiscount && 
+        (p) => p.studentId === (student.studentId || student.id) &&
+               !p.isDiscount &&
                p.paymentMode !== "Discount"
       );
-      
+
       // Debug for Feb
       if (student.name?.toLowerCase().includes("febin")) {
-        console.log("Febin - Phone:", student.phone, "TotalFee:", student.totalFee);
-        console.log("Febin - Matching payments:", payments.filter(p => p.studentPhone === student.phone));
+        console.log("Febin - studentId:", student.studentId || student.id, "TotalFee:", student.totalFee);
+        console.log("Febin - Matching payments:", payments.filter(p => p.studentId === (student.studentId || student.id)));
         console.log("Febin - Non-discount payments:", studentPayments);
       }
 
@@ -1151,7 +1152,7 @@ function StudentDetailModal({ student, onClose, payments }: { student: Student; 
   const [showFullDetails, setShowFullDetails] = useState(false);
   
   // Filter payments for this student
-  const studentPayments = payments.filter(p => p.studentPhone === student.phone || p.studentName === student.name);
+  const studentPayments = payments.filter(p => p.studentId === (student.studentId || student.id) || p.studentName === student.name);
   
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
