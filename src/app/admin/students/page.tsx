@@ -65,6 +65,7 @@ import {
   ChevronDown,
 
   ChevronUp,
+
   FileText,
 
   Printer,
@@ -134,6 +135,8 @@ interface Payment {
   remarks?: string;
 
 }
+
+
 
 interface Student {
 
@@ -4191,10 +4194,15 @@ export default function StudentsPage() {
                     </div>
 
                   ) : (
+
                     <select
+
                       value={formData.faculty}
+
                       onChange={(e) => {
+
                         if (e.target.value === "__other__") {
+
                           setCustomFaculty(true);
 
                           setCustomCourse(true);
@@ -4208,19 +4216,31 @@ export default function StudentsPage() {
                           setCustomCourse(false);
 
                           setCustomStream(false);
+
                           setFormData({ ...formData, faculty: e.target.value, course: "", stream: "", duration: "", endYear: "" });
+
                         }
 
                       }}
+
                       required
+
                       className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
+
                     >
+
                       <option value="">Select Faculty</option>
+
                       {getFaculties().map((f) => (
+
                         <option key={f} value={f}>{f}</option>
+
                       ))}
+
                       <option value="__other__">Other (Type custom)</option>
+
                     </select>
+
                   )}
 
                 </div>
@@ -4260,10 +4280,15 @@ export default function StudentsPage() {
                     </div>
 
                   ) : formData.faculty ? (
+
                     <select
+
                       value={formData.course}
+
                       onChange={(e) => {
+
                         if (e.target.value === "__other__") {
+
                           setCustomCourse(true);
 
                           setCustomStream(true);
@@ -4271,28 +4296,47 @@ export default function StudentsPage() {
                           setFormData({ ...formData, course: "", stream: "", duration: "", endYear: "" });
 
                         } else {
+
                           const course = e.target.value;
+
                           const dur = formData.faculty && course ? getDuration(formData.faculty, course) : "";
+
                           const end = dur ? calcEndYear(dur, formData.startYear) : "";
 
                           setCustomStream(false);
+
                           setFormData({ ...formData, course, stream: "", duration: dur, endYear: end });
+
                         }
 
                       }}
+
                       required
+
                       className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
+
                     >
+
                       <option value="">Select Course</option>
+
                       {availableCourses.map((c) => (
+
                         <option key={c} value={c}>{c}</option>
+
                       ))}
+
                       <option value="__other__">Other (Type custom)</option>
+
                     </select>
+
                   ) : (
+
                     <select disabled className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-500 appearance-none">
+
                       <option>Select faculty first</option>
+
                     </select>
+
                   )}
 
                 </div>
@@ -4340,32 +4384,53 @@ export default function StudentsPage() {
                     </div>
 
                   ) : formData.course ? (
+
                     <select
+
                       value={formData.stream}
+
                       onChange={(e) => {
+
                         if (e.target.value === "__other__") {
+
                           setCustomStream(true);
 
                           setFormData({ ...formData, stream: "" });
 
                         } else {
+
                           setFormData({ ...formData, stream: e.target.value });
+
                         }
 
                       }}
+
                       required
+
                       className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
+
                     >
+
                       <option value="">Select Stream</option>
+
                       {availableStreams.map((s) => (
+
                         <option key={s} value={s}>{s}</option>
+
                       ))}
+
                       <option value="__other__">Other (Type custom)</option>
+
                     </select>
+
                   ) : (
+
                     <select disabled className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 bg-slate-50 text-slate-500 appearance-none">
+
                       <option>Select course first</option>
+
                     </select>
+
                   )}
 
                 </div>
@@ -4403,29 +4468,47 @@ export default function StudentsPage() {
                     </div>
 
                   ) : (
+
                     <select
+
                       value={formData.university}
+
                       onChange={(e) => {
+
                         if (e.target.value === "__other__") {
+
                           setCustomUniversity(true);
 
                           setFormData({ ...formData, university: "" });
 
                         } else {
+
                           setFormData({ ...formData, university: e.target.value });
+
                         }
 
                       }}
+
                       required
+
                       className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
+
                     >
+
                       <option value="">Select University</option>
+
                       <option value="Capital University">Capital University</option>
+
                       <option value="Asian International University">Asian International University</option>
+
                       <option value="North East Frontier Technical University">North East Frontier Technical University</option>
+
                       <option value="Niilm University">Niilm University</option>
+
                       <option value="__other__">Other (Type custom)</option>
+
                     </select>
+
                   )}
 
                 </div>
@@ -4443,21 +4526,37 @@ export default function StudentsPage() {
                   <label className="block text-xs font-medium text-slate-700 mb-1">Duration{customCourse ? " *" : ""}</label>
 
                   {customCourse ? (
+
                     <select
+
                       value={formData.duration}
+
                       onChange={(e) => {
+
                         const dur = e.target.value;
+
                         const end = dur ? calcEndYear(dur, formData.startYear) : "";
+
                         setFormData({ ...formData, duration: dur, endYear: end });
+
                       }}
+
                       required
+
                       className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
+
                     >
+
                       <option value="">Select duration</option>
+
                       {DURATION_OPTIONS.map((d) => (
+
                         <option key={d} value={d}>{d}</option>
+
                       ))}
+
                     </select>
+
                   ) : (
 
                     <input
@@ -4479,38 +4578,65 @@ export default function StudentsPage() {
                 <div>
 
                   <label className="block text-xs font-medium text-slate-700 mb-1">Start Year *</label>
+
                   <select
+
                     value={formData.startYear}
+
                     onChange={(e) => {
+
                       const start = e.target.value;
+
                       const dur = formData.duration || autoDuration;
+
                       const end = calcEndYear(dur, start);
+
                       setFormData({ ...formData, startYear: start, endYear: end || formData.endYear });
+
                     }}
 
                     required
+
                     className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
+
                   >
+
                     {yearOptions.map((y) => (
+
                       <option key={y} value={y}>{y}</option>
+
                     ))}
+
                   </select>
+
                 </div>
 
                 <div>
 
                   <label className="block text-xs font-medium text-slate-700 mb-1">End Year *</label>
+
                   <select
+
                     value={formData.endYear}
+
                     onChange={(e) => setFormData({ ...formData, endYear: e.target.value })}
+
                     required
+
                     className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
+
                   >
+
                     <option value="">Select</option>
+
                     {yearOptions.map((y) => (
+
                       <option key={y} value={y}>{y}</option>
+
                     ))}
+
                   </select>
+
                 </div>
 
               </div>
@@ -4624,17 +4750,29 @@ export default function StudentsPage() {
                 <div>
 
                   <label className="block text-xs font-medium text-slate-700 mb-1">Admission Center *</label>
+
                   <select
+
                     value={formData.admissionCenter}
+
                     onChange={(e) => setFormData({ ...formData, admissionCenter: e.target.value })}
+
                     className="w-full px-3 py-1.5 text-sm rounded-lg border border-slate-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none bg-white"
+
                     required
+
                   >
+
                     <option value="Bengaluru">Bengaluru</option>
+
                     <option value="Kochi">Kochi</option>
+
                     <option value="Salem">Salem</option>
+
                     <option value="Hyderabad">Hyderabad</option>
+
                   </select>
+
                 </div>
 
               </div>
