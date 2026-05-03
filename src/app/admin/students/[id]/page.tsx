@@ -48,6 +48,17 @@ function formatDateToDDMMYY(dateString?: string): string {
   return `${day}-${month}-${year}`;
 }
 
+// Format ISO date to readable string: 03 May 2026, 02:30 PM
+function formatDateTime(isoString?: string): string {
+  if (!isoString) return "";
+  try {
+    const d = new Date(isoString);
+    return d.toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true });
+  } catch {
+    return "";
+  }
+}
+
 // Utility function to deduplicate course names with slash pattern
 function deduplicateCourseName(courseName?: string): string {
   if (!courseName) return "";
@@ -152,10 +163,17 @@ interface Student {
     status: "Pass" | "Fail" | "Not Declared";
     date?: string;
     certificateStatus?: "Not Issued" | "Issued from University" | "Sent" | "Received";
+    certificateIssuedAt?: string;
+    certificateSentAt?: string;
+    certificateReceivedAt?: string;
     semesters?: {
       semester: number;
       status: "Pass" | "Fail" | "Not Declared";
+      statusChangedAt?: string;
       certificateStatus?: "Not Issued" | "Issued from University" | "Sent" | "Received";
+      certificateIssuedAt?: string;
+      certificateSentAt?: string;
+      certificateReceivedAt?: string;
     }[];
   }>;
   consignments?: Array<{
@@ -236,6 +254,9 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
   const [paymentsData, setPaymentsData] = useState<Payment[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
 
+  // Course Results year accordion
+  const [expandedYear, setExpandedYear] = useState<number | null>(null);
+
   // Section collapse states
   const [collapsedSections, setCollapsedSections] = useState({
     courseResults: true,
@@ -265,6 +286,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         return { ...allCollapsed, [section]: false };
       }
       // If closing a section, just toggle this one
+      if (section === "courseResults") setExpandedYear(null);
       return { ...prev, [section]: true };
     });
   };
@@ -413,12 +435,26 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         ? semestersForYear.map(sem => ({ semester: sem, status: "Pass" as const }))
         : (existingIndex >= 0 ? updatedResults[existingIndex].semesters : []);
 
+      // Capture certificate timestamps
+      const existingResult = existingIndex >= 0 ? updatedResults[existingIndex] : null;
+      const prevCertStatus = existingResult?.certificateStatus;
+      const now = new Date().toISOString();
+      const certificateIssuedAt = certificateStatus === "Issued from University" && prevCertStatus !== "Issued from University"
+        ? now : (existingResult?.certificateIssuedAt);
+      const certificateSentAt = certificateStatus === "Sent" && prevCertStatus !== "Sent"
+        ? now : (existingResult?.certificateSentAt);
+      const certificateReceivedAt = certificateStatus === "Received" && prevCertStatus !== "Received"
+        ? now : (existingResult?.certificateReceivedAt);
+
       if (existingIndex >= 0) {
         updatedResults[existingIndex] = { 
           year, 
           status, 
           date, 
           certificateStatus: certificateStatus || updatedResults[existingIndex].certificateStatus,
+          certificateIssuedAt,
+          certificateSentAt,
+          certificateReceivedAt,
           semesters 
         };
       } else {
@@ -427,6 +463,9 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
           status, 
           date, 
           certificateStatus,
+          certificateIssuedAt,
+          certificateSentAt,
+          certificateReceivedAt,
           semesters 
         });
       }
@@ -468,11 +507,21 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
 
       let semesters = existingIndex >= 0 ? [...(updatedResults[existingIndex].semesters || [])] : [];
       const semIndex = semesters.findIndex(s => s.semester === semester);
+      const prevSem = semIndex >= 0 ? semesters[semIndex] : undefined;
+      const prevSemCertStatus = prevSem?.certificateStatus;
+      const now = new Date().toISOString();
+      const semStatusChangedAt = status !== prevSem?.status ? now : prevSem?.statusChangedAt;
+      const semCertIssuedAt = certificateStatus === "Issued from University" && prevSemCertStatus !== "Issued from University"
+        ? now : (prevSem?.certificateIssuedAt);
+      const semCertSentAt = certificateStatus === "Sent" && prevSemCertStatus !== "Sent"
+        ? now : (prevSem?.certificateSentAt);
+      const semCertReceivedAt = certificateStatus === "Received" && prevSemCertStatus !== "Received"
+        ? now : (prevSem?.certificateReceivedAt);
 
       if (semIndex >= 0) {
-        semesters[semIndex] = { semester, status, certificateStatus: certificateStatus || semesters[semIndex].certificateStatus };
+        semesters[semIndex] = { semester, status, statusChangedAt: semStatusChangedAt, certificateStatus: certificateStatus || semesters[semIndex].certificateStatus, certificateIssuedAt: semCertIssuedAt, certificateSentAt: semCertSentAt, certificateReceivedAt: semCertReceivedAt };
       } else {
-        semesters.push({ semester, status, certificateStatus });
+        semesters.push({ semester, status, statusChangedAt: semStatusChangedAt, certificateStatus, certificateIssuedAt: semCertIssuedAt, certificateSentAt: semCertSentAt, certificateReceivedAt: semCertReceivedAt });
       }
 
       // Check if all semesters for this year are passed
@@ -891,122 +940,198 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
             {admissionStatus === "Confirmed" && !collapsedSections.courseResults && (
-              <div className="p-4 space-y-4">
+              <div className="p-4 space-y-2">
               {groupSemestersByYear(getSemesterCount(student.duration)).map((yearGroup) => {
                 const yearResult = semesterResults?.find((r) => r.year === yearGroup.year);
                 const status = yearResult?.status || "Not Declared";
                 const certificateStatus = yearResult?.certificateStatus || "Not Issued";
+                const isExpanded = expandedYear === yearGroup.year;
                 return (
-                  <div key={yearGroup.year} className="bg-gradient-to-br from-cyan-50 to-white rounded-xl border border-cyan-100 shadow-sm p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-sm font-bold text-cyan-800">Year {yearGroup.year}</p>
-                      <div className="flex gap-2">
-                        <div>
-                          <label className="text-[10px] text-slate-500 block mb-1">Status</label>
-                          <select
-                            value={status}
-                            onChange={(e) => updateYearResult(yearGroup.year, e.target.value as "Pass" | "Fail" | "Not Declared")}
-                            disabled={savingTracking}
-                            className={`px-3 py-1.5 text-xs font-bold rounded-lg border-2 outline-none transition-colors ${
-                              status === "Pass"
-                                ? "bg-emerald-50 border-emerald-300 text-emerald-800"
-                                : status === "Fail"
-                                ? "bg-red-50 border-red-300 text-red-800"
-                                : "bg-slate-50 border-slate-200 text-slate-600"
-                            }`}
-                          >
-                            <option value="Not Declared">Not Declared</option>
-                            <option value="Pass">Pass</option>
-                            <option value="Fail">Fail</option>
-                          </select>
+                  <div key={yearGroup.year} className="bg-gradient-to-br from-cyan-50 to-white rounded-xl border border-cyan-100 shadow-sm overflow-hidden">
+                    <div
+                      className="flex items-center justify-between p-3 cursor-pointer hover:bg-cyan-100/40 transition-colors"
+                      onClick={() => setExpandedYear(isExpanded ? null : yearGroup.year)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${status === "Pass" ? "bg-emerald-100 text-emerald-700" : status === "Fail" ? "bg-red-100 text-red-700" : "bg-slate-100 text-slate-500"}`}>
+                          <span className="text-[10px] font-bold">Y{yearGroup.year}</span>
                         </div>
-                        {status === "Pass" && (
-                          <div>
-                            <label className="text-[10px] text-slate-500 block mb-1">Certificate</label>
-                            <select
-                              value={certificateStatus}
-                              onChange={(e) => updateYearResult(yearGroup.year, status, e.target.value as "Not Issued" | "Issued from University" | "Sent" | "Received")}
-                              disabled={savingTracking}
-                              className={`px-3 py-1.5 text-xs font-bold rounded-lg border-2 outline-none transition-colors ${
-                                certificateStatus === "Received"
-                                  ? "bg-emerald-50 border-emerald-300 text-emerald-800"
-                                  : certificateStatus === "Sent"
-                                  ? "bg-blue-50 border-blue-300 text-blue-800"
-                                  : certificateStatus === "Issued from University"
-                                  ? "bg-purple-50 border-purple-300 text-purple-800"
-                                  : "bg-slate-50 border-slate-200 text-slate-600"
-                              }`}
-                            >
-                              <option value="Not Issued">Not Issued</option>
-                              <option value="Issued from University">Issued</option>
-                              <option value="Sent">Sent</option>
-                              <option value="Received">Received</option>
-                            </select>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold ${status === "Pass" ? "text-emerald-700" : status === "Fail" ? "text-red-700" : "text-slate-500"}`}>{status}</span>
+                          {certificateStatus !== "Not Issued" && (
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${certificateStatus === "Received" ? "bg-emerald-100 text-emerald-700" : certificateStatus === "Sent" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>{certificateStatus}</span>
+                          )}
+                          {yearResult?.certificateReceivedAt && (
+                            <span className="text-[10px] text-slate-400">Received {new Date(yearResult.certificateReceivedAt).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                          )}
+                        </div>
                       </div>
+                      {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                     </div>
-                    <div className="flex flex-wrap gap-3">
-                      {yearGroup.semesters.map((sem) => {
-                        const semResult = yearResult?.semesters?.find(s => s.semester === sem);
-                        const semStatus = semResult?.status || "Not Declared";
-                        const semCertificateStatus = semResult?.certificateStatus || "Not Issued";
-                        return (
-                          <div key={sem} className="flex-1 min-w-[200px] bg-white rounded-lg border border-cyan-200 p-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-xs font-bold text-cyan-700">Sem {sem}</span>
+                    {isExpanded && (
+                      <div className="px-3 pb-3 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-bold text-cyan-800">Year {yearGroup.year} Details</p>
+                          <div className="flex gap-2">
+                            <div>
+                              <label className="text-[10px] text-slate-500 block mb-1">Status</label>
+                              <select
+                                value={status}
+                                onChange={(e) => updateYearResult(yearGroup.year, e.target.value as "Pass" | "Fail" | "Not Declared")}
+                                disabled={savingTracking}
+                                className={`px-3 py-1.5 text-xs font-bold rounded-lg border-2 outline-none transition-colors ${
+                                  status === "Pass"
+                                    ? "bg-emerald-50 border-emerald-300 text-emerald-800"
+                                    : status === "Fail"
+                                    ? "bg-red-50 border-red-300 text-red-800"
+                                    : "bg-slate-50 border-slate-200 text-slate-600"
+                                }`}
+                              >
+                                <option value="Not Declared">Not Declared</option>
+                                <option value="Pass">Pass</option>
+                                <option value="Fail">Fail</option>
+                              </select>
                             </div>
-                            <div className="space-y-2">
+                            {status === "Pass" && (
                               <div>
-                                <label className="text-[9px] text-slate-500 block mb-1">Status</label>
+                                <label className="text-[10px] text-slate-500 block mb-1">Certificate</label>
                                 <select
-                                  value={semStatus}
-                                  onChange={(e) => updateSemesterResult(yearGroup.year, sem, e.target.value as "Pass" | "Fail" | "Not Declared", semCertificateStatus)}
+                                  value={certificateStatus}
+                                  onChange={(e) => updateYearResult(yearGroup.year, status, e.target.value as "Not Issued" | "Issued from University" | "Sent" | "Received")}
                                   disabled={savingTracking}
-                                  className={`w-full px-2 py-1 text-xs font-bold rounded-lg border outline-none transition-colors ${
-                                    semStatus === "Pass"
+                                  className={`px-3 py-1.5 text-xs font-bold rounded-lg border-2 outline-none transition-colors ${
+                                    certificateStatus === "Received"
                                       ? "bg-emerald-50 border-emerald-300 text-emerald-800"
-                                      : semStatus === "Fail"
-                                      ? "bg-red-50 border-red-300 text-red-800"
+                                      : certificateStatus === "Sent"
+                                      ? "bg-blue-50 border-blue-300 text-blue-800"
+                                      : certificateStatus === "Issued from University"
+                                      ? "bg-purple-50 border-purple-300 text-purple-800"
                                       : "bg-slate-50 border-slate-200 text-slate-600"
                                   }`}
                                 >
-                                  <option value="Not Declared">Not Declared</option>
-                                  <option value="Pass">Pass</option>
-                                  <option value="Fail">Fail</option>
+                                  <option value="Not Issued">Not Issued</option>
+                                  <option value="Issued from University">Issued</option>
+                                  <option value="Sent">Sent</option>
+                                  <option value="Received">Received</option>
                                 </select>
                               </div>
-                              {semStatus === "Pass" && (
-                                <div>
-                                  <label className="text-[9px] text-slate-500 block mb-1">Certificate</label>
-                                  <select
-                                    value={semCertificateStatus}
-                                    onChange={(e) => updateSemesterResult(yearGroup.year, sem, semStatus, e.target.value as "Not Issued" | "Issued from University" | "Sent" | "Received")}
-                                    disabled={savingTracking}
-                                    className={`w-full px-2 py-1 text-xs font-bold rounded-lg border outline-none transition-colors ${
-                                      semCertificateStatus === "Received"
-                                        ? "bg-emerald-50 border-emerald-300 text-emerald-800"
-                                        : semCertificateStatus === "Sent"
-                                        ? "bg-blue-50 border-blue-300 text-blue-800"
-                                        : semCertificateStatus === "Issued from University"
-                                        ? "bg-purple-50 border-purple-300 text-purple-800"
-                                        : "bg-slate-50 border-slate-200 text-slate-600"
-                                    }`}
-                                  >
-                                    <option value="Not Issued">Not Issued</option>
-                                    <option value="Issued from University">Issued</option>
-                                    <option value="Sent">Sent</option>
-                                    <option value="Received">Received</option>
-                                  </select>
-                                </div>
-                              )}
-                            </div>
+                            )}
                           </div>
-                        );
-                      })}
-                    </div>
-                    {yearResult?.date && (
-                      <p className="text-[10px] text-slate-500 mt-2">Updated on {yearResult.date}</p>
+                        </div>
+                        <div className="flex flex-wrap gap-3">
+                          {yearGroup.semesters.map((sem) => {
+                            const semResult = yearResult?.semesters?.find(s => s.semester === sem);
+                            const semStatus = semResult?.status || "Not Declared";
+                            const semCertificateStatus = semResult?.certificateStatus || "Not Issued";
+                            return (
+                              <div key={sem} className="flex-1 min-w-[200px] bg-white rounded-lg border border-cyan-200 p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="text-xs font-bold text-cyan-700">Sem {sem}</span>
+                                </div>
+                                <div className="space-y-2">
+                                  <div>
+                                    <label className="text-[9px] text-slate-500 block mb-1">Status</label>
+                                    <select
+                                      value={semStatus}
+                                      onChange={(e) => updateSemesterResult(yearGroup.year, sem, e.target.value as "Pass" | "Fail" | "Not Declared", semCertificateStatus)}
+                                      disabled={savingTracking}
+                                      className={`w-full px-2 py-1 text-xs font-bold rounded-lg border outline-none transition-colors ${
+                                        semStatus === "Pass"
+                                          ? "bg-emerald-50 border-emerald-300 text-emerald-800"
+                                          : semStatus === "Fail"
+                                          ? "bg-red-50 border-red-300 text-red-800"
+                                          : "bg-slate-50 border-slate-200 text-slate-600"
+                                      }`}
+                                    >
+                                      <option value="Not Declared">Not Declared</option>
+                                      <option value="Pass">Pass</option>
+                                      <option value="Fail">Fail</option>
+                                    </select>
+                                  </div>
+                                  {semStatus === "Pass" && (
+                                    <div>
+                                      <label className="text-[9px] text-slate-500 block mb-1">Certificate</label>
+                                      <select
+                                        value={semCertificateStatus}
+                                        onChange={(e) => updateSemesterResult(yearGroup.year, sem, semStatus, e.target.value as "Not Issued" | "Issued from University" | "Sent" | "Received")}
+                                        disabled={savingTracking}
+                                        className={`w-full px-2 py-1 text-xs font-bold rounded-lg border outline-none transition-colors ${
+                                          semCertificateStatus === "Received"
+                                            ? "bg-emerald-50 border-emerald-300 text-emerald-800"
+                                            : semCertificateStatus === "Sent"
+                                            ? "bg-blue-50 border-blue-300 text-blue-800"
+                                            : semCertificateStatus === "Issued from University"
+                                            ? "bg-purple-50 border-purple-300 text-purple-800"
+                                            : "bg-slate-50 border-slate-200 text-slate-600"
+                                        }`}
+                                      >
+                                        <option value="Not Issued">Not Issued</option>
+                                        <option value="Issued from University">Issued</option>
+                                        <option value="Sent">Sent</option>
+                                        <option value="Received">Received</option>
+                                      </select>
+                                    </div>
+                                  )}
+                                </div>
+                                {/* Semester timestamps */}
+                                <div className="mt-2 pt-2 border-t border-slate-100 space-y-1">
+                                  {semResult?.statusChangedAt && (
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[9px] text-slate-400 uppercase tracking-wider">Result updated</span>
+                                      <span className="text-[10px] text-slate-600 font-medium">{formatDateTime(semResult.statusChangedAt)}</span>
+                                    </div>
+                                  )}
+                                  {semResult?.certificateIssuedAt && (
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[9px] text-slate-400 uppercase tracking-wider">Certificate issued</span>
+                                      <span className="text-[10px] text-purple-700 font-medium">{formatDateTime(semResult.certificateIssuedAt)}</span>
+                                    </div>
+                                  )}
+                                  {semResult?.certificateSentAt && (
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[9px] text-slate-400 uppercase tracking-wider">Certificate sent</span>
+                                      <span className="text-[10px] text-blue-700 font-medium">{formatDateTime(semResult.certificateSentAt)}</span>
+                                    </div>
+                                  )}
+                                  {semResult?.certificateReceivedAt && (
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[9px] text-slate-400 uppercase tracking-wider">Certificate received</span>
+                                      <span className="text-[10px] text-emerald-700 font-medium">{formatDateTime(semResult.certificateReceivedAt)}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {/* Year-level timestamps */}
+                        <div className="mt-2 pt-2 border-t border-slate-100 space-y-1">
+                          {yearResult?.date && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] text-slate-400 uppercase tracking-wider">Year result updated</span>
+                              <span className="text-[10px] text-slate-600 font-medium">{yearResult.date}</span>
+                            </div>
+                          )}
+                          {yearResult?.certificateIssuedAt && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] text-slate-400 uppercase tracking-wider">Year certificate issued</span>
+                              <span className="text-[10px] text-purple-700 font-medium">{formatDateTime(yearResult.certificateIssuedAt)}</span>
+                            </div>
+                          )}
+                          {yearResult?.certificateSentAt && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] text-slate-400 uppercase tracking-wider">Year certificate sent</span>
+                              <span className="text-[10px] text-blue-700 font-medium">{formatDateTime(yearResult.certificateSentAt)}</span>
+                            </div>
+                          )}
+                          {yearResult?.certificateReceivedAt && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] text-slate-400 uppercase tracking-wider">Year certificate received</span>
+                              <span className="text-[10px] text-emerald-700 font-medium">{formatDateTime(yearResult.certificateReceivedAt)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
                 );
