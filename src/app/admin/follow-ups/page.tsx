@@ -124,10 +124,12 @@ function parseLocalDate(dateValue: string | { toDate: () => Date } | unknown): D
   return new Date();
 }
 
-// Calculate days between dates
+// Calculate days between dates (calendar date only, ignoring time)
 function daysBetween(date1: Date, date2: Date): number {
   const oneDay = 24 * 60 * 60 * 1000;
-  return Math.round(Math.abs((date1.getTime() - date2.getTime()) / oneDay));
+  const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+  const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
+  return Math.round(Math.abs((d1.getTime() - d2.getTime()) / oneDay));
 }
 
 export default function FollowUpsPage() {

@@ -40,6 +40,7 @@ export default function AdminDashboard() {
   // Follow-ups data state
   const [students, setStudents] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
+  const [followUpRecords, setFollowUpRecords] = useState<any[]>([]);
   
   // Student detail modal state
   const [detailStudent, setDetailStudent] = useState<any>(null);
@@ -86,8 +87,13 @@ export default function AdminDashboard() {
           })) as (Payment & { archived?: boolean })[]
         ).filter((p) => !p.archived);
 
+        // Get existing follow-up records
+        const followUpsSnap = await getDocs(collection(db, "followUps"));
+        const followUpsData = followUpsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
         setStudents(activeStudents);
         setPayments(activePayments);
+        setFollowUpRecords(followUpsData);
 
         setStats({
           totalStudents,
@@ -191,6 +197,7 @@ export default function AdminDashboard() {
             loading={loading} 
             students={students} 
             payments={payments}
+            followUpRecords={followUpRecords}
             onViewStudent={setDetailStudent}
           />
         </ActionCenter>
@@ -550,7 +557,10 @@ function parseLocalDate(dateValue: string | { toDate: () => Date } | unknown): D
 
 function daysBetween(date1: Date, date2: Date): number {
   const oneDay = 24 * 60 * 60 * 1000;
-  return Math.round(Math.abs((date1.getTime() - date2.getTime()) / oneDay));
+  // Strip time component so calculation is based on calendar date only
+  const d1 = new Date(date1.getFullYear(), date1.getMonth(), date1.getDate());
+  const d2 = new Date(date2.getFullYear(), date2.getMonth(), date2.getDate());
+  return Math.round(Math.abs((d1.getTime() - d2.getTime()) / oneDay));
 }
 
 // Action Center Container
@@ -566,7 +576,7 @@ function ActionCenter({ children }: { children: React.ReactNode }) {
 }
 
 // Follow-Up List Component - Fee Dues
-type FollowUpTab = "pending" | "inprogress" | "completed";
+type FollowUpTab = "pending" | "inprogress" | "completed" | "archived";
 
 interface FollowUpStudent {
   id: string;
@@ -580,42 +590,67 @@ interface FollowUpStudent {
   studentData?: any;
 }
 
-function FollowUpList({ loading, students, payments, onViewStudent }: { loading: boolean; students: any[]; payments: any[]; onViewStudent: (student: any) => void }) {
+function FollowUpList({ loading, students, payments, followUpRecords, onViewStudent }: { loading: boolean; students: any[]; payments: any[]; followUpRecords: any[]; onViewStudent: (student: any) => void }) {
   const [activeTab, setActiveTab] = useState<FollowUpTab>("pending");
   const today = new Date();
 
-  // Calculate real follow-up data from students and payments
+  // Calculate real follow-up data from students and payments (matching follow-ups page logic)
   const followUpData: FollowUpStudent[] = useMemo(() => {
     if (!students.length || !payments.length) return [];
-    
+
     const items: FollowUpStudent[] = [];
-    
+
     students.forEach((student) => {
-      // Get payments for this student
-      const studentPayments = payments.filter((p) => p.studentPhone === student.phone);
-      
+      // Skip archived students
+      if (student.archived) return;
+
+      // Get payments for this student by studentId, excluding discounts (same as follow-ups page)
+      const studentPayments = payments.filter(
+        (p) => p.studentId === (student.studentId || student.id) &&
+               !p.isDiscount &&
+               p.paymentMode !== "Discount"
+      );
+
       // Calculate total cash collected (ignore discounts)
       const totalCashCollected = studentPayments.reduce(
-        (sum, p) => sum + (parseFloat(String(p.amountPaid || "0")) || 0), 
+        (sum, p) => sum + (parseFloat(String(p.amountPaid || "0")) || 0),
         0
       );
-      
+
       // Due amount = Total Fee - Cash Collected
       const totalFee = parseFloat(String(student.totalFee || "0")) || 0;
       const dueAmount = totalFee - totalCashCollected;
-      
+
       // Find last payment date
       const lastPayment = studentPayments
         .filter(p => p.paymentDate)
-        .sort((a, b) => 
+        .sort((a, b) =>
           parseLocalDate(b.paymentDate).getTime() - parseLocalDate(a.paymentDate).getTime()
         )[0];
-      
+
       const lastPaymentDate = lastPayment?.paymentDate || student.createdAt || new Date().toISOString();
       const daysOverdue = daysBetween(today, parseLocalDate(lastPaymentDate));
-      
+
       // Only include students with due amount > 0 and overdue > 20 days
       if (dueAmount > 0 && daysOverdue > 20) {
+        // Check for existing follow-up record to get real status
+        const existingRecord = followUpRecords.find(r => r.studentId === (student.studentId || student.id));
+
+        let status: FollowUpTab = "pending";
+        if (existingRecord) {
+          // Check if remind date has passed before resetting status
+          const remindDate = existingRecord.remindAfter ? new Date(existingRecord.remindAfter) : null;
+          const remindDatePassed = remindDate && today >= remindDate;
+
+          if ((existingRecord.status === "deleted" || existingRecord.status === "completed") && remindDatePassed) {
+            status = "pending";
+          } else if (existingRecord.status === "deleted") {
+            status = "archived";
+          } else if (["pending", "inprogress", "completed"].includes(existingRecord.status)) {
+            status = existingRecord.status;
+          }
+        }
+
         items.push({
           id: student.id,
           studentName: student.name,
@@ -624,14 +659,14 @@ function FollowUpList({ loading, students, payments, onViewStudent }: { loading:
           dueAmount,
           daysOverdue,
           lastPaymentDays: daysOverdue,
-          status: "pending", // Default to pending for dashboard view
+          status,
           studentData: student,
         });
       }
     });
-    
+
     return items.sort((a, b) => b.daysOverdue - a.daysOverdue);
-  }, [students, payments]);
+  }, [students, payments, followUpRecords]);
 
   const filteredData = followUpData.filter((s) => s.status === activeTab);
 
@@ -639,12 +674,14 @@ function FollowUpList({ loading, students, payments, onViewStudent }: { loading:
     pending: followUpData.filter((s) => s.status === "pending").length,
     inprogress: followUpData.filter((s) => s.status === "inprogress").length,
     completed: followUpData.filter((s) => s.status === "completed").length,
+    archived: followUpData.filter((s) => s.status === "archived").length,
   };
 
   const tabs = [
     { key: "pending" as FollowUpTab, label: "Pending Follow-Up", count: tabCounts.pending },
     { key: "inprogress" as FollowUpTab, label: "In Progress", count: tabCounts.inprogress },
-    { key: "completed" as FollowUpTab, label: "Completed Follow-Ups", count: tabCounts.completed },
+    { key: "completed" as FollowUpTab, label: "Completed", count: tabCounts.completed },
+    { key: "archived" as FollowUpTab, label: "Archived", count: tabCounts.archived },
   ];
 
   return (
