@@ -135,14 +135,14 @@ export default function AuditPage() {
           getDocs(collection(db, "payments")),
         ]);
         const stu: Student[] = [];
-        stuSnap.forEach((d) => {
+        stuSnap.forEach((d: any) => {
           const data = { id: d.id, ...(d.data() as Omit<Student, "id">) };
           if (data.archived) return; // exclude soft-archived students
           stu.push(data);
         });
 
         const items: PayItem[] = [];
-        paySnap.forEach((d) => {
+        paySnap.forEach((d: any) => {
           const p = d.data() as Payment;
           // Exclude discount vouchers and archived payments from "collected" revenue
           if (p.archived) return;
