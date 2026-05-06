@@ -171,7 +171,7 @@ export default function FollowUpsPage() {
       try {
         // Fetch students
         const studentsSnap = await getDocs(collection(db, "students"));
-        const studentsData = studentsSnap.docs.map((d) => ({ 
+        const studentsData = studentsSnap.docs.map((d: any) => ({ 
           id: d.id, 
           ...d.data() 
         })) as Student[];
@@ -180,7 +180,7 @@ export default function FollowUpsPage() {
         // Fetch payments
         const paymentsQuery = query(collection(db, "payments"), orderBy("createdAt", "desc"));
         const paymentsSnap = await getDocs(paymentsQuery);
-        const paymentsData = paymentsSnap.docs.map((d) => ({ 
+        const paymentsData = paymentsSnap.docs.map((d: any) => ({ 
           id: d.id, 
           ...d.data() 
         })) as Payment[];
@@ -188,7 +188,7 @@ export default function FollowUpsPage() {
 
         // Fetch existing follow-up records
         const followUpsSnap = await getDocs(collection(db, "followUps"));
-        const followUpsData = followUpsSnap.docs.map((d) => ({ 
+        const followUpsData = followUpsSnap.docs.map((d: any) => ({ 
           id: d.id, 
           ...d.data() 
         })) as FollowUpRecord[];
@@ -326,12 +326,10 @@ export default function FollowUpsPage() {
     return items.sort((a, b) => b.daysOverdue - a.daysOverdue);
   }, [students, payments, followUpRecords]);
 
-  // Helper function to abbreviate course name (e.g., "MJMC (Master of Journalism...)" → "MJMC")
+  // Helper function to clean course name - take first part before / and remove parentheses
   function abbreviateCourse(course: string | undefined): string {
     if (!course) return "";
-    // Extract the short code before the parenthesis
-    const match = course.match(/^([A-Za-z]+)\s*\(/);
-    return match ? match[1] : course;
+    return course.split('/')[0].trim().replace(/\s*\([^)]*\)/g, "");
   }
 
   // Auto-create/update follow-up records in database
@@ -697,11 +695,11 @@ export default function FollowUpsPage() {
                           <p className="font-semibold text-slate-900">{s.name || "—"}</p>
                           <p className="text-xs text-slate-500">{s.faculty || ""}</p>
                         </td>
-                        <td className="px-5 py-3 font-mono text-xs text-slate-700">{s.studentId || s.id}</td>
-                        <td className="px-5 py-3 text-slate-700">{s.course || "—"}</td>
-                        <td className="px-5 py-3 text-slate-700">{s.university || "—"}</td>
+                        <td className="px-5 py-3 font-mono text-xs text-slate-900">{s.studentId || s.id}</td>
+                        <td className="px-5 py-3 text-slate-900">{s.course ? s.course.split('/')[0].trim().replace(/\s*\([^)]*\)/g, "") : "—"}{s.stream ? `-${s.stream}` : ""}</td>
+                        <td className="px-5 py-3 text-slate-900">{s.university || "—"}</td>
                         <td className="px-5 py-3">
-                          <div className="text-xs text-slate-700">{s.phone || "—"}</div>
+                          <div className="text-xs text-slate-900">{s.phone || "—"}</div>
                           <div className="text-xs text-slate-500 truncate max-w-[180px]">{s.email || ""}</div>
                         </td>
                         <td className="px-5 py-3 text-xs text-slate-600">{formatArchivedDate(s.archivedAt)}</td>
@@ -747,8 +745,8 @@ export default function FollowUpsPage() {
                 onClick={() => setActiveTab(tab.key)}
                 className={`px-5 py-3 text-sm font-medium rounded-xl transition-all flex items-center gap-2.5 ${
                   activeTab === tab.key
-                    ? "bg-gradient-to-r from-red-700 to-red-600 text-white shadow-lg"
-                    : "bg-white text-slate-600 hover:bg-red-50 border border-slate-200 hover:border-red-200"
+                    ? "gradient-bg text-white shadow-lg"
+                    : "bg-white text-slate-600 hover:bg-slate-50 border border-slate-200"
                 }`}
               >
                 <span className={`w-2 h-2 rounded-full ${
@@ -814,12 +812,12 @@ export default function FollowUpsPage() {
                             </button>
                           </td>
                           <td className="px-5 py-4">
-                            <p className="text-sm text-slate-600">{item.studentData?.university || item.university || '—'}</p>
+                            <p className="text-sm text-slate-900">{item.studentData?.university || item.university || '—'}</p>
                           </td>
                           <td className="px-5 py-4">
                             <a 
                               href={`tel:${item.studentPhone}`}
-                              className="text-sm text-slate-600 hover:text-red-600 transition-colors"
+                              className="text-sm text-slate-900 hover:text-red-600 transition-colors"
                             >
                               {item.studentPhone}
                             </a>
@@ -837,7 +835,7 @@ export default function FollowUpsPage() {
                               onClick={() => setExpandedNotes(expandedNotes === item.id ? null : item.id)}
                               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                                 expandedNotes === item.id
-                                  ? 'bg-red-600 text-white'
+                                  ? 'gradient-bg text-white'
                                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                               }`}
                             >
@@ -881,7 +879,7 @@ export default function FollowUpsPage() {
                               {item.status !== "deleted" && (
                                 <button
                                   onClick={() => handleDelete(item)}
-                                  className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                                  className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
                                   title="Remove"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -906,12 +904,12 @@ export default function FollowUpsPage() {
                                     const noteText = noteParts.join(':').trim();
                                     return (
                                       <div key={idx} className="flex gap-3 p-3 bg-slate-50 rounded-lg">
-                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 text-red-600 text-xs font-semibold flex items-center justify-center">
+                                        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center">
                                           {item.remarks.length - idx}
                                         </span>
                                         <div className="flex-1 min-w-0">
                                           <p className="text-xs text-red-500 font-medium mb-0.5">{date}</p>
-                                          <p className="text-sm text-slate-700">{noteText}</p>
+                                          <p className="text-sm text-slate-900">{noteText}</p>
                                         </div>
                                       </div>
                                     );
@@ -980,7 +978,7 @@ export default function FollowUpsPage() {
               <button
                 onClick={handleAddNote}
                 disabled={!noteText.trim() || savingNote}
-                className="flex-1 bg-red-600 text-white px-4 py-2.5 rounded-xl hover:bg-red-700 active:bg-red-800 transition-colors flex items-center justify-center gap-2 font-medium disabled:opacity-50"
+                className="flex-1 gradient-bg text-white px-4 py-2.5 rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2 font-medium disabled:opacity-50"
               >
                 {savingNote ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -1105,8 +1103,8 @@ export default function FollowUpsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-5">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-red-100 rounded-full">
-                <AlertTriangle className="w-5 h-5 text-red-600" />
+              <div className="p-2 bg-slate-100 rounded-full">
+                <AlertTriangle className="w-5 h-5 text-slate-600" />
               </div>
               <h3 className="text-lg font-bold text-slate-900">Confirm Action</h3>
             </div>
@@ -1127,7 +1125,7 @@ export default function FollowUpsPage() {
               </button>
               <button
                 onClick={() => confirmCallback?.()}
-                className="flex-1 bg-red-600 text-white px-4 py-2.5 rounded-xl hover:bg-red-700 active:bg-red-800 transition-colors font-medium"
+                className="flex-1 gradient-bg text-white px-4 py-2.5 rounded-xl hover:shadow-lg transition-all font-medium"
               >
                 Yes, Remove
               </button>
@@ -1201,15 +1199,15 @@ function StudentDetailModal({ student, onClose, payments }: { student: Student; 
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div><span className="text-slate-500">University:</span> <span className="font-medium">{student.university || "—"}</span></div>
               <div><span className="text-slate-500">Faculty:</span> <span className="font-medium">{student.faculty || "—"}</span></div>
-              <div><span className="text-slate-500">Course:</span> <span className="font-medium">{student.course || "—"}</span></div>
+              <div><span className="text-slate-500">Course:</span> <span className="font-medium">{student.course ? student.course.split('/')[0].trim().replace(/\s*\([^)]*\)/g, "") : "—"}{student.stream ? `-${student.stream}` : ""}</span></div>
               <div><span className="text-slate-500">Stream:</span> <span className="font-medium">{student.stream || "—"}</span></div>
               <div><span className="text-slate-500">Duration:</span> <span className="font-medium">{student.duration || "—"}</span></div>
             </div>
           </div>
           
           {/* Fee Info */}
-          <div className="bg-red-50 rounded-lg p-3 border border-red-100">
-            <p className="text-xs text-red-600 uppercase mb-2">Fee Information</p>
+          <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
+            <p className="text-xs text-slate-600 uppercase mb-2">Fee Information</p>
             <div className="grid grid-cols-3 gap-3 text-sm">
               <div>
                 <p className="text-slate-500">Total Fee</p>
@@ -1230,7 +1228,7 @@ function StudentDetailModal({ student, onClose, payments }: { student: Student; 
           <div className="flex gap-3 pt-2">
             <button
               onClick={() => setShowFullDetails(!showFullDetails)}
-              className="flex-1 bg-red-600 text-white text-center py-2 rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+              className="flex-1 gradient-bg text-white text-center py-2 rounded-lg text-sm font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2"
             >
               <ArrowRight className="w-4 h-4" />
               {showFullDetails ? 'Hide Full Details' : 'View Full Profile'}
@@ -1278,7 +1276,7 @@ function StudentDetailModal({ student, onClose, payments }: { student: Student; 
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div><span className="text-slate-500">University:</span> <span className="font-medium text-slate-900">{student.university || "—"}</span></div>
                   <div><span className="text-slate-500">Faculty:</span> <span className="font-medium text-slate-900">{student.faculty || "—"}</span></div>
-                  <div><span className="text-slate-500">Course:</span> <span className="font-medium text-slate-900">{student.course || "—"}</span></div>
+                  <div><span className="text-slate-500">Course:</span> <span className="font-medium text-slate-900">{student.course ? student.course.split('/')[0].trim().replace(/\s*\([^)]*\)/g, "") : "—"}{student.stream ? `-${student.stream}` : ""}</span></div>
                   <div><span className="text-slate-500">Stream:</span> <span className="font-medium text-slate-900">{student.stream || "—"}</span></div>
                   <div><span className="text-slate-500">Duration:</span> <span className="font-medium text-slate-900">{student.duration || "—"}</span></div>
                   <div><span className="text-slate-500">Start Year:</span> <span className="font-medium text-slate-900">{student.startYear || "—"}</span></div>
