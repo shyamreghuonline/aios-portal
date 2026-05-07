@@ -305,38 +305,38 @@ export default function ReceiptPage() {
       .header { padding:16px 32px; display:flex; justify-content:space-between; align-items:center; }
       .header img { height:60px; width:auto; object-fit:contain; }
       .header .right { text-align:right; }
-      .header .rcpt-label { font-size:12px; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em; }
+      .header .rcpt-label { font-size:12px; color:#374151; text-transform:uppercase; letter-spacing:0.05em; }
       .header .rcpt-num { font-size:20px; font-weight:bold; color:#8B0000; }
       .meta { background:#f3f4f6; padding:8px 32px; display:flex; gap:32px; font-size:14px; }
-      .meta .lbl { color:#6b7280; }
-      .meta .val { font-weight:600; color:#1f2937; }
+      .meta .lbl { color:#374151; }
+      .meta .val { font-weight:600; color:#111827; }
       .content { padding:24px 32px; }
       .section { margin-bottom:24px; }
-      .section-title { font-size:14px; font-weight:bold; color:#1f2937; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:12px; border-bottom:1px solid #e5e7eb; padding-bottom:4px; }
+      .section-title { font-size:11px; font-weight:bold; color:#1f2937; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px; border-bottom:1px solid #e5e7eb; padding-bottom:3px; }
       .grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 32px; font-size:14px; }
       .grid .lbl { color:#8B0000; font-weight:600; }
-      .grid .val { color:#1f2937; margin-left:8px; }
+      .grid .val { color:#111827; margin-left:8px; }
       table { width:100%; border-collapse:collapse; }
       th { background:#8B0000; color:#fff; padding:10px 12px; text-align:left; font-size:13px; font-weight:600; border:1px solid #b91c1c; }
-      td { padding:10px 12px; font-size:13px; color:#374151; background:#fef2f2; border:1px solid #fee2e2; }
+      td { padding:10px 12px; font-size:13px; color:#111827; background:#fef2f2; border:1px solid #fee2e2; }
       .text-right { text-align:right; }
       .text-green { color:#16a34a; font-weight:bold; }
       .text-red { color:#dc2626; font-weight:bold; }
       .amount-box { border:1px solid #8B0000; padding:12px; margin-top:16px; }
-      .amount-box .lbl { font-size:12px; color:#6b7280; text-transform:uppercase; margin-bottom:4px; }
-      .amount-box .val { font-size:14px; font-weight:600; color:#1f2937; }
+      .amount-box .lbl { font-size:12px; color:#374151; text-transform:uppercase; margin-bottom:4px; }
+      .amount-box .val { font-size:14px; font-weight:600; color:#111827; }
       .info-row { display:flex; gap:16px; margin-top:16px; }
       .info-card { flex:1; padding:12px; background:#f3f4f6; border-left:4px solid #8B0000; }
-      .info-card .lbl { font-size:12px; color:#6b7280; text-transform:uppercase; margin-bottom:4px; }
-      .info-card .val { font-size:14px; font-weight:600; color:#1f2937; }
+      .info-card .lbl { font-size:12px; color:#374151; text-transform:uppercase; margin-bottom:4px; }
+      .info-card .val { font-size:14px; font-weight:600; color:#111827; }
       .remark-row { display:flex; justify-content:space-between; gap:32px; margin-top:16px; }
       .remark-row > div { flex:1; }
-      .remark-title { font-size:12px; font-weight:bold; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px; }
-      .remark-text { font-size:13px; color:#374151; background:#f9fafb; padding:12px; }
-      .sys-msg { font-size:12px; color:#6b7280; font-style:italic; text-align:center; line-height:1.6; padding-top:16px; }
+      .remark-title { font-size:12px; font-weight:bold; color:#374151; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px; }
+      .remark-text { font-size:13px; color:#1f2937; background:#f9fafb; padding:12px; }
+      .sys-msg { font-size:12px; color:#374151; font-style:italic; text-align:center; line-height:1.6; padding-top:16px; }
       .contact { margin-top:16px; }
-      .contact-title { font-size:10px; font-weight:bold; color:#8B0000; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px; }
-      .contact-box { font-size:12px; color:#374151; font-weight:500; line-height:1.6; border-left:4px solid #8B0000; padding-left:12px; padding-top:8px; padding-bottom:8px; background:#fef2f2; border-radius:0 8px 8px 0; }
+      .contact-title { font-size:9px; font-weight:bold; color:#8B0000; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px; }
+      .contact-box { font-size:10px; color:#1f2937; font-weight:500; line-height:1.5; border-left:3px solid #8B0000; padding-left:10px; padding-top:6px; padding-bottom:6px; background:#fef2f2; border-radius:0 6px 6px 0; }
       .footer { padding:16px 32px; }
       .footer-line { height:1px; background:#8B0000; }
     </style></head><body>
@@ -379,7 +379,7 @@ export default function ReceiptPage() {
           <div class="amount-box"><p class="lbl">Amount in Words:</p><p class="val">${numberToWords(p.amountPaid)} Rupees Only</p></div>
           <div class="remark-row">
             ${p.remarks ? `<div><div class="remark-title">Remarks</div><div class="remark-text">${p.remarks}</div></div>` : '<div></div>'}
-            <div><p class="sys-msg">This is a system-generated receipt.<br/>No signature is required.<br/>Valid as per AIOS EDU payment records.</p></div>
+            <div><p class="sys-msg">**This is a system-generated receipt & No signature is required.<br/>Valid as per AIOS EDU payment records.</p></div>
           </div>
           <div class="contact">
             <div class="contact-title">Branch &amp; Contact Information</div>
