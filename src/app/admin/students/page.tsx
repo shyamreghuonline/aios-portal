@@ -610,9 +610,9 @@ export default function StudentsPage() {
 
       const payments = snap.docs
 
-        .map((d) => ({ id: d.id, ...d.data() } as Payment))
+        .map((d: any) => ({ id: d.id, ...d.data() } as Payment))
 
-        .filter((p) => (p as unknown as Record<string,string>).studentId === student.studentId || (p as unknown as Record<string,string>).studentId === student.id);
+        .filter((p: any) => (p as unknown as Record<string,string>).studentId === student.studentId || (p as unknown as Record<string,string>).studentId === student.id);
 
       setPaymentsModal({ student, payments });
 
@@ -650,7 +650,7 @@ export default function StudentsPage() {
 
       const map: Record<string, number> = {};
 
-      snap.docs.forEach((d) => {
+      snap.docs.forEach((d: any) => {
 
         const p = d.data();
 
@@ -684,7 +684,7 @@ export default function StudentsPage() {
 
       const snap = await getDocs(collection(db, "students"));
 
-      const data = snap.docs.map((d) => ({
+      const data = snap.docs.map((d: any) => ({
 
         id: d.id,
 
@@ -923,7 +923,7 @@ export default function StudentsPage() {
 
 
 
-    snapshot.forEach((doc) => {
+    snapshot.forEach((doc: any) => {
 
       const studentId = doc.data().studentId as string;
 
@@ -983,7 +983,7 @@ export default function StudentsPage() {
 
 
 
-    snapshot.forEach((doc) => {
+    snapshot.forEach((doc: any) => {
 
       const receiptNumber = doc.data().receiptNumber as string;
 
@@ -1309,6 +1309,10 @@ export default function StudentsPage() {
 
       setCustomStream(false);
 
+      // Close the form modal after successful submission
+
+      setShowForm(false);
+
       fetchStudents();
 
     } catch (err) {
@@ -1355,7 +1359,7 @@ export default function StudentsPage() {
 
         await Promise.all(
 
-          paySnap.docs.map((p) =>
+          paySnap.docs.map((p: any) =>
 
             setDoc(
 

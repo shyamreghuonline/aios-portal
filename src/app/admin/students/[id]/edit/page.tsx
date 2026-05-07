@@ -253,29 +253,28 @@ export default function StudentEditPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
+    <div className="pb-24 lg:pb-6 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-4">
-          <Link href={`/admin/students/${student?.id}`} className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-red-600 transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Student Details
-          </Link>
-        </div>
-
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-4">
-          <div className="gradient-bg px-4 sm:px-6 py-4">
+        <div className="mb-5">
+          <div className="bg-gradient-to-br from-red-50 via-white to-rose-50 rounded-xl shadow-md border border-red-100 p-4 sm:p-6 flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center border-2 border-white/30">
-                <Edit className="w-5 h-5 text-white" />
+              <div className="w-12 h-12 rounded-lg border-2 border-red-200 bg-white flex items-center justify-center shadow-sm">
+                <Edit className="w-6 h-6 text-red-600" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-white">Edit Student Profile</h2>
-                <p className="text-xs text-white/80">{student?.studentId || student?.id}</p>
+                <p className="text-xs text-slate-500 font-medium">Editing Profile</p>
+                <h1 className="text-lg font-bold text-slate-900">{student?.studentId || student?.id}</h1>
+                <p className="text-sm text-red-600 font-semibold">{student?.name}</p>
               </div>
             </div>
+            <Link href={`/admin/students/${student?.id}`} className="text-sm font-semibold text-slate-600 hover:text-red-600 flex items-center gap-1">
+              <ArrowLeft className="w-4 h-4" />
+              Back
+            </Link>
           </div>
+        </div>
 
-          <div className="p-4 sm:p-6">
+        <div className="space-y-4">
             {success && (
               <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-emerald-600" />
@@ -343,7 +342,7 @@ export default function StudentEditPage() {
               </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Photo</label>
+                <label className="block text-[13px] font-semibold text-blue-700 mb-2">Photo</label>
                 <div className="flex items-center gap-3">
                   {personal.photo && (
                     <img src={personal.photo} alt="Student" className="w-20 h-20 rounded-lg object-cover border border-slate-200" />
@@ -357,7 +356,7 @@ export default function StudentEditPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Date of Birth</label>
+                <label className="block text-[13px] font-semibold text-blue-700 mb-2">Date of Birth</label>
                 <input
                   type="date"
                   value={personal.dob || ""}
@@ -366,7 +365,7 @@ export default function StudentEditPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Gender</label>
+                <label className="block text-[13px] font-semibold text-blue-700 mb-2">Gender</label>
                 <select
                   value={personal.gender || ""}
                   onChange={(e) => setPersonal({ ...personal, gender: e.target.value })}
@@ -379,7 +378,7 @@ export default function StudentEditPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Blood Group</label>
+                <label className="block text-[13px] font-semibold text-blue-700 mb-2">Blood Group</label>
                 <select
                   value={personal.bloodGroup || ""}
                   onChange={(e) => setPersonal({ ...personal, bloodGroup: e.target.value })}
@@ -397,7 +396,7 @@ export default function StudentEditPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Father's Name</label>
+                <label className="block text-[13px] font-semibold text-blue-700 mb-2">Father's Name</label>
                 <input
                   type="text"
                   value={personal.fatherName || ""}
@@ -406,7 +405,7 @@ export default function StudentEditPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Mother's Name</label>
+                <label className="block text-[13px] font-semibold text-blue-700 mb-2">Mother's Name</label>
                 <input
                   type="text"
                   value={personal.motherName || ""}
@@ -415,7 +414,7 @@ export default function StudentEditPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Guardian Name</label>
+                <label className="block text-[13px] font-semibold text-blue-700 mb-2">Guardian Name</label>
                 <input
                   type="text"
                   value={personal.guardianName || ""}
@@ -424,7 +423,7 @@ export default function StudentEditPage() {
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Address</label>
+                <label className="block text-[13px] font-semibold text-blue-700 mb-2">Address</label>
                 <textarea
                   value={personal.address || ""}
                   onChange={(e) => setPersonal({ ...personal, address: e.target.value })}
@@ -433,7 +432,7 @@ export default function StudentEditPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">City</label>
+                <label className="block text-[13px] font-semibold text-blue-700 mb-2">City</label>
                 <input
                   type="text"
                   value={personal.city || ""}
@@ -442,7 +441,7 @@ export default function StudentEditPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">State</label>
+                <label className="block text-[13px] font-semibold text-blue-700 mb-2">State</label>
                 <input
                   type="text"
                   value={personal.state || ""}
@@ -451,7 +450,7 @@ export default function StudentEditPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Pincode</label>
+                <label className="block text-[13px] font-semibold text-blue-700 mb-2">Pincode</label>
                 <input
                   type="text"
                   value={personal.pincode || ""}
@@ -460,7 +459,7 @@ export default function StudentEditPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Aadhaar Number</label>
+                <label className="block text-[13px] font-semibold text-blue-700 mb-2">Aadhaar Number</label>
                 <input
                   type="text"
                   value={personal.aadhaarNumber || ""}
@@ -469,7 +468,7 @@ export default function StudentEditPage() {
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Aadhaar Document</label>
+                <label className="block text-[13px] font-semibold text-blue-700 mb-2">Aadhaar Document</label>
                 <div className="flex items-center gap-3">
                   {personal.aadhaarUrl && (
                     <span className="text-xs text-green-600 flex items-center gap-1.5">
@@ -486,7 +485,7 @@ export default function StudentEditPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Employment Type</label>
+                <label className="block text-[13px] font-semibold text-blue-700 mb-2">Employment Type</label>
                 <select
                   value={personal.employmentType || ""}
                   onChange={(e) => setPersonal({ ...personal, employmentType: e.target.value })}
@@ -500,7 +499,7 @@ export default function StudentEditPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Years of Experience</label>
+                <label className="block text-[13px] font-semibold text-blue-700 mb-2">Years of Experience</label>
                 <input
                   type="text"
                   value={personal.yearsOfExperience || ""}
@@ -523,7 +522,7 @@ export default function StudentEditPage() {
               <h4 className="text-xs font-semibold text-slate-900 mb-3">SSLC / 10th</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Institution</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Institution</label>
                   <input
                     type="text"
                     value={academic.sslc?.institution || ""}
@@ -532,7 +531,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Board</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Board</label>
                   <input
                     type="text"
                     value={academic.sslc?.board || ""}
@@ -541,7 +540,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Year</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Year</label>
                   <input
                     type="text"
                     value={academic.sslc?.year || ""}
@@ -550,7 +549,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Percentage</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Percentage</label>
                   <input
                     type="text"
                     value={academic.sslc?.percentage || ""}
@@ -559,7 +558,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Certificate</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Certificate</label>
                   <div className="flex items-center gap-3">
                     {academic.sslc?.certificateUrl && (
                       <span className="text-xs text-green-600 flex items-center gap-1.5">
@@ -583,7 +582,7 @@ export default function StudentEditPage() {
               <h4 className="text-xs font-semibold text-slate-900 mb-3">HSC / 12th</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Institution</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Institution</label>
                   <input
                     type="text"
                     value={academic.plustwo?.institution || ""}
@@ -592,7 +591,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Board</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Board</label>
                   <input
                     type="text"
                     value={academic.plustwo?.board || ""}
@@ -601,7 +600,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Stream</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Stream</label>
                   <input
                     type="text"
                     value={academic.plustwo?.stream || ""}
@@ -610,7 +609,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Year</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Year</label>
                   <input
                     type="text"
                     value={academic.plustwo?.year || ""}
@@ -619,7 +618,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Percentage</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Percentage</label>
                   <input
                     type="text"
                     value={academic.plustwo?.percentage || ""}
@@ -628,7 +627,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Certificate</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Certificate</label>
                   <div className="flex items-center gap-3">
                     {academic.plustwo?.certificateUrl && (
                       <span className="text-xs text-green-600 flex items-center gap-1.5">
@@ -652,7 +651,7 @@ export default function StudentEditPage() {
               <h4 className="text-xs font-semibold text-slate-900 mb-3">Under Graduate (UG)</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Institution</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Institution</label>
                   <input
                     type="text"
                     value={academic.ug?.institution || ""}
@@ -661,7 +660,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Degree</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Degree</label>
                   <input
                     type="text"
                     value={academic.ug?.degree || ""}
@@ -670,7 +669,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Year</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Year</label>
                   <input
                     type="text"
                     value={academic.ug?.year || ""}
@@ -679,7 +678,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Percentage</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Percentage</label>
                   <input
                     type="text"
                     value={academic.ug?.percentage || ""}
@@ -688,7 +687,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Certificate</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Certificate</label>
                   <div className="flex items-center gap-3">
                     {academic.ug?.certificateUrl && (
                       <span className="text-xs text-green-600 flex items-center gap-1.5">
@@ -712,7 +711,7 @@ export default function StudentEditPage() {
               <h4 className="text-xs font-semibold text-slate-900 mb-3">Post Graduate (PG)</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Institution</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Institution</label>
                   <input
                     type="text"
                     value={academic.pg?.institution || ""}
@@ -721,7 +720,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Degree</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Degree</label>
                   <input
                     type="text"
                     value={academic.pg?.degree || ""}
@@ -730,7 +729,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Year</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Year</label>
                   <input
                     type="text"
                     value={academic.pg?.year || ""}
@@ -739,7 +738,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Percentage</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Percentage</label>
                   <input
                     type="text"
                     value={academic.pg?.percentage || ""}
@@ -748,7 +747,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Certificate</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Certificate</label>
                   <div className="flex items-center gap-3">
                     {academic.pg?.certificateUrl && (
                       <span className="text-xs text-green-600 flex items-center gap-1.5">
@@ -772,7 +771,7 @@ export default function StudentEditPage() {
               <h4 className="text-xs font-semibold text-slate-900 mb-3">PhD / Other</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Institution</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Institution</label>
                   <input
                     type="text"
                     value={academic.phd?.institution || ""}
@@ -781,7 +780,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Topic</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Topic</label>
                   <input
                     type="text"
                     value={academic.phd?.topic || ""}
@@ -790,7 +789,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Year</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Year</label>
                   <input
                     type="text"
                     value={academic.phd?.year || ""}
@@ -799,7 +798,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Status</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Status</label>
                   <input
                     type="text"
                     value={academic.phd?.status || ""}
@@ -808,7 +807,7 @@ export default function StudentEditPage() {
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">Certificate</label>
+                  <label className="block text-[13px] font-semibold text-blue-700 mb-2">Certificate</label>
                   <div className="flex items-center gap-3">
                     {academic.phd?.certificateUrl && (
                       <span className="text-xs text-green-600 flex items-center gap-1.5">
@@ -826,22 +825,21 @@ export default function StudentEditPage() {
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Save Button */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200">
-            <Link
-              href={`/admin/students/${student?.id}`}
-              className="px-6 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200"
+            {/* Save Button */}
+          <div className="flex justify-end gap-3 pt-6 border-t border-slate-200 mt-6">
+            <button
+              onClick={() => window.history.back()}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
             >
               Cancel
-            </Link>
+            </button>
             <button
               onClick={handleSave}
               disabled={saving}
-              className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white rounded-lg gradient-bg hover:shadow-lg transition-all disabled:opacity-60"
             >
-              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
               {saving ? "Saving..." : "Save Changes"}
             </button>
           </div>

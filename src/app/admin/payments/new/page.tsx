@@ -69,7 +69,7 @@ async function generateReceiptId(type: "payment" | "discount" = "payment"): Prom
   const snapshot = await getDocs(collection(db, "payments"));
   let maxSerial = 0;
 
-  snapshot.forEach((doc) => {
+  snapshot.forEach((doc: any) => {
     const receiptNumber = doc.data().receiptNumber as string;
     if (receiptNumber && (receiptNumber.startsWith("RCP") || receiptNumber.startsWith("VCH"))) {
       // Extract serial from [Prefix][YY][Month][Serial] format
@@ -110,16 +110,16 @@ export default function NewPaymentPage() {
   useEffect(() => {
     async function fetchStudents() {
       const snap = await getDocs(collection(db, "students"));
-      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as (Student & { archived?: boolean })[];
+      const data = snap.docs.map((d: any) => ({ id: d.id, ...d.data() })) as (Student & { archived?: boolean })[];
       // Exclude archived (alumni) students from selection
-      const active = data.filter((s) => !s.archived);
-      setStudents(active.sort((a, b) => a.name.localeCompare(b.name)));
+      const active = data.filter((s: any) => !s.archived);
+      setStudents(active.sort((a: any, b: any) => a.name.localeCompare(b.name)));
     }
     fetchStudents();
   }, []);
 
   async function handleStudentSelect(studentId: string) {
-    const student = students.find((s) => s.id === studentId) || null;
+    const student = students.find((s: any) => s.id === studentId) || null;
     setSelectedStudent(student);
 
     if (student) {
@@ -128,7 +128,7 @@ export default function NewPaymentPage() {
       const snap = await getDocs(q);
       let totalPaid = 0;
       let maxInstallment = 0;
-      snap.forEach((d) => {
+      snap.forEach((d: any) => {
         totalPaid += parseFloat(d.data().amountPaid || "0");
         const inst = parseInt(d.data().installmentNumber || "0");
         if (inst > maxInstallment) maxInstallment = inst;
@@ -210,7 +210,7 @@ export default function NewPaymentPage() {
       >
         {/* Student Selection */}
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Select Student *</label>
+          <label className="block text-xs font-semibold text-black mb-2">Select Student *</label>
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <select
@@ -220,7 +220,7 @@ export default function NewPaymentPage() {
               className="w-full pl-9 pr-3 py-2.5 text-sm rounded-lg border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-100 outline-none appearance-none bg-white"
             >
               <option value="">Choose student...</option>
-              {students.map((s) => (
+              {students.map((s: any) => (
                 <option key={s.id} value={s.id}>
                   {s.name} ({s.studentId || s.id}) — {(s.course || s.program || "").replace(/\s*\([^)]*\)/g, "")}{s.stream ? `-${s.stream}` : ""}
                 </option>
@@ -252,7 +252,7 @@ export default function NewPaymentPage() {
         {/* Payment Details */}
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Amount Paid (₹) *</label>
+            <label className="block text-xs font-semibold text-black mb-2">Amount Paid (₹) *</label>
             <div className="relative">
               <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -267,7 +267,7 @@ export default function NewPaymentPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Payment Date *</label>
+            <label className="block text-xs font-semibold text-black mb-2">Payment Date *</label>
             <div className="relative">
               <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -280,7 +280,7 @@ export default function NewPaymentPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Payment Mode *</label>
+            <label className="block text-xs font-semibold text-black mb-2">Payment Mode *</label>
             <div className="relative">
               <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <select
@@ -300,7 +300,7 @@ export default function NewPaymentPage() {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Transaction Ref / UTR</label>
+            <label className="block text-xs font-semibold text-black mb-2">Transaction Ref / UTR</label>
             <div className="relative">
               <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
@@ -315,7 +315,7 @@ export default function NewPaymentPage() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Remarks</label>
+          <label className="block text-xs font-semibold text-black mb-2">Remarks</label>
           <textarea
             value={formData.remarks}
             onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}

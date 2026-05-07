@@ -90,7 +90,7 @@ async function generateReceiptId(type: "payment" | "discount" = "payment"): Prom
   const snapshot = await getDocs(collection(db, "payments"));
   let maxSerial = 0;
 
-  snapshot.forEach((doc) => {
+  snapshot.forEach((doc: any) => {
     const receiptNumber = doc.data().receiptNumber as string;
     if (receiptNumber && (receiptNumber.startsWith("RCP") || receiptNumber.startsWith("VCH"))) {
       const serialPart = receiptNumber.slice(7);
@@ -147,7 +147,7 @@ export default function PendingPaymentsPage() {
     try {
       const pq = query(collection(db, "payments"), where("studentId", "==", studentId), orderBy("paymentDate", "desc"));
       const ps = await getDocs(pq);
-      const confirmed = ps.docs.map(d => ({ id: d.id, ...d.data() } as ConfirmedPayment));
+      const confirmed = ps.docs.map((d: any) => ({ id: d.id, ...d.data() } as ConfirmedPayment));
       setConsolidatedConfirmed(confirmed);
     } catch (err) {
       console.error("Error fetching confirmed payments:", err);
@@ -165,7 +165,7 @@ export default function PendingPaymentsPage() {
           orderBy("createdAt", "desc")
         );
         const snap = await getDocs(q);
-        const paymentsData = snap.docs.map((d) => ({ 
+        const paymentsData = snap.docs.map((d: any) => ({ 
           id: d.id, 
           ...d.data() 
         })) as PendingPayment[];
@@ -221,8 +221,8 @@ export default function PendingPaymentsPage() {
         where("studentId", "==", selectedPayment.studentId)
       );
       const paymentsSnap = await getDocs(paymentsQuery);
-      const existingPayments = paymentsSnap.docs.map(d => d.data());
-      const totalPaid = existingPayments.reduce((sum, p) => sum + (p.amountPaid || 0), 0);
+      const existingPayments = paymentsSnap.docs.map((d: any) => d.data());
+      const totalPaid = existingPayments.reduce((sum: number, p: any) => sum + (p.amountPaid || 0), 0);
       const newBalance = Math.max(0, (student.totalFee - student.discountAmount) - totalPaid - selectedPayment.amount);
 
       // Generate receipt ID using same format as new payment page
@@ -501,7 +501,7 @@ Thank you!`,
           <p className="text-sm font-bold text-blue-700">
             ₹{pendingPayments
               .filter(p => p.status === "pending")
-              .reduce((sum, p) => sum + p.amount, 0)
+              .reduce((sum: number, p: any) => sum + p.amount, 0)
               .toLocaleString("en-IN")}
           </p>
         </div>
@@ -549,14 +549,14 @@ Thank you!`,
             </tr>
           </thead>
           <tbody>
-            {filteredPayments.map((payment) => {
+            {filteredPayments.map((payment: any) => {
               const student = students[payment.studentId];
               return (
                 <tr key={payment.id} className="border-b border-red-100 hover:bg-slate-50/50 transition-colors">
                   <td className="px-3 py-2.5">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center shrink-0 text-xs font-bold text-red-700">
-                        {(payment.studentName || "?").split(" ").map(s => s[0]).slice(0, 2).join("").toUpperCase()}
+                        {(payment.studentName || "?").split(" ").map((s: string) => s[0]).slice(0, 2).join("").toUpperCase()}
                       </div>
                       <div>
                         <p className="text-sm text-slate-900 font-bold">{payment.studentName}</p>
@@ -579,7 +579,9 @@ Thank you!`,
                     ) : "—"}
                   </td>
                   <td className="px-3 py-2.5 text-sm text-slate-900">
-                    {student ? `${(student.course || "").replace(/\s*\([^)]*\)/g, "")}${student.stream ? `-${student.stream}` : ""}` : "—"}
+                    <span className="block text-sm text-slate-900 leading-snug break-words">
+                      {student ? `${(student.course || "").split('/')[0].trim().replace(/\s*\([^)]*\)/g, "")}${student.stream ? `-${student.stream}` : ""}` : "—"}
+                    </span>
                   </td>
                   <td className="px-3 py-2.5 font-bold text-green-600 text-sm">
                     ₹{payment.amount.toLocaleString("en-IN")}
@@ -641,7 +643,7 @@ Thank you!`,
                               const ps = await getDocs(pq);
                               let totalPaid = 0;
                               let maxInst = 0;
-                              ps.forEach((d) => {
+                              ps.forEach((d: any) => {
                                 totalPaid += parseFloat(d.data().amountPaid || "0");
                                 const inst = parseInt(d.data().installmentNumber || "0");
                                 if (inst > maxInst) maxInst = inst;

@@ -352,8 +352,8 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
         orderBy("createdAt", "desc")
       ));
       const payments = snap.docs
-        .map(d => ({ id: d.id, ...d.data() } as Payment))
-        .filter(p => (p as unknown as Record<string, string>).studentId === student.studentId || (p as unknown as Record<string, string>).studentId === student.id);
+        .map((d: any) => ({ id: d.id, ...d.data() } as Payment))
+        .filter((p: any) => (p as unknown as Record<string, string>).studentId === student.studentId || (p as unknown as Record<string, string>).studentId === student.id);
       setPaymentsData(payments);
     } catch (err) {
       console.error("Error fetching payments:", err);

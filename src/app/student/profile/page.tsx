@@ -183,7 +183,7 @@ export default function StudentProfilePage() {
 
   useEffect(() => {
     if (!studentId) return;
-    getDoc(doc(db, "students", studentId)).then(snap => {
+    getDoc(doc(db, "students", studentId)).then((snap: any) => {
       if (!snap.exists()) return;
       const d = snap.data();
       if (d.personalDetails) setPersonal(d.personalDetails as PersonalDetails);

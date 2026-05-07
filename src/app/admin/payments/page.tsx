@@ -43,12 +43,12 @@ export default function PaymentsPage() {
       try {
         const q = query(collection(db, "payments"), orderBy("createdAt", "desc"));
         const snap = await getDocs(q);
-        const data = snap.docs.map((d) => ({
+        const data = snap.docs.map((d: any) => ({
           id: d.id,
           ...d.data(),
         })) as Payment[];
         // Hide payments belonging to archived students
-        setPayments(data.filter((p) => !p.archived));
+        setPayments(data.filter((p: any) => !p.archived));
       } catch (err) {
         console.error("Error fetching payments:", err);
       } finally {
@@ -68,7 +68,7 @@ export default function PaymentsPage() {
     setDeletingId(p.id);
     try {
       await deleteDoc(doc(db, "payments", p.id));
-      setPayments((prev) => prev.filter((x) => x.id !== p.id));
+      setPayments((prev) => prev.filter((x: any) => x.id !== p.id));
     } catch (err) {
       console.error("Error deleting payment:", err);
       alert("Failed to delete payment. Please try again.");
@@ -166,7 +166,7 @@ export default function PaymentsPage() {
           />
         </div>
         <Calendar className="w-4 h-4 text-slate-500" />
-        {presets.map((p) => (
+        {presets.map((p: any) => (
           <button
             key={p.key}
             onClick={() => setDatePreset(p.key)}
@@ -252,7 +252,7 @@ export default function PaymentsPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((payment) => (
+              {filtered.map((payment: Payment) => (
                 <tr key={payment.id} className="border-b border-red-100 hover:bg-slate-50/50 transition-colors">
                   <td className="px-3 py-2.5">
                     <Link
@@ -272,7 +272,9 @@ export default function PaymentsPage() {
                     </span>
                   </td>
                   <td className="px-3 py-2.5 text-sm text-slate-900">
-                    {(payment.course || payment.program || "").replace(/\s*\([^)]*\)/g, "")}{payment.stream ? `-${payment.stream}` : ""}
+                    <span className="block text-sm text-slate-900 leading-snug break-words">
+                      {(payment.course || payment.program || "").split('/')[0].trim().replace(/\s*\([^)]*\)/g, "")}{payment.stream ? `-${payment.stream}` : ""}
+                    </span>
                   </td>
                   <td className="px-3 py-2.5 font-bold text-green-600 text-sm">
                     ₹{(payment.amountPaid || 0).toLocaleString("en-IN")}

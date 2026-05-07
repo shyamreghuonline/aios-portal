@@ -132,11 +132,11 @@ export default function PaymentsHub() {
         getDocs(query(collection(db, "pendingPayments"), where("studentId", "==", studentId))),
         getDoc(doc(db, "students", studentId)),
       ]);
-      setConfirmedPayments(pSnap.docs.map(d => ({ id: d.id, ...d.data() } as ConfirmedPayment)));
+      setConfirmedPayments(pSnap.docs.map((d: any) => ({ id: d.id, ...d.data() } as ConfirmedPayment)));
       setPendingPayments(
         pendSnap.docs
-          .map(d => ({ id: d.id, ...d.data() } as PendingPayment))
-          .filter(p => p.status !== "approved")
+          .map((d: any) => ({ id: d.id, ...d.data() } as PendingPayment))
+          .filter((p: any) => p.status !== "approved")
       );
       if (sDoc.exists()) {
         const d = sDoc.data();

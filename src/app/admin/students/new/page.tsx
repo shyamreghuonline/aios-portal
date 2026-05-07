@@ -43,7 +43,7 @@ async function generateStudentId(): Promise<string> {
   const snapshot = await getDocs(collection(db, "students"));
   let maxSerial = 0;
 
-  snapshot.forEach((doc) => {
+  snapshot.forEach((doc: any) => {
     const studentId = doc.data().studentId as string | undefined;
     if (studentId && studentId.startsWith(prefix)) {
       const serialPart = studentId.slice(prefix.length); // Get last 5 digits
@@ -73,7 +73,7 @@ async function generateReceiptId(type: "payment" | "discount" = "payment"): Prom
   const snapshot = await getDocs(collection(db, "payments"));
   let maxSerial = 0;
 
-  snapshot.forEach((doc) => {
+  snapshot.forEach((doc: any) => {
     const receiptNumber = doc.data().receiptNumber as string;
     if (receiptNumber && (receiptNumber.startsWith("RCP") || receiptNumber.startsWith("VCH"))) {
       // Extract serial from [Prefix][YY][Month][Serial] format

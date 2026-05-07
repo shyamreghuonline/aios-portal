@@ -51,17 +51,17 @@ export default function AdminDashboard() {
         // Get students (exclude archived)
         const studentsSnap = await getDocs(collection(db, "students"));
         const activeStudents = studentsSnap.docs
-          .map((d) => ({ id: d.id, ...d.data() } as { id: string; [k: string]: unknown }))
-          .filter((s) => !(s as { archived?: boolean }).archived);
+          .map((d: any) => ({ id: d.id, ...d.data() } as { id: string; [k: string]: unknown }))
+          .filter((s: any) => !(s as { archived?: boolean }).archived);
         const totalStudents = activeStudents.length;
 
         // Get payments (exclude archived)
         const paymentsSnap = await getDocs(collection(db, "payments"));
         const activePayments = paymentsSnap.docs
-          .map((d) => ({ id: d.id, ...d.data() } as { id: string; [k: string]: unknown }))
-          .filter((p) => !(p as { archived?: boolean }).archived);
+          .map((d: any) => ({ id: d.id, ...d.data() } as { id: string; [k: string]: unknown }))
+          .filter((p: any) => !(p as { archived?: boolean }).archived);
         let totalCollected = 0;
-        activePayments.forEach((p) => {
+        activePayments.forEach((p: any) => {
           totalCollected += parseFloat((p as { amountPaid?: string }).amountPaid || "0");
         });
 
@@ -71,25 +71,25 @@ export default function AdminDashboard() {
         );
         const pendingPaymentCount = pendingSnap.size;
 
-        // Calculate pending fees from active students only
+        // Calculate pending fees from active students only     
         let totalFees = 0;
-        activeStudents.forEach((s) => {
-          totalFees += parseFloat((s as { totalFee?: string }).totalFee || "0");
+        activeStudents.forEach((s: { totalFee?: string }) => {
+          totalFees += parseFloat(s.totalFee || "0");
         });
 
         // All payments sorted (excluding archived)
         const allQuery = query(collection(db, "payments"), orderBy("createdAt", "desc"));
         const allSnap = await getDocs(allQuery);
         const allPayments = (
-          allSnap.docs.map((doc) => ({
+          allSnap.docs.map((doc: any) => ({
             id: doc.id,
             ...doc.data(),
           })) as (Payment & { archived?: boolean })[]
-        ).filter((p) => !p.archived);
+        ).filter((p: any) => !p.archived);
 
         // Get existing follow-up records
         const followUpsSnap = await getDocs(collection(db, "followUps"));
-        const followUpsData = followUpsSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const followUpsData = followUpsSnap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
 
         setStudents(activeStudents);
         setPayments(activePayments);
@@ -403,7 +403,7 @@ function StudentDetailModal({ student, onClose, payments }: { student: any; onCl
                 <p className="text-sm text-slate-500 text-center py-4">No payments found</p>
               ) : (
                 <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                  {studentPayments.map((payment, idx) => (
+                  {studentPayments.map((payment: any, idx: number) => (
                     <div key={payment.id || idx} className="bg-slate-50 rounded-lg p-3 flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-slate-900">Receipt #{payment.receiptNumber}</p>
@@ -441,7 +441,7 @@ function PaymentReport({ stats, loading, periodTab, setPeriodTab }: {
   const monthStartStr = fmt(new Date(now.getFullYear(), now.getMonth(), 1));
 
   const filtered = useMemo(() => {
-    return stats.allPayments.filter((p) => {
+    return stats.allPayments.filter((p: Payment) => {
       const d = p.paymentDate;
       if (periodTab === "today") return d === today;
       if (periodTab === "week") return d >= weekStartStr && d <= today;
@@ -451,11 +451,11 @@ function PaymentReport({ stats, loading, periodTab, setPeriodTab }: {
   }, [stats.allPayments, periodTab, today, weekStartStr, monthStartStr]);
 
   const periodDiscount = filtered
-    .filter((p) => p.isDiscount || p.paymentMode === "Discount")
-    .reduce((sum, p) => sum + parseFloat(p.amountPaid as string || "0"), 0);
+    .filter((p: any) => p.isDiscount || p.paymentMode === "Discount")
+    .reduce((sum: number, p: any) => sum + parseFloat(p.amountPaid as string || "0"), 0);
   const periodCollected = filtered
-    .filter((p) => !p.isDiscount && p.paymentMode !== "Discount")
-    .reduce((sum, p) => sum + parseFloat(p.amountPaid as string || "0"), 0);
+    .filter((p: any) => !p.isDiscount && p.paymentMode !== "Discount")
+    .reduce((sum: number, p: any) => sum + parseFloat(p.amountPaid as string || "0"), 0);
   const periodTotal = periodCollected + periodDiscount;
 
   const tabs: { key: PeriodTab; label: string }[] = [
@@ -515,7 +515,7 @@ function PaymentReport({ stats, loading, periodTab, setPeriodTab }: {
           </div>
         ) : (
           <div className="space-y-2">
-            {filtered.map((payment) => (
+            {filtered.map((payment: Payment) => (
               <Link
                 key={payment.id}
                 href={`/admin/payments/${payment.id}`}
@@ -600,20 +600,20 @@ function FollowUpList({ loading, students, payments, followUpRecords, onViewStud
 
     const items: FollowUpStudent[] = [];
 
-    students.forEach((student) => {
+    students.forEach((student: any) => {
       // Skip archived students
       if (student.archived) return;
 
       // Get payments for this student by studentId, excluding discounts (same as follow-ups page)
       const studentPayments = payments.filter(
-        (p) => p.studentId === (student.studentId || student.id) &&
+        (p: any) => p.studentId === (student.studentId || student.id) &&
                !p.isDiscount &&
                p.paymentMode !== "Discount"
       );
 
       // Calculate total cash collected (ignore discounts)
       const totalCashCollected = studentPayments.reduce(
-        (sum, p) => sum + (parseFloat(String(p.amountPaid || "0")) || 0),
+        (sum: number, p: any) => sum + (parseFloat(String(p.amountPaid || "0")) || 0),
         0
       );
 
@@ -623,8 +623,8 @@ function FollowUpList({ loading, students, payments, followUpRecords, onViewStud
 
       // Find last payment date
       const lastPayment = studentPayments
-        .filter(p => p.paymentDate)
-        .sort((a, b) =>
+        .filter((p: any) => p.paymentDate)
+        .sort((a: any, b: any) =>
           parseLocalDate(b.paymentDate).getTime() - parseLocalDate(a.paymentDate).getTime()
         )[0];
 
@@ -634,7 +634,7 @@ function FollowUpList({ loading, students, payments, followUpRecords, onViewStud
       // Only include students with due amount > 0 and overdue > 20 days
       if (dueAmount > 0 && daysOverdue > 20) {
         // Check for existing follow-up record to get real status
-        const existingRecord = followUpRecords.find(r => r.studentId === (student.studentId || student.id));
+        const existingRecord = followUpRecords.find((r: any) => r.studentId === (student.studentId || student.id));
 
         let status: FollowUpTab = "pending";
         if (existingRecord) {
@@ -665,16 +665,16 @@ function FollowUpList({ loading, students, payments, followUpRecords, onViewStud
       }
     });
 
-    return items.sort((a, b) => b.daysOverdue - a.daysOverdue);
+    return items.sort((a: any, b: any) => b.daysOverdue - a.daysOverdue);
   }, [students, payments, followUpRecords]);
 
-  const filteredData = followUpData.filter((s) => s.status === activeTab);
+  const filteredData = followUpData.filter((s: any) => s.status === activeTab);
 
   const tabCounts = {
-    pending: followUpData.filter((s) => s.status === "pending").length,
-    inprogress: followUpData.filter((s) => s.status === "inprogress").length,
-    completed: followUpData.filter((s) => s.status === "completed").length,
-    archived: followUpData.filter((s) => s.status === "archived").length,
+    pending: followUpData.filter((s: any) => s.status === "pending").length,
+    inprogress: followUpData.filter((s: any) => s.status === "inprogress").length,
+    completed: followUpData.filter((s: any) => s.status === "completed").length,
+    archived: followUpData.filter((s: any) => s.status === "archived").length,
   };
 
   const tabs = [
@@ -727,26 +727,26 @@ function FollowUpList({ loading, students, payments, followUpRecords, onViewStud
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-2 px-2 text-sm font-bold text-slate-700 uppercase tracking-wide">
+                <tr className="border-b-2 border-slate-300 bg-gradient-to-r from-slate-50 to-slate-100">
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-600 uppercase tracking-wider letter-spacing">
                     Student Name
                   </th>
-                  <th className="text-left py-2 px-2 text-sm font-bold text-slate-700 uppercase tracking-wide">
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">
                     ID
                   </th>
-                  <th className="text-left py-2 px-2 text-sm font-bold text-slate-700 uppercase tracking-wide">
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">
                     Contact
                   </th>
-                  <th className="text-left py-2 px-2 text-sm font-bold text-slate-700 uppercase tracking-wide">
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">
                     Due Amount
                   </th>
-                  <th className="text-left py-2 px-2 text-sm font-bold text-slate-700 uppercase tracking-wide">
+                  <th className="text-left py-2.5 px-3 text-xs font-semibold text-slate-600 uppercase tracking-wider">
                     Days Overdue
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredData.map((student) => (
+                {filteredData.map((student: any) => (
                   <tr key={student.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
                     <td className="py-3 px-2">
                       <p className="text-sm font-medium text-slate-900">{student.studentName}</p>

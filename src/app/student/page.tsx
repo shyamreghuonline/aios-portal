@@ -255,7 +255,7 @@ export default function StudentDashboard() {
         const pSnap = await getDocs(q);
         let paid = 0;
         const list: Payment[] = [];
-        pSnap.forEach(d => {
+        pSnap.forEach((d: any) => {
           const data = d.data();
           paid += parseFloat(data.amountPaid || "0");
           list.push({ id: d.id, ...data } as unknown as Payment);
