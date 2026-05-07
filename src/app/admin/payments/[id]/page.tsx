@@ -312,6 +312,7 @@ export default function ReceiptPage() {
       .meta .val { font-weight:600; color:#111827; }
       .content { padding:24px 32px; }
       .section { margin-bottom:24px; }
+      .section.no-margin { margin-bottom:0; }
       .section-title { font-size:11px; font-weight:bold; color:#1f2937; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px; border-bottom:1px solid #e5e7eb; padding-bottom:3px; }
       .grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 32px; font-size:14px; }
       .grid .lbl { color:#8B0000; font-weight:600; }
@@ -336,7 +337,7 @@ export default function ReceiptPage() {
       .sys-msg { font-size:12px; color:#374151; font-style:italic; text-align:center; line-height:1.6; padding-top:16px; }
       .contact { margin-top:16px; }
       .contact-title { font-size:9px; font-weight:bold; color:#8B0000; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px; }
-      .contact-box { font-size:10px; color:#1f2937; font-weight:500; line-height:1.5; border-left:3px solid #8B0000; padding-left:10px; padding-top:6px; padding-bottom:6px; background:#fef2f2; border-radius:0 6px 6px 0; }
+      .contact-box { font-size:10px; color:#6b7280; font-weight:500; line-height:1.5; padding:6px 0; }
       .footer { padding:16px 32px; }
       .footer-line { height:1px; background:#8B0000; }
     </style></head><body>
@@ -360,13 +361,9 @@ export default function ReceiptPage() {
               <div><span class="lbl">Email:</span><span class="val">${p.studentEmail}</span></div>
             </div>
           </div>
-          <div class="section">
-            <div class="section-title">Program Details</div>
-            <div class="grid">
-              <div><span class="lbl">University:</span><span class="val">${p.university}</span></div>
-              <div><span class="lbl">Program:</span><span class="val">${p.program}</span></div>
-              <div><span class="lbl">Course:</span><span class="val">${course}</span></div>
-            </div>
+          <div class="grid" style="margin-top:8px;">
+            <div><span class="lbl">University:</span><span class="val">${p.university}</span></div>
+            <div><span class="lbl">Program:</span><span class="val">${p.program}</span></div>
           </div>
           <div class="section">
             <table>
@@ -379,11 +376,11 @@ export default function ReceiptPage() {
           <div class="amount-box"><p class="lbl">Amount in Words:</p><p class="val">${numberToWords(p.amountPaid)} Rupees Only</p></div>
           <div class="remark-row">
             ${p.remarks ? `<div><div class="remark-title">Remarks</div><div class="remark-text">${p.remarks}</div></div>` : '<div></div>'}
-            <div><p class="sys-msg">**This is a system-generated receipt & No signature is required.<br/>Valid as per AIOS EDU payment records.</p></div>
+            <div><p class="sys-msg">**This is a system-generated receipt;No signature is required**</p></div>
           </div>
           <div class="contact">
             <div class="contact-title">Branch &amp; Contact Information</div>
-            <div class="contact-box"><p>ADMISSION SUPPORTING BRANCH : THALASSERY</p><p>WHATSAPP HELPLINE: +91-7411133333</p><p>BENGALURU OFFICE : 22222228 (MON TO SAT 10am to 5pm)</p></div>
+            <div class="contact-box"><p>ADMISSION SUPPORTING BRANCH : THALASSERY</p><p>WHATSAPP HELPLINE: +91-7411133333</p><p>BENGALURU OFFICE : (080)-22222228 (MON TO SAT 10am to 5pm)</p></div>
           </div>
         </div>
         <div class="footer"><div class="footer-line"></div></div>
@@ -453,27 +450,31 @@ export default function ReceiptPage() {
       }
       
       const fileName = `Receipt_${payment.receiptNumber}.png`;
-      const file = new File([blob], fileName, { type: 'image/png' });
-      const shareText = `Hi ${payment.studentName}, here is your payment receipt (${payment.receiptNumber}). Amount: ₹${payment.amountPaid.toLocaleString('en-IN')}`;
       
-      // Use Web Share API to share directly (single click → pick WhatsApp → sent)
+      // Always download the image first
+      const imageUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Try Web Share API on mobile (after download)
+      const file = new File([blob], fileName, { type: 'image/png' });
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: `Receipt - ${payment.receiptNumber}`,
-          text: shareText,
-          files: [file]
-        });
-      } else {
-        // Fallback: Download the image for manual sharing
-        const imageUrl = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = imageUrl;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(imageUrl);
+        try {
+          await navigator.share({
+            title: `Receipt - ${payment.receiptNumber}`,
+            text: `Hi ${payment.studentName}, here is your payment receipt (${payment.receiptNumber}). Amount: ₹${payment.amountPaid.toLocaleString('en-IN')}`,
+            files: [file]
+          });
+        } catch (shareErr) {
+          // User cancelled or share failed - image already downloaded
+        }
       }
+      
+      URL.revokeObjectURL(imageUrl);
     } catch (err: any) {
       if (err?.name !== 'AbortError') {
         console.error("Error generating receipt image:", err);
