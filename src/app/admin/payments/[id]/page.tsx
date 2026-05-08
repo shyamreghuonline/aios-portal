@@ -7,6 +7,30 @@ import { ArrowLeft, Printer, Loader2, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
+// Utility function to deduplicate course names with slash pattern
+function deduplicateCourseName(courseName?: string): string {
+  if (!courseName) return "";
+  // Handle the specific case: "X / X-Y" -> "X-Y" or "X / X" -> "X"
+  // Split by any slash character
+  const parts = courseName.split(/\s*[\/／∕]\s*/);
+  if (parts.length === 2) {
+    const part1 = parts[0].trim();
+    const part2 = parts[1].trim();
+    // If both parts are identical, return one
+    if (part1 === part2) {
+      return part1;
+    }
+    // Extract base name (before hyphen) from each part
+    const part1Base = part1.split(/[-–]/)[0].trim();
+    const part2Base = part2.split(/[-–]/)[0].trim();
+    // If the base names are identical, return the part with more info (part2)
+    if (part1Base === part2Base) {
+      return part2;
+    }
+  }
+  return courseName;
+}
+
 interface Payment {
   receiptNumber: string;
   studentName: string;
@@ -34,6 +58,20 @@ function formatPaymentDate(dateString: string): string {
   const [year, month, day] = dateString.split("-");
   if (!year || !month || !day) return dateString;
   return `${day}-${month}-${year}`;
+}
+
+function formatPaymentDateTime(dateString: string): string {
+  // Parse YYYY-MM-DD format and add current time → DD-MM-YYYY HH:MM AM/PM
+  if (!dateString) return "—";
+  const [year, month, day] = dateString.split("-");
+  if (!year || !month || !day) return dateString;
+  const now = new Date();
+  let hours = now.getHours();
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  return `${day}-${month}-${year} ${hours}:${minutes} ${ampm}`;
 }
 
 function numberToWords(num: number): string {
@@ -296,12 +334,13 @@ export default function ReceiptPage() {
   }
 
   function buildReceiptHTML(p: Payment): string {
-    const course = `${p.course}${p.stream ? ` - ${p.stream}` : ""}`;
+    const course = `${deduplicateCourseName(p.course)}${p.stream ? ` - ${p.stream}` : ""}`;
     const logoUrl = window.location.origin + '/login-page.jpeg';
     return `<!DOCTYPE html><html><head><style>
       * { margin:0; padding:0; box-sizing:border-box; }
       body { font-family:Arial,Helvetica,sans-serif; color:#333; background:#fff; }
-      .receipt { width:800px; margin:0 auto; border:2px solid #8B0000; background:#fff; }
+      .receipt { width:800px; margin:0 auto; border:2px solid #8B0000; background:#fff; position:relative; overflow:hidden; }
+      .watermark { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:500px; height:500px; background-image:url('/watermark.jpg'); background-size:contain; background-repeat:no-repeat; background-position:center; opacity:0.12; pointer-events:none; z-index:0; }
       .header { padding:16px 32px; display:flex; justify-content:space-between; align-items:center; }
       .header img { height:60px; width:auto; object-fit:contain; }
       .header .right { text-align:right; }
@@ -310,20 +349,21 @@ export default function ReceiptPage() {
       .meta { background:#f3f4f6; padding:8px 32px; display:flex; gap:32px; font-size:14px; }
       .meta .lbl { color:#374151; }
       .meta .val { font-weight:600; color:#111827; }
-      .content { padding:24px 32px; }
+      .content { padding:24px 32px; position:relative; z-index:1; }
       .section { margin-bottom:24px; }
+      .section.with-top-margin { margin-top:20px; }
       .section.no-margin { margin-bottom:0; }
       .section-title { font-size:11px; font-weight:bold; color:#1f2937; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px; border-bottom:1px solid #e5e7eb; padding-bottom:3px; }
-      .grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 32px; font-size:14px; }
-      .grid .lbl { color:#8B0000; font-weight:600; }
-      .grid .val { color:#111827; margin-left:8px; }
-      table { width:100%; border-collapse:collapse; }
-      th { background:#8B0000; color:#fff; padding:10px 12px; text-align:left; font-size:13px; font-weight:600; border:1px solid #b91c1c; }
-      td { padding:10px 12px; font-size:13px; color:#111827; background:#fef2f2; border:1px solid #fee2e2; }
+      .grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 32px; font-size:14px; word-wrap:break-word; overflow-wrap:break-word; }
+      .grid .lbl { color:#8B0000; font-weight:600; white-space:nowrap; }
+      .grid .val { color:#111827; margin-left:8px; word-wrap:break-word; overflow-wrap:break-word; }
+      table { width:100%; border-collapse:collapse; max-width:100%; table-layout:fixed; }
+      th { background:#8B0000; color:#fff; padding:10px 12px; text-align:left; font-size:13px; font-weight:600; border:1px solid #b91c1c; word-wrap:break-word; position:relative; z-index:1; }
+      td { padding:10px 12px; font-size:13px; color:#111827; background:rgba(254,242,242,0.5); border:1px solid #fee2e2; word-wrap:break-word; position:relative; }
       .text-right { text-align:right; }
       .text-green { color:#16a34a; font-weight:bold; }
       .text-red { color:#dc2626; font-weight:bold; }
-      .amount-box { border:1px solid #8B0000; padding:12px; margin-top:16px; }
+      .amount-box { border:1px solid #8B0000; padding:16px; margin-top:20px; background:#fafafa; }
       .amount-box .lbl { font-size:12px; color:#374151; text-transform:uppercase; margin-bottom:4px; }
       .amount-box .val { font-size:14px; font-weight:600; color:#111827; }
       .info-row { display:flex; gap:16px; margin-top:16px; }
@@ -333,21 +373,20 @@ export default function ReceiptPage() {
       .remark-row { display:flex; justify-content:space-between; gap:32px; margin-top:16px; }
       .remark-row > div { flex:1; }
       .remark-title { font-size:12px; font-weight:bold; color:#374151; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px; }
-      .remark-text { font-size:13px; color:#1f2937; background:#f9fafb; padding:12px; }
+      .remark-text { font-size:13px; color:#1f2937; background:#f9fafb; padding:16px; border:1px solid #e5e7eb; min-height:40px; }
       .sys-msg { font-size:12px; color:#374151; font-style:italic; text-align:center; line-height:1.6; padding-top:16px; }
-      .contact { margin-top:16px; }
-      .contact-title { font-size:9px; font-weight:bold; color:#8B0000; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:4px; }
-      .contact-box { font-size:10px; color:#6b7280; font-weight:500; line-height:1.5; padding:6px 0; }
       .footer { padding:16px 32px; }
       .footer-line { height:1px; background:#8B0000; }
+      .footer-text { font-size:9px; color:#6b7280; text-align:center; padding-top:8px; line-height:1.4; }
     </style></head><body>
       <div class="receipt">
+        <div class="watermark"></div>
         <div class="header">
           <div><img src="${logoUrl}" alt="AIOS EDU" /></div>
           <div class="right"><p class="rcpt-label">Receipt No</p><p class="rcpt-num">${p.receiptNumber}</p></div>
         </div>
         <div class="meta">
-          <span><span class="lbl">Date:</span> <span class="val">${formatPaymentDate(p.paymentDate)}</span></span>
+          <span><span class="lbl">Date:</span> <span class="val">${formatPaymentDateTime(p.paymentDate)}</span></span>
           <span><span class="lbl">Payment Mode:</span> <span class="val">${p.paymentMode}</span></span>
           ${p.transactionRef ? `<span><span class="lbl">Ref:</span> <span class="val">${p.transactionRef}</span></span>` : ''}
         </div>
@@ -361,11 +400,13 @@ export default function ReceiptPage() {
               <div><span class="lbl">Email:</span><span class="val">${p.studentEmail}</span></div>
             </div>
           </div>
-          <div class="grid" style="margin-top:8px;">
-            <div><span class="lbl">University:</span><span class="val">${p.university}</span></div>
-            <div><span class="lbl">Program:</span><span class="val">${p.program}</span></div>
+          <div class="section no-margin">
+            <div class="grid">
+              <div><span class="lbl">University:</span><span class="val">${p.university}</span></div>
+              <div><span class="lbl">Program:</span><span class="val">${p.program}</span></div>
+            </div>
           </div>
-          <div class="section">
+          <div class="section with-top-margin">
             <table>
               <thead><tr><th>Description</th><th class="text-right">Amount</th></tr></thead>
               <tbody>
@@ -378,12 +419,11 @@ export default function ReceiptPage() {
             ${p.remarks ? `<div><div class="remark-title">Remarks</div><div class="remark-text">${p.remarks}</div></div>` : '<div></div>'}
             <div><p class="sys-msg">**This is a system-generated receipt;No signature is required**</p></div>
           </div>
-          <div class="contact">
-            <div class="contact-title">Branch &amp; Contact Information</div>
-            <div class="contact-box"><p>ADMISSION SUPPORTING BRANCH : THALASSERY</p><p>WHATSAPP HELPLINE: +91-7411133333</p><p>BENGALURU OFFICE : (080)-22222228 (MON TO SAT 10am to 5pm)</p></div>
-          </div>
         </div>
-        <div class="footer"><div class="footer-line"></div></div>
+        <div class="footer">
+          <div class="footer-line"></div>
+          <div class="footer-text">ADMISSION SUPPORTING BRANCH : THALASSERY | WHATSAPP HELPLINE: +91-7411133333 | BENGALURU OFFICE : (080)-22222228 (MON TO SAT 10am to 5pm)</div>
+        </div>
       </div>
     </body></html>`;
   }
@@ -450,17 +490,9 @@ export default function ReceiptPage() {
       }
       
       const fileName = `Receipt_${payment.receiptNumber}.png`;
+      const phoneNumber = '917411133333';
       
-      // Always download the image first
-      const imageUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = imageUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Try Web Share API on mobile (after download)
+      // Try Web Share API first (mobile)
       const file = new File([blob], fileName, { type: 'image/png' });
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
@@ -469,10 +501,25 @@ export default function ReceiptPage() {
             text: `Hi ${payment.studentName}, here is your payment receipt (${payment.receiptNumber}). Amount: ₹${payment.amountPaid.toLocaleString('en-IN')}`,
             files: [file]
           });
+          setSharingWhatsApp(false);
+          return;
         } catch (shareErr) {
-          // User cancelled or share failed - image already downloaded
+          // Web Share failed, fall through to download + WhatsApp Web
         }
       }
+      
+      // Download the image
+      const imageUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Open WhatsApp Web with pre-filled message
+      const message = encodeURIComponent(`Hi ${payment.studentName}, here is your payment receipt (${payment.receiptNumber}). Amount: ₹${payment.amountPaid.toLocaleString('en-IN')}`);
+      window.open(`https://web.whatsapp.com/send?phone=${phoneNumber}&text=${message}`, '_blank');
       
       URL.revokeObjectURL(imageUrl);
     } catch (err: any) {
@@ -592,9 +639,9 @@ export default function ReceiptPage() {
                   <span style={{ color: '#8B0000' }} className="font-semibold">University:</span>
                   <span className="ml-2 text-gray-900">{payment.university || "—"}</span>
                 </div>
-                <div>
+                <div className="mt-2">
                   <span style={{ color: '#8B0000' }} className="font-semibold">Course:</span>
-                  <span className="ml-2 text-gray-900">{(payment.course || payment.program || "").replace(/\s*\([^)]*\)/g, "")}{payment.stream ? `-${payment.stream}` : ""}</span>
+                  <span className="ml-2 text-gray-900">{deduplicateCourseName(payment.course || payment.program)}{payment.stream ? `-${payment.stream}` : ""}</span>
                 </div>
               </div>
             </section>
@@ -747,7 +794,7 @@ export default function ReceiptPage() {
                 </div>
                 <div>
                   <span style={{ color: '#8B0000' }} className="font-semibold">Course:</span>
-                  <span className="ml-2 text-gray-900">{payment.course}{payment.stream ? ` - ${payment.stream}` : ""}</span>
+                  <span className="ml-2 text-gray-900">{deduplicateCourseName(payment.course)}{payment.stream ? ` - ${payment.stream}` : ""}</span>
                 </div>
               </div>
             </section>
