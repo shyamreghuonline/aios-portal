@@ -403,7 +403,7 @@ export default function ReceiptPage() {
           <div class="section no-margin">
             <div class="grid">
               <div><span class="lbl">University:</span><span class="val">${p.university}</span></div>
-              <div><span class="lbl">Program:</span><span class="val">${p.program}</span></div>
+              <div><span class="lbl">Program:</span><span class="val">${deduplicateCourseName(p.program)}</span></div>
             </div>
           </div>
           <div class="section with-top-margin">

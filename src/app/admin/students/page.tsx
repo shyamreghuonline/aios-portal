@@ -1883,7 +1883,7 @@ export default function StudentsPage() {
 
                           <Link href={`/admin/students/${student.studentId || student.id}`} className="p-1.5 text-slate-600 hover:text-purple-600 transition-colors" title="View Details">
 
-                            <FileText className="w-4 h-4" />
+                            <Eye className="w-4 h-4" />
 
                           </Link>
 
@@ -1897,7 +1897,7 @@ export default function StudentsPage() {
 
                           >
 
-                            <Eye className="w-4 h-4" />
+                            <Receipt className="w-4 h-4" />
 
                           </button>
 
