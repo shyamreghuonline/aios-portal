@@ -486,7 +486,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       const semestersForYear = yearGroup?.semesters || [];
 
       // Auto-mark semesters as passed when year is marked as passed
-      let semesters = status === "Pass" 
+      let semesters: any[] = status === "Pass" 
         ? semestersForYear.map(sem => ({ semester: sem, status: "Pass" as const }))
         : (existingIndex >= 0 ? [...(updatedResults[existingIndex].semesters || [])] : []);
 
@@ -495,11 +495,11 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       const prevCertStatus = existingResult?.certificateStatus;
       const now = new Date().toISOString();
       const certificateIssuedAt = certificateStatus === "Issued from University" && prevCertStatus !== "Issued from University"
-        ? now : (existingResult?.certificateIssuedAt || null);
+        ? now : (existingResult?.certificateIssuedAt || undefined);
       const certificateSentAt = certificateStatus === "Sent" && prevCertStatus !== "Sent"
-        ? now : (existingResult?.certificateSentAt || null);
+        ? now : (existingResult?.certificateSentAt || undefined);
       const certificateReceivedAt = certificateStatus === "Received" && prevCertStatus !== "Received"
-        ? now : (existingResult?.certificateReceivedAt || null);
+        ? now : (existingResult?.certificateReceivedAt || undefined);
 
       // When certificate status changes at year level, cascade to all semesters
       const effectiveCertStatus = certificateStatus || (existingIndex >= 0 ? updatedResults[existingIndex].certificateStatus : undefined) || "Not Issued";
@@ -579,16 +579,16 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       const now = new Date().toISOString();
       const semStatusChangedAt = status !== prevSem?.status ? now : prevSem?.statusChangedAt;
       const semCertIssuedAt = certificateStatus === "Issued from University" && prevSemCertStatus !== "Issued from University"
-        ? now : (prevSem?.certificateIssuedAt || null);
+        ? now : (prevSem?.certificateIssuedAt || undefined);
       const semCertSentAt = certificateStatus === "Sent" && prevSemCertStatus !== "Sent"
-        ? now : (prevSem?.certificateSentAt || null);
+        ? now : (prevSem?.certificateSentAt || undefined);
       const semCertReceivedAt = certificateStatus === "Received" && prevSemCertStatus !== "Received"
-        ? now : (prevSem?.certificateReceivedAt || null);
+        ? now : (prevSem?.certificateReceivedAt || undefined);
 
       if (semIndex >= 0) {
-        semesters[semIndex] = { semester, status, statusChangedAt: semStatusChangedAt || null, certificateStatus: certificateStatus || semesters[semIndex].certificateStatus || "Not Issued", certificateIssuedAt: semCertIssuedAt, certificateSentAt: semCertSentAt, certificateReceivedAt: semCertReceivedAt };
+        semesters[semIndex] = { semester, status, statusChangedAt: semStatusChangedAt || undefined, certificateStatus: certificateStatus || semesters[semIndex].certificateStatus || "Not Issued", certificateIssuedAt: semCertIssuedAt, certificateSentAt: semCertSentAt, certificateReceivedAt: semCertReceivedAt };
       } else {
-        semesters.push({ semester, status, statusChangedAt: semStatusChangedAt || null, certificateStatus: certificateStatus || "Not Issued", certificateIssuedAt: semCertIssuedAt, certificateSentAt: semCertSentAt, certificateReceivedAt: semCertReceivedAt });
+        semesters.push({ semester, status, statusChangedAt: semStatusChangedAt || undefined, certificateStatus: certificateStatus || "Not Issued", certificateIssuedAt: semCertIssuedAt, certificateSentAt: semCertSentAt, certificateReceivedAt: semCertReceivedAt });
       }
 
       // Check if all semesters for this year are passed
