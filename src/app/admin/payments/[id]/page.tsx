@@ -346,7 +346,8 @@ export default function ReceiptPage() {
       .header .right { text-align:right; }
       .header .rcpt-label { font-size:12px; color:#374151; text-transform:uppercase; letter-spacing:0.05em; }
       .header .rcpt-num { font-size:20px; font-weight:bold; color:#8B0000; }
-      .meta { background:#f3f4f6; padding:8px 32px; display:flex; gap:32px; font-size:14px; }
+      .meta { background:#f3f4f6; padding:8px 32px; font-size:14px; }
+      .meta span { margin-right:32px; }
       .meta .lbl { color:#374151; }
       .meta .val { font-weight:600; color:#111827; }
       .content { padding:24px 32px; position:relative; z-index:1; }
@@ -354,9 +355,10 @@ export default function ReceiptPage() {
       .section.with-top-margin { margin-top:20px; }
       .section.no-margin { margin-bottom:0; }
       .section-title { font-size:11px; font-weight:bold; color:#1f2937; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px; border-bottom:1px solid #e5e7eb; padding-bottom:3px; }
-      .grid { display:grid; grid-template-columns:1fr 1fr; gap:8px 32px; font-size:14px; word-wrap:break-word; overflow-wrap:break-word; }
-      .grid .lbl { color:#8B0000; font-weight:600; white-space:nowrap; }
-      .grid .val { color:#111827; margin-left:8px; word-wrap:break-word; overflow-wrap:break-word; }
+      .billto-table { width:100%; border-collapse:collapse; font-size:13px; }
+      .billto-table td { padding:2px 8px 2px 0; width:50%; }
+      .billto-table .lbl { color:#8B0000; font-weight:600; white-space:nowrap; }
+      .billto-table .val { color:#111827; margin-left:4px; }
       table { width:100%; border-collapse:collapse; max-width:100%; table-layout:fixed; }
       th { background:#8B0000; color:#fff; padding:10px 12px; text-align:left; font-size:13px; font-weight:600; border:1px solid #b91c1c; word-wrap:break-word; position:relative; z-index:1; }
       td { padding:10px 12px; font-size:13px; color:#111827; background:rgba(254,242,242,0.5); border:1px solid #fee2e2; word-wrap:break-word; position:relative; }
@@ -378,6 +380,11 @@ export default function ReceiptPage() {
       .footer { padding:16px 32px; }
       .footer-line { height:1px; background:#8B0000; }
       .footer-text { font-size:9px; color:#6b7280; text-align:center; padding-top:8px; line-height:1.4; }
+      @media print {
+        .billto-table { width:100% !important; }
+        .billto-table td { width:50% !important; }
+        .meta span { margin-right:32px !important; }
+      }
     </style></head><body>
       <div class="receipt">
         <div class="watermark"></div>
@@ -393,18 +400,20 @@ export default function ReceiptPage() {
         <div class="content">
           <div class="section">
             <div class="section-title">Bill To</div>
-            <div class="grid">
-              <div><span class="lbl">Name:</span><span class="val">${p.studentName}</span></div>
-              <div><span class="lbl">Enrollment ID:</span><span class="val">${resolvedStudentId || p.studentId || '—'}</span></div>
-              <div><span class="lbl">Phone:</span><span class="val">${p.studentPhone}</span></div>
-              <div><span class="lbl">Email:</span><span class="val">${p.studentEmail}</span></div>
-            </div>
-          </div>
-          <div class="section no-margin">
-            <div class="grid">
-              <div><span class="lbl">University:</span><span class="val">${p.university}</span></div>
-              <div><span class="lbl">Program:</span><span class="val">${deduplicateCourseName(p.program)}</span></div>
-            </div>
+            <table class="billto-table">
+              <tr>
+                <td style="width:50%"><span class="lbl">Name:</span><span class="val">${p.studentName}</span></td>
+                <td style="width:50%"><span class="lbl">Enrollment ID:</span><span class="val">${resolvedStudentId || p.studentId || '—'}</span></td>
+              </tr>
+              <tr>
+                <td style="width:50%"><span class="lbl">Phone:</span><span class="val">${p.studentPhone}</span></td>
+                <td style="width:50%"><span class="lbl">Email:</span><span class="val">${p.studentEmail}</span></td>
+              </tr>
+              <tr>
+                <td style="width:50%"><span class="lbl">University:</span><span class="val">${p.university || '—'}</span></td>
+                <td style="width:50%"><span class="lbl">Course:</span><span class="val">${deduplicateCourseName(p.course || p.program)}${p.stream ? `-${p.stream}` : ''}</span></td>
+              </tr>
+            </table>
           </div>
           <div class="section with-top-margin">
             <table>

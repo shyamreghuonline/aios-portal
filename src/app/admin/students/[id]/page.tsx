@@ -158,6 +158,7 @@ interface Student {
     };
   };
   admissionStatus?: "Pending" | "In Progress" | "Confirmed" | "Rejected";
+  universityEnrollmentId?: string;
   semesterResults?: Array<{
     year: number;
     status: "Pass" | "Fail" | "Not Declared";
@@ -225,6 +226,10 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
 
   // Tracking feature states
   const [admissionStatus, setAdmissionStatus] = useState<Student["admissionStatus"]>("Pending");
+  const [universityEnrollmentId, setUniversityEnrollmentId] = useState<string>("");
+  const [uniEnrollIdEdit, setUniEnrollIdEdit] = useState<string>("");
+  const [uniEnrollIdError, setUniEnrollIdError] = useState<string>("");
+  const [isUniEnrollEditing, setIsUniEnrollEditing] = useState<boolean>(false);
   const [semesterResults, setSemesterResults] = useState<Student["semesterResults"]>([]);
   const [consignments, setConsignments] = useState<Student["consignments"]>([]);
   const [trackingNotes, setTrackingNotes] = useState<string[]>([]);
@@ -303,6 +308,9 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
 
           // Initialize tracking states from student data
           setAdmissionStatus(studentData.admissionStatus || "Pending");
+          setUniversityEnrollmentId(studentData.universityEnrollmentId || "");
+          setUniEnrollIdEdit(studentData.universityEnrollmentId || "");
+          setIsUniEnrollEditing(!studentData.universityEnrollmentId);
           setSemesterResults(studentData.semesterResults || []);
           setConsignments(studentData.consignments || []);
           setTrackingNotes(studentData.trackingNotes || []);
@@ -416,6 +424,53 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
     } finally {
       setSavingTracking(false);
     }
+  }
+
+  function validateUniversityEnrollmentId(id: string): string {
+    if (!id || id.trim() === "") {
+      return "University Enrollment ID is mandatory";
+    }
+    if (id.length > 15) {
+      return "Maximum 15 characters allowed";
+    }
+    if (!/^[a-zA-Z0-9]+$/.test(id)) {
+      return "Only alphanumeric characters allowed (A-Z, 0-9)";
+    }
+    return "";
+  }
+
+  async function saveUniversityEnrollmentId() {
+    if (!student) return;
+    const error = validateUniversityEnrollmentId(uniEnrollIdEdit);
+    if (error) {
+      setUniEnrollIdError(error);
+      return;
+    }
+    setSavingTracking(true);
+    setUniEnrollIdError("");
+    try {
+      await setDoc(doc(db, "students", student.id), { universityEnrollmentId: uniEnrollIdEdit.trim().toUpperCase() }, { merge: true });
+      setUniversityEnrollmentId(uniEnrollIdEdit.trim().toUpperCase());
+      setIsUniEnrollEditing(false);
+    } catch (err) {
+      console.error("Error updating university enrollment ID:", err);
+    } finally {
+      setSavingTracking(false);
+    }
+  }
+
+  function clearUniversityEnrollmentId() {
+    setUniEnrollIdEdit(universityEnrollmentId);
+    setUniEnrollIdError("");
+    if (universityEnrollmentId) {
+      setIsUniEnrollEditing(false);
+    }
+  }
+
+  function startEditingUniEnrollId() {
+    setUniEnrollIdEdit(universityEnrollmentId);
+    setIsUniEnrollEditing(true);
+    setUniEnrollIdError("");
   }
 
   async function updateYearResult(year: number, status: "Pass" | "Fail" | "Not Declared", certificateStatus?: "Not Issued" | "Issued from University" | "Sent" | "Received") {
@@ -915,6 +970,77 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                 )}
               </div>
             </div>
+            {admissionStatus === "Confirmed" && (
+              <div className={`bg-gradient-to-br rounded-xl border shadow-sm p-3 flex flex-col justify-between ${uniEnrollIdError ? 'from-red-50 to-white border-red-300' : 'from-emerald-50 to-white border-emerald-100'}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <p className={`text-xs font-semibold ${uniEnrollIdError ? 'text-red-700' : 'text-emerald-700'}`}>
+                    University Enrollment ID <span className="text-red-500">*</span>
+                  </p>
+                  {!isUniEnrollEditing && universityEnrollmentId && (
+                    <button
+                      onClick={startEditingUniEnrollId}
+                      disabled={savingTracking}
+                      className="w-6 h-6 flex items-center justify-center rounded-md bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-600 transition-colors"
+                      title="Edit"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+                {isUniEnrollEditing ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={uniEnrollIdEdit}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 15);
+                          setUniEnrollIdEdit(val);
+                          if (uniEnrollIdError) setUniEnrollIdError("");
+                        }}
+                        maxLength={15}
+                        placeholder="Enter ID (max 15 chars)"
+                        disabled={savingTracking}
+                        className={`w-full px-2 py-1.5 text-xs font-medium rounded-lg border-2 outline-none transition-colors uppercase ${
+                          uniEnrollIdError
+                            ? 'border-red-300 bg-red-50 text-red-800 focus:border-red-500'
+                            : 'border-emerald-200 bg-emerald-50 text-emerald-800 focus:border-emerald-400'
+                        }`}
+                      />
+                      <button
+                        onClick={saveUniversityEnrollmentId}
+                        disabled={savingTracking || !uniEnrollIdEdit.trim()}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white transition-colors"
+                        title="Save"
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={clearUniversityEnrollmentId}
+                        disabled={savingTracking}
+                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-40 text-white transition-colors"
+                        title="Cancel"
+                      >
+                        <XIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">{uniEnrollIdEdit.length}/15 max</p>
+                    {uniEnrollIdError && (
+                      <p className="text-xs text-red-600 mt-1">{uniEnrollIdError}</p>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-slate-800 uppercase tracking-wide">
+                      {universityEnrollmentId || <span className="text-slate-400 italic">Not set - Click edit to add</span>}
+                    </p>
+                    {universityEnrollmentId && (
+                      <span className="text-[10px] text-emerald-600 font-medium bg-emerald-100 px-2 py-0.5 rounded-full">Saved</span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

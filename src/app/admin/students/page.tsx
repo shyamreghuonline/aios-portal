@@ -177,6 +177,8 @@ interface Student {
 
   admissionCenter?: string;
 
+  universityEnrollmentId?: string;
+
   profileEditEnabled?: boolean;
 
   createdAt?: unknown;
@@ -1717,6 +1719,12 @@ export default function StudentsPage() {
 
                   </th>
 
+                  <th className="text-left px-2 lg:px-3 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest hidden lg:table-cell">
+
+                    Uni. Enrollment ID
+
+                  </th>
+
                   <th className="text-right px-2 lg:px-3 py-2.5 lg:py-3.5 text-xs font-semibold text-white uppercase tracking-widest">Actions</th>
 
                 </tr>
@@ -1872,6 +1880,16 @@ export default function StudentsPage() {
                         <span className="text-sm text-slate-800 bg-slate-100 px-1.5 lg:px-2 py-0.5 rounded-md">
 
                           {student.startYear}{student.endYear ? ` – ${student.endYear}` : ""}
+
+                        </span>
+
+                      </td>
+
+                      <td className="px-2 lg:px-3 py-2 lg:py-3 whitespace-nowrap hidden lg:table-cell">
+
+                        <span className="text-sm text-slate-800 font-medium uppercase">
+
+                          {student.universityEnrollmentId || "–"}
 
                         </span>
 
