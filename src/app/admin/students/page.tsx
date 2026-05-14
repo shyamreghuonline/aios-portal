@@ -100,6 +100,8 @@ import {
 
   Download,
 
+  Link2,
+
 } from "lucide-react";
 
 import jsPDF from "jspdf";
@@ -178,6 +180,10 @@ interface Student {
   admissionCenter?: string;
 
   universityEnrollmentId?: string;
+
+  registrationMode?: "full-profile" | "details-only";
+
+  detailsFilledAt?: string;
 
   profileEditEnabled?: boolean;
 
@@ -431,6 +437,16 @@ export default function StudentsPage() {
   const [newStudentName, setNewStudentName] = useState<string>("");
 
   const [newStudentCopied, setNewStudentCopied] = useState(false);
+
+  const [registrationMode, setRegistrationMode] = useState<"full-profile" | "details-only">("full-profile");
+
+  const [newStudentLinkType, setNewStudentLinkType] = useState<"password" | "details">("password");
+
+  const [detailsLinkModal, setDetailsLinkModal] = useState<{ link: string; studentName: string; studentId: string } | null>(null);
+
+  const [detailsLinkCopied, setDetailsLinkCopied] = useState(false);
+
+  const [generatingDetailsLink, setGeneratingDetailsLink] = useState<string | null>(null);
 
   const [detailStudent, setDetailStudent] = useState<Student | null>(null);
   const [detailExpandedYear, setDetailExpandedYear] = useState<number | null>(null);
@@ -810,6 +826,33 @@ export default function StudentsPage() {
 
 
 
+  async function handleGenerateDetailsLink(student: Student) {
+    setGeneratingDetailsLink(student.id);
+    try {
+      const tokenRes = await fetch("/api/auth/create-details-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentId: student.studentId || student.id }),
+      });
+      const tokenData = await tokenRes.json();
+      if (tokenRes.ok && tokenData.link) {
+        setDetailsLinkModal({
+          link: tokenData.link,
+          studentName: student.name,
+          studentId: student.studentId || student.id,
+        });
+        setDetailsLinkCopied(false);
+      } else {
+        alert("Failed to generate details link.");
+      }
+    } catch (err) {
+      console.error("Error generating details link:", err);
+      alert("Error generating details link.");
+    } finally {
+      setGeneratingDetailsLink(null);
+    }
+  }
+
   function downloadDocument(url: string, filename: string) {
 
     if (!url) return;
@@ -1127,6 +1170,8 @@ export default function StudentsPage() {
 
         admissionCenter: formData.admissionCenter,
 
+        registrationMode: registrationMode,
+
         createdAt: serverTimestamp(),
 
       });
@@ -1187,84 +1232,68 @@ export default function StudentsPage() {
 
 
 
-      // Generate password setup token and send SMS with link
-
+      // Generate token based on registration mode
       let generatedLink: string | null = null;
 
-      try {
-
-        const tokenRes = await fetch("/api/auth/create-password-token", {
-
-          method: "POST",
-
-          headers: { "Content-Type": "application/json" },
-
-          body: JSON.stringify({ phone: phoneKey, studentId }),
-
-        });
-
-        const tokenData = await tokenRes.json();
-
-
-
-        if (tokenRes.ok && tokenData.link) {
-
-          generatedLink = tokenData.link;
-
-
-
-          // Attempt SMS auto-send (non-blocking)
-
-          try {
-
-            await fetch("/api/send-sms", {
-
-              method: "POST",
-
-              headers: { "Content-Type": "application/json" },
-
-              body: JSON.stringify({
-
-                phone: phoneKey,
-
-                studentName: formData.name,
-
-                studentId: studentId,
-
-                type: "password-link",
-
-                passwordLink: tokenData.link,
-
-              }),
-
-            });
-
-          } catch (smsErr) {
-
-            console.error("SMS auto-send failed (expected if provider not configured):", smsErr);
-
+      if (registrationMode === "details-only") {
+        // Details-only mode: generate a details token (no password)
+        try {
+          const tokenRes = await fetch("/api/auth/create-details-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ studentId }),
+          });
+          const tokenData = await tokenRes.json();
+          if (tokenRes.ok && tokenData.link) {
+            generatedLink = tokenData.link;
+          } else {
+            console.error("Failed to generate details token:", tokenData.error);
           }
-
-        } else {
-
-          console.error("Failed to generate password token:", tokenData.error);
-
+        } catch (tokenErr) {
+          console.error("Error generating details token:", tokenErr);
         }
+        setNewStudentLinkType("details");
+      } else {
+        // Full-profile mode: generate password setup token and send SMS
+        try {
+          const tokenRes = await fetch("/api/auth/create-password-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone: phoneKey, studentId }),
+          });
+          const tokenData = await tokenRes.json();
 
-      } catch (tokenErr) {
+          if (tokenRes.ok && tokenData.link) {
+            generatedLink = tokenData.link;
 
-        console.error("Error generating password token:", tokenErr);
-
+            // Attempt SMS auto-send (non-blocking)
+            try {
+              await fetch("/api/send-sms", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  phone: phoneKey,
+                  studentName: formData.name,
+                  studentId: studentId,
+                  type: "password-link",
+                  passwordLink: tokenData.link,
+                }),
+              });
+            } catch (smsErr) {
+              console.error("SMS auto-send failed (expected if provider not configured):", smsErr);
+            }
+          } else {
+            console.error("Failed to generate password token:", tokenData.error);
+          }
+        } catch (tokenErr) {
+          console.error("Error generating password token:", tokenErr);
+        }
+        setNewStudentLinkType("password");
       }
 
-
-
       // Show success UI with link inside the modal
-
       setNewStudentLink(generatedLink);
-
       setNewStudentName(formData.name);
-
       setNewStudentCopied(false);
 
 
@@ -1311,9 +1340,7 @@ export default function StudentsPage() {
 
       setCustomStream(false);
 
-      // Close the form modal after successful submission
-
-      setShowForm(false);
+      // Refresh students list (modal stays open to show success UI with link)
 
       fetchStudents();
 
@@ -1815,7 +1842,18 @@ export default function StudentsPage() {
 
                           <div className="min-w-0">
 
-                            <p className="font-bold text-slate-900 text-sm group-hover/name:text-red-700 transition-colors truncate max-w-[100px] lg:max-w-none">{student.name}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-bold text-slate-900 text-sm group-hover/name:text-red-700 transition-colors truncate max-w-[100px] lg:max-w-none">{student.name}</p>
+                              {student.registrationMode === "details-only" && (
+                                <span className={`inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold rounded-full flex-shrink-0 ${
+                                  student.detailsFilledAt
+                                    ? "bg-green-100 text-green-700 border border-green-200"
+                                    : "bg-amber-100 text-amber-700 border border-amber-200"
+                                }`}>
+                                  {student.detailsFilledAt ? "Filled" : "Pending"}
+                                </span>
+                              )}
+                            </div>
 
                             <p className="text-xs text-slate-600 mt-0.5 hidden sm:block">{student.email}</p>
 
@@ -1933,6 +1971,17 @@ export default function StudentsPage() {
 
                           </button>
 
+                          {student.registrationMode === "details-only" && (
+                            <button
+                              onClick={() => handleGenerateDetailsLink(student)}
+                              disabled={generatingDetailsLink === student.id}
+                              className="p-1.5 text-blue-600 hover:text-blue-800 transition-colors"
+                              title={student.detailsFilledAt ? "Resend Details Link (already filled)" : "Send Details Link"}
+                            >
+                              {generatingDetailsLink === student.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
+                            </button>
+                          )}
+
                           <button
 
                             onClick={() => toggleStudentProfileEdit(student)}
@@ -2043,13 +2092,17 @@ export default function StudentsPage() {
 
                 <div className="flex items-center gap-2 flex-shrink-0">
 
-                  <button onClick={() => { if (detailStudent) handleResetPassword(detailStudent); }} disabled={resettingPasswordId === detailStudent?.id} className="px-3 py-1.5 text-xs font-bold text-red-700 bg-white rounded-lg hover:bg-red-50 transition-colors shadow-sm hidden sm:flex items-center gap-1.5 disabled:opacity-60">
-
-                    {resettingPasswordId === detailStudent?.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
-
-                    Reset Password
-
-                  </button>
+                  {detailStudent?.registrationMode === "details-only" ? (
+                    <button onClick={() => { if (detailStudent) handleGenerateDetailsLink(detailStudent); }} disabled={generatingDetailsLink === detailStudent?.id} className="px-3 py-1.5 text-xs font-bold text-blue-700 bg-white rounded-lg hover:bg-blue-50 transition-colors shadow-sm hidden sm:flex items-center gap-1.5 disabled:opacity-60">
+                      {generatingDetailsLink === detailStudent?.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Link2 className="w-3.5 h-3.5" />}
+                      Send Details Link
+                    </button>
+                  ) : (
+                    <button onClick={() => { if (detailStudent) handleResetPassword(detailStudent); }} disabled={resettingPasswordId === detailStudent?.id} className="px-3 py-1.5 text-xs font-bold text-red-700 bg-white rounded-lg hover:bg-red-50 transition-colors shadow-sm hidden sm:flex items-center gap-1.5 disabled:opacity-60">
+                      {resettingPasswordId === detailStudent?.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
+                      Reset Password
+                    </button>
+                  )}
 
                   <button onClick={() => setShowDiscountModal(true)} className="px-3 py-1.5 text-xs font-bold text-red-700 bg-white rounded-lg hover:bg-red-50 transition-colors shadow-sm hidden sm:block">
 
@@ -4088,7 +4141,7 @@ export default function StudentsPage() {
 
               <h2 className="text-lg font-bold text-slate-900">Add Student</h2>
 
-              <button onClick={() => setShowForm(false)} className="text-slate-500 hover:text-slate-700">
+              <button onClick={() => { setNewStudentLink(null); setNewStudentName(""); setNewStudentCopied(false); setRegistrationMode("full-profile"); setShowForm(false); }} className="text-slate-500 hover:text-slate-700">
 
                 <X className="w-5 h-5" />
 
@@ -4116,7 +4169,7 @@ export default function StudentsPage() {
 
                   <p className="text-sm text-green-700">
 
-                    <strong>{newStudentName}</strong> has been enrolled. Share the password setup link below with the student via WhatsApp, SMS, or email.
+                    <strong>{newStudentName}</strong> has been enrolled. {newStudentLinkType === "details" ? "Share the profile registration link below — no password needed, valid for 24 hours." : "Share the password setup link below with the student via WhatsApp, SMS, or email."}
 
                   </p>
 
@@ -4124,7 +4177,7 @@ export default function StudentsPage() {
 
                   <div className="bg-white border border-green-200 rounded-lg p-4 space-y-3">
 
-                    <label className="block text-xs font-semibold text-green-800 uppercase tracking-wide">Password Setup Link</label>
+                    <label className="block text-xs font-semibold text-green-800 uppercase tracking-wide">{newStudentLinkType === "details" ? "Profile Registration Link" : "Password Setup Link"}</label>
 
                     <div className="flex gap-2">
 
@@ -4175,9 +4228,9 @@ export default function StudentsPage() {
                   <a
 
                     href={`https://wa.me/?text=${encodeURIComponent(
-
-                      `Welcome to AIOS EDU! Dear ${newStudentName}, your enrollment is confirmed. Please set your portal password here: ${newStudentLink} (valid 24h). -AIOS EDU Team`
-
+                      newStudentLinkType === "details"
+                        ? `Welcome to AIOS EDU! Dear ${newStudentName}, please fill your profile details here: ${newStudentLink} (valid 24h, no password needed). -AIOS EDU Team`
+                        : `Welcome to AIOS EDU! Dear ${newStudentName}, your enrollment is confirmed. Please set your portal password here: ${newStudentLink} (valid 24h). -AIOS EDU Team`
                     )}`}
 
                     target="_blank"
@@ -4210,6 +4263,8 @@ export default function StudentsPage() {
 
                       setNewStudentCopied(false);
 
+                      setRegistrationMode("full-profile");
+
                     }}
 
                     className="flex-1 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
@@ -4229,6 +4284,8 @@ export default function StudentsPage() {
                       setNewStudentName("");
 
                       setNewStudentCopied(false);
+
+                      setRegistrationMode("full-profile");
 
                       setShowForm(false);
 
@@ -4964,6 +5021,40 @@ export default function StudentsPage() {
 
 
 
+              {/* Registration Mode Toggle */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <label className="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide">Registration Mode</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRegistrationMode("full-profile")}
+                    className={`py-2 px-3 text-xs font-semibold rounded-lg border-2 transition-all ${
+                      registrationMode === "full-profile"
+                        ? "border-red-500 bg-red-50 text-red-700"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                    }`}
+                  >
+                    Full Profile
+                    <span className="block text-[10px] font-normal mt-0.5 opacity-70">Password login</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRegistrationMode("details-only")}
+                    className={`py-2 px-3 text-xs font-semibold rounded-lg border-2 transition-all ${
+                      registrationMode === "details-only"
+                        ? "border-blue-500 bg-blue-50 text-blue-700"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                    }`}
+                  >
+                    Details Only
+                    <span className="block text-[10px] font-normal mt-0.5 opacity-70">Link access (24h)</span>
+                  </button>
+                </div>
+                {registrationMode === "details-only" && (
+                  <p className="text-[10px] text-blue-600 font-medium mt-2">Student gets a 24-hour link to fill their profile. No password or login needed.</p>
+                )}
+              </div>
+
               <button
 
                 type="submit"
@@ -4994,6 +5085,57 @@ export default function StudentsPage() {
 
         </div>
 
+      )}
+
+      {/* Details Link Sharing Modal */}
+      {detailsLinkModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-900">Share Details Link</h2>
+              <button onClick={() => setDetailsLinkModal(null)} className="text-slate-500 hover:text-slate-700">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+              <p className="text-sm text-blue-800">
+                Share this link with <strong>{detailsLinkModal.studentName}</strong> to fill their profile details. No password needed.
+              </p>
+              <div className="bg-white border border-blue-200 rounded-lg p-3 space-y-2">
+                <label className="block text-xs font-semibold text-blue-800 uppercase tracking-wide">Profile Registration Link</label>
+                <div className="flex gap-2">
+                  <input readOnly value={detailsLinkModal.link}
+                    className="flex-1 px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-mono break-all" />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(detailsLinkModal.link);
+                      setDetailsLinkCopied(true);
+                      setTimeout(() => setDetailsLinkCopied(false), 2000);
+                    }}
+                    className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 flex-shrink-0"
+                  >
+                    {detailsLinkCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {detailsLinkCopied ? "Copied!" : "Copy"}
+                  </button>
+                </div>
+                <p className="text-xs text-slate-500">Link valid for <strong>24 hours</strong>.</p>
+              </div>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(
+                  `Dear ${detailsLinkModal.studentName}, please fill your profile details here: ${detailsLinkModal.link} (valid 24h, no password needed). -AIOS EDU Team`
+                )}`}
+                target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white bg-green-500 rounded-lg hover:bg-green-600 transition-colors"
+              >
+                <Send className="w-4 h-4" /> Share via WhatsApp
+              </a>
+            </div>
+            <button onClick={() => setDetailsLinkModal(null)}
+              className="w-full py-2.5 text-sm font-bold text-white gradient-bg rounded-lg hover:shadow-lg transition-all">
+              Done
+            </button>
+          </div>
+        </div>
       )}
 
     </div>

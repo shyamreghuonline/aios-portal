@@ -36,11 +36,26 @@ export async function POST(request: NextRequest) {
 
     const studentData = studentSnap.data()!;
 
+    const tokenType = tokenData.type || "password";
+
+    // For details-only tokens, return full student data (no auth available on client)
+    if (tokenType === "details-only") {
+      return NextResponse.json({
+        valid: true,
+        studentId: tokenData.studentId,
+        phone: tokenData.phone,
+        name: studentData.name,
+        type: tokenType,
+        studentData: { id: tokenData.studentId, ...studentData },
+      });
+    }
+
     return NextResponse.json({
       valid: true,
       studentId: tokenData.studentId,
       phone: tokenData.phone,
       name: studentData.name,
+      type: tokenType,
     });
   } catch (err) {
     console.error("[validate-token] error:", err);

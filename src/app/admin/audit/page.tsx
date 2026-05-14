@@ -605,7 +605,7 @@ export default function AuditPage() {
         ) : (
           <div className="divide-y divide-slate-100">
             {grouped.map((uni) => {
-              const isOpen = openUni[uni.university] ?? true;
+              const isOpen = openUni[uni.university] ?? false;
               const totalFee = uni.students.reduce(
                 (a, s) => a + studentEffective(s),
                 0

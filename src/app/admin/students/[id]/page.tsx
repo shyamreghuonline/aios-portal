@@ -486,27 +486,39 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       const semestersForYear = yearGroup?.semesters || [];
 
       // Auto-mark semesters as passed when year is marked as passed
-      const semesters = status === "Pass" 
+      let semesters = status === "Pass" 
         ? semestersForYear.map(sem => ({ semester: sem, status: "Pass" as const }))
-        : (existingIndex >= 0 ? updatedResults[existingIndex].semesters : []);
+        : (existingIndex >= 0 ? [...(updatedResults[existingIndex].semesters || [])] : []);
 
       // Capture certificate timestamps
       const existingResult = existingIndex >= 0 ? updatedResults[existingIndex] : null;
       const prevCertStatus = existingResult?.certificateStatus;
       const now = new Date().toISOString();
       const certificateIssuedAt = certificateStatus === "Issued from University" && prevCertStatus !== "Issued from University"
-        ? now : (existingResult?.certificateIssuedAt);
+        ? now : (existingResult?.certificateIssuedAt || null);
       const certificateSentAt = certificateStatus === "Sent" && prevCertStatus !== "Sent"
-        ? now : (existingResult?.certificateSentAt);
+        ? now : (existingResult?.certificateSentAt || null);
       const certificateReceivedAt = certificateStatus === "Received" && prevCertStatus !== "Received"
-        ? now : (existingResult?.certificateReceivedAt);
+        ? now : (existingResult?.certificateReceivedAt || null);
+
+      // When certificate status changes at year level, cascade to all semesters
+      const effectiveCertStatus = certificateStatus || (existingIndex >= 0 ? updatedResults[existingIndex].certificateStatus : undefined) || "Not Issued";
+      if (certificateStatus && semesters.length > 0) {
+        semesters = semesters.map(sem => ({
+          ...sem,
+          certificateStatus: certificateStatus,
+          ...(certificateStatus === "Issued from University" && sem.certificateIssuedAt == null ? { certificateIssuedAt: now } : {}),
+          ...(certificateStatus === "Sent" && sem.certificateSentAt == null ? { certificateSentAt: now } : {}),
+          ...(certificateStatus === "Received" && sem.certificateReceivedAt == null ? { certificateReceivedAt: now } : {}),
+        }));
+      }
 
       if (existingIndex >= 0) {
         updatedResults[existingIndex] = { 
           year, 
           status, 
           date, 
-          certificateStatus: certificateStatus || updatedResults[existingIndex].certificateStatus,
+          certificateStatus: effectiveCertStatus,
           certificateIssuedAt,
           certificateSentAt,
           certificateReceivedAt,
@@ -517,7 +529,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
           year, 
           status, 
           date, 
-          certificateStatus,
+          certificateStatus: effectiveCertStatus,
           certificateIssuedAt,
           certificateSentAt,
           certificateReceivedAt,
@@ -567,16 +579,16 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
       const now = new Date().toISOString();
       const semStatusChangedAt = status !== prevSem?.status ? now : prevSem?.statusChangedAt;
       const semCertIssuedAt = certificateStatus === "Issued from University" && prevSemCertStatus !== "Issued from University"
-        ? now : (prevSem?.certificateIssuedAt);
+        ? now : (prevSem?.certificateIssuedAt || null);
       const semCertSentAt = certificateStatus === "Sent" && prevSemCertStatus !== "Sent"
-        ? now : (prevSem?.certificateSentAt);
+        ? now : (prevSem?.certificateSentAt || null);
       const semCertReceivedAt = certificateStatus === "Received" && prevSemCertStatus !== "Received"
-        ? now : (prevSem?.certificateReceivedAt);
+        ? now : (prevSem?.certificateReceivedAt || null);
 
       if (semIndex >= 0) {
-        semesters[semIndex] = { semester, status, statusChangedAt: semStatusChangedAt, certificateStatus: certificateStatus || semesters[semIndex].certificateStatus, certificateIssuedAt: semCertIssuedAt, certificateSentAt: semCertSentAt, certificateReceivedAt: semCertReceivedAt };
+        semesters[semIndex] = { semester, status, statusChangedAt: semStatusChangedAt || null, certificateStatus: certificateStatus || semesters[semIndex].certificateStatus || "Not Issued", certificateIssuedAt: semCertIssuedAt, certificateSentAt: semCertSentAt, certificateReceivedAt: semCertReceivedAt };
       } else {
-        semesters.push({ semester, status, statusChangedAt: semStatusChangedAt, certificateStatus, certificateIssuedAt: semCertIssuedAt, certificateSentAt: semCertSentAt, certificateReceivedAt: semCertReceivedAt });
+        semesters.push({ semester, status, statusChangedAt: semStatusChangedAt || null, certificateStatus: certificateStatus || "Not Issued", certificateIssuedAt: semCertIssuedAt, certificateSentAt: semCertSentAt, certificateReceivedAt: semCertReceivedAt });
       }
 
       // Check if all semesters for this year are passed
@@ -1152,7 +1164,7 @@ export default function StudentDetailPage({ params }: { params: Promise<{ id: st
                             return (
                               <div key={sem} className="flex-1 min-w-[200px] bg-white rounded-lg border border-cyan-200 p-3">
                                 <div className="flex items-center justify-between mb-2">
-                                  <span className="text-xs font-bold text-cyan-700">Sem {sem}</span>
+                                  <span className="text-xs font-bold text-cyan-700">Semester {sem}</span>
                                 </div>
                                 <div className="space-y-2">
                                   <div>

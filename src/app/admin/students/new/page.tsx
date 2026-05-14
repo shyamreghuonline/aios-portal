@@ -105,6 +105,8 @@ export default function NewStudentPage() {
   const [copied, setCopied] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [tokenError, setTokenError] = useState<string | null>(null);
+  const [registrationMode, setRegistrationMode] = useState<"full-profile" | "details-only">("full-profile");
+  const [linkType, setLinkType] = useState<"password" | "details">("password");
   const currentYear = new Date().getFullYear();
   
   const [formData, setFormData] = useState({
@@ -211,6 +213,7 @@ export default function NewStudentPage() {
         admissionCenter: admissionCenter || "Bengaluru",
         studentId,
         profileEditEnabled: true,
+        registrationMode: registrationMode,
         createdAt: serverTimestamp(),
       });
 
@@ -242,40 +245,61 @@ export default function NewStudentPage() {
         });
       }
 
-      // Generate password setup token and send SMS with link
+      // Generate token based on registration mode
       let generatedLink: string | null = null;
-      try {
-        const tokenRes = await fetch("/api/auth/create-password-token", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ phone: phoneKey, studentId }),
-        });
-        const tokenData = await tokenRes.json();
 
-        if (tokenRes.ok && tokenData.link) {
-          generatedLink = tokenData.link;
-
-          // Attempt to send SMS — non-blocking, keeps working when SMS is not configured
-          try {
-            await fetch("/api/send-sms", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                phone: phoneKey,
-                studentName: name,
-                studentId: studentId,
-                type: "password-link",
-                passwordLink: tokenData.link,
-              }),
-            });
-          } catch (smsErr) {
-            console.error("SMS auto-send failed (expected if provider not configured):", smsErr);
+      if (registrationMode === "details-only") {
+        try {
+          const tokenRes = await fetch("/api/auth/create-details-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ studentId }),
+          });
+          const tokenData = await tokenRes.json();
+          if (tokenRes.ok && tokenData.link) {
+            generatedLink = tokenData.link;
+          } else {
+            console.error("Failed to generate details token:", tokenData.error);
           }
-        } else {
-          console.error("Failed to generate password token:", tokenData.error);
+        } catch (tokenErr) {
+          console.error("Error generating details token:", tokenErr);
         }
-      } catch (tokenErr) {
-        console.error("Error generating password token:", tokenErr);
+        setLinkType("details");
+      } else {
+        try {
+          const tokenRes = await fetch("/api/auth/create-password-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone: phoneKey, studentId }),
+          });
+          const tokenData = await tokenRes.json();
+
+          if (tokenRes.ok && tokenData.link) {
+            generatedLink = tokenData.link;
+
+            // Attempt to send SMS — non-blocking
+            try {
+              await fetch("/api/send-sms", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  phone: phoneKey,
+                  studentName: name,
+                  studentId: studentId,
+                  type: "password-link",
+                  passwordLink: tokenData.link,
+                }),
+              });
+            } catch (smsErr) {
+              console.error("SMS auto-send failed (expected if provider not configured):", smsErr);
+            }
+          } else {
+            console.error("Failed to generate password token:", tokenData.error);
+          }
+        } catch (tokenErr) {
+          console.error("Error generating password token:", tokenErr);
+        }
+        setLinkType("password");
       }
 
       // Show success UI with password link for admin to share
@@ -663,6 +687,43 @@ export default function NewStudentPage() {
           </div>
         </div>
 
+        {/* Registration Mode Toggle */}
+        <div className="pb-2">
+          <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
+            <span className="w-5 h-5 rounded-full gradient-bg flex items-center justify-center text-xs text-white">5</span>
+            Registration Mode
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setRegistrationMode("full-profile")}
+              className={`py-2.5 px-4 text-sm font-semibold rounded-lg border-2 transition-all ${
+                registrationMode === "full-profile"
+                  ? "border-red-500 bg-red-50 text-red-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+              }`}
+            >
+              Full Profile
+              <span className="block text-[11px] font-normal mt-0.5 opacity-70">Password login — student gets full portal access</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setRegistrationMode("details-only")}
+              className={`py-2.5 px-4 text-sm font-semibold rounded-lg border-2 transition-all ${
+                registrationMode === "details-only"
+                  ? "border-blue-500 bg-blue-50 text-blue-700"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+              }`}
+            >
+              Details Only
+              <span className="block text-[11px] font-normal mt-0.5 opacity-70">24-hour link — student fills profile only, no password</span>
+            </button>
+          </div>
+          {registrationMode === "details-only" && (
+            <p className="text-xs text-blue-600 font-medium mt-2">Student gets a 24-hour link to fill their profile. No password or login needed.</p>
+          )}
+        </div>
+
         {/* Submit */}
         <div className="flex gap-3 pt-4 border-t border-slate-100">
           <Link
@@ -690,13 +751,13 @@ export default function NewStudentPage() {
             <h3 className="font-bold text-lg">Student Added Successfully!</h3>
           </div>
           <p className="text-sm text-green-700">
-            <strong>{createdStudentName}</strong> has been enrolled. Share the password setup link below with the student via WhatsApp, SMS, or email.
+            <strong>{createdStudentName}</strong> has been enrolled. {linkType === "details" ? "Share the profile registration link below — no password needed, valid for 24 hours." : "Share the password setup link below with the student via WhatsApp, SMS, or email."}
           </p>
 
           {passwordLink ? (
             <>
               <div className="bg-white border border-green-200 rounded-lg p-4 space-y-3">
-                <label className="block text-xs font-semibold text-green-800 uppercase tracking-wide">Password Setup Link</label>
+                <label className="block text-xs font-semibold text-green-800 uppercase tracking-wide">{linkType === "details" ? "Profile Registration Link" : "Password Setup Link"}</label>
                 <div className="flex gap-2">
                   <input
                     readOnly
@@ -723,7 +784,9 @@ export default function NewStudentPage() {
               {/* WhatsApp share button */}
               <a
                 href={`https://wa.me/?text=${encodeURIComponent(
-                  `Welcome to AIOS EDU! Dear ${createdStudentName}, your enrollment is confirmed. Please set your portal password here: ${passwordLink} (valid 24h). -AIOS EDU Team`
+                  linkType === "details"
+                    ? `Welcome to AIOS EDU! Dear ${createdStudentName}, please fill your profile details here: ${passwordLink} (valid 24h, no password needed). -AIOS EDU Team`
+                    : `Welcome to AIOS EDU! Dear ${createdStudentName}, your enrollment is confirmed. Please set your portal password here: ${passwordLink} (valid 24h). -AIOS EDU Team`
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -753,6 +816,7 @@ export default function NewStudentPage() {
                 setCopied(false);
                 setShowSuccess(false);
                 setTokenError(null);
+                setRegistrationMode("full-profile");
                 setFormData({
                   name: "",
                   email: "",
